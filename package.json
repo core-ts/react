@@ -1,0 +1,41 @@
+{
+  "name": "react-plus",
+  "version": "0.0.9",
+  "description": "react",
+  "main": "./lib/index.js",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build:lib": "tsc",
+    "clean:lib": "rimraf lib"
+  },
+  "devDependencies": {
+    "@types/react": "^16.9.0",
+    "@types/react-router-dom": "^4.3.0",
+    "tslint": "5.10.0",
+    "typescript": "^3.3.3333"
+  },
+  "peerDependencies": {
+    "form-util": "0.0.5",
+    "query-string": "^6.13.1",
+    "react": "^16.8.0",
+    "react-router-dom": "^4.3.1",
+    "reflectx": "0.0.9",
+    "search-utilities": "0.0.5",
+    "ui-plus": "0.0.4",
+    "uione": "0.0.7",
+    "validation-util": "0.0.3"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com/common-ts/react"
+  },
+  "keywords": [
+    "react",
+    "react-plus",
+    "reactx",
+    "react-core"
+  ]
+}
