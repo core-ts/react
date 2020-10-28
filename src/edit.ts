@@ -1,13 +1,6 @@
 
-import {ResourceService} from 'uione';
-import {Attribute, Metadata, Type} from './core';
+import {Attribute, ErrorMessage, Metadata, resource, ResourceService, Type} from './core';
 
-interface ErrorMessage {
-  field: string;
-  code: string;
-  param?: string|number|Date;
-  message?: string;
-}
 export enum Status {
   DuplicateKey = 0,
   NotFound = 0,
@@ -21,12 +14,6 @@ export interface ResultInfo<T> {
   errors?: ErrorMessage[];
   value?: T;
   message?: string;
-}
-
-// tslint:disable-next-line:class-name
-export class resource {
-  static _cache: any = {};
-  static cache = true;
 }
 
 export interface MetaModel {

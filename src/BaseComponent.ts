@@ -3,45 +3,45 @@ import * as React from 'react';
 import {setValue} from 'reflectx';
 import {clone, makeDiff} from 'reflectx';
 import {addParametersIntoUrl, append, buildSearchMessage, changePage, changePageSize, formatResults, getDisplayFields, handleSortEvent, initSearchable, mergeSearchModel, more, optimizeSearchModel, reset, Searchable, SearchModel, SearchResult, showResults} from 'search-utilities';
-import {formatter} from 'ui-plus';
-import {Locale, messageByHttpStatus} from 'uione';
-import {storage} from 'uione';
-import {UIService} from 'uione';
-import {message} from 'uione';
-import {initForm, initMaterial} from 'uione';
-import {buildId, Metadata} from './core';
+import {buildId, initForm, LoadingService, Locale, message, messageByHttpStatus, Metadata, removePhoneFormat, ResourceService, UIService} from './core';
 import {build, buildMessageFromStatusCode, createModel, handleVersion, initPropertyNullInModel, ResultInfo, Status} from './edit';
 import {HistoryProps} from './HistoryProps';
 import {buildFromUrl} from './route';
 import {valueOf} from './util';
 
+export const enLocale = {
+  'localeId': 'en-US',
+  'countryCode': 'US',
+  'dateFormat': 'M/d/yyyy',
+  'firstDayOfWeek': 1,
+  'decimalSeparator': '.',
+  'groupSeparator': ',',
+  'decimalDigits': 2,
+  'currencyCode': 'USD',
+  'currencySymbol': '$',
+  'currencyPattern': 0
+};
 export class BaseViewComponent<W extends HistoryProps, I> extends React.Component<W, I & any> {
-  constructor(props) {
+  constructor(props, protected resourceService: ResourceService, protected getLocale?: () => Locale) {
     super(props);
-    this.requireAuthentication = this.requireAuthentication.bind(this);
-    this.getLocale = this.getLocale.bind(this);
+    this.resource = resourceService.resource();
+    if (getLocale) {
+      this.getLocale = this.getLocale.bind(this);
+    }
     this.back = this.back.bind(this);
-    this.alertError = this.alertError.bind(this);
-
-    this.handleError = this.handleError.bind(this);
   }
-
-  private _includingCurrencySymbol = false;
-  protected resource: any = storage.getResource();
+  protected resource: any = {};
+  protected includingCurrencySymbol = false;
   protected dateTimeFormat: string = null;
   protected running: boolean;
   protected form: any;
 
-  protected includingCurrencySymbol(): boolean {
-    return this._includingCurrencySymbol;
+  protected currencySymbol(): boolean {
+    return this.includingCurrencySymbol;
   }
 
   protected getCurrencyCode(): string {
     return (this.form ? this.form.getAttribute('currency-code') : null);
-  }
-
-  protected getLocale(): Locale {
-    return storage.getLocale();
   }
 
 /*
@@ -69,70 +69,6 @@ export class BaseViewComponent<W extends HistoryProps, I> extends React.Componen
     }
     this.props.history.goBack();
   }
-
-  handleError(err?: any) {
-    storage.loading().hideLoading();
-    this.running = false;
-    // const data = response && response.response && response.response.data ? response.response.data : response;
-    const data = err.response ? err.response : err;
-    const descriptions = [];
-    const errCodeList = [];
-    let callBack = null;
-    const r = storage.resource();
-    const title = r.value('error');
-    let msg = r.value('error_internal');
-    if (data && data.status) {
-      if (data.status === 404) {
-        msg = r.value('error_not_found');
-        errCodeList.push(data.statusText);
-        descriptions.push(msg);
-        const errCode = this.returnErrCodeIfExist(errCodeList, 'InvalidAuthorizationToken');
-        callBack = this.makeCallBackHandleError(errCode);
-
-        this.alertError(descriptions.join('<br>'), title, null, callBack);
-      } else if (data.status === 401) {
-        msg = r.value('error_unauthorized');
-        errCodeList.push('InvalidAuthorizationToken');
-        descriptions.push(msg);
-        const errCode = this.returnErrCodeIfExist(errCodeList, 'InvalidAuthorizationToken');
-        callBack = this.makeCallBackHandleError(errCode);
-
-        this.alertError(descriptions.join('<br>'), title, null, callBack);
-      } else if (data.status === 403) {
-        msg = r.value('error_forbidden');
-        errCodeList.push('Forbidden');
-        descriptions.push(msg);
-        const errCode = this.returnErrCodeIfExist(errCodeList, 'InvalidAuthorizationToken');
-        callBack = this.makeCallBackHandleError(errCode);
-
-        this.alertError(descriptions.join('<br>'), title, null, callBack);
-      } else {
-        msg = messageByHttpStatus(data.status, r);
-        this.alertError(msg, title, null, callBack);
-      }
-    } else {
-      this.alertError(msg, title, null, callBack);
-    }
-  }
-  private makeCallBackHandleError(errCode: string): any {
-    switch (errCode) {
-      case 'InvalidAuthorizationToken': {
-        return  this.requireAuthentication();
-      }
-    }
-  }
-  protected alertError(msg: string, title: string, detail?: string, callback?: () => void) {
-    storage.alert().alertError(msg, title, detail, callback);
-  }
-  private requireAuthentication() {
-    sessionStorage.clear();
-    const redirect = window.location.pathname;
-    this.props.history.push('/auth?redirect=' + redirect);
-  }
-
-  private returnErrCodeIfExist(arrayErrCode: string[], expected: string): string {
-    return arrayErrCode.find(errCode => errCode === expected);
-  }
 }
 
 export interface ViewService<T, ID> {
@@ -140,16 +76,22 @@ export interface ViewService<T, ID> {
   keys(): string[];
   load(id: ID, ctx?: any): Promise<T>;
 }
-
 export class ViewComponent<T, ID, W extends HistoryProps, I> extends BaseViewComponent<W, I> {
-  constructor(props, protected metadata: Metadata, private viewService: ViewService<T, ID>) {
-    super(props);
+  constructor(props, protected service: ViewService<T, ID>,
+      resourceService: ResourceService,
+      protected showError: (msg: string, title?: string, detail?: string, callback?: () => void) => void,
+      getLocale?: () => Locale,
+      protected loading?: LoadingService) {
+    super(props, resourceService, getLocale);
+    this.metadata = service.metadata();
     this.getModelName = this.getModelName.bind(this);
     this.load = this.load.bind(this);
     this.getModel = this.getModel.bind(this);
     this.showModel = this.showModel.bind(this);
+    this.handleError = this.handleError.bind(this);
   }
   protected form: any;
+  protected metadata: Metadata;
 
   protected getModelName() {
     return (this.metadata ? this.metadata.name : '');
@@ -159,9 +101,12 @@ export class ViewComponent<T, ID, W extends HistoryProps, I> extends BaseViewCom
     const id: any = _id;
     if (id != null && id !== '') {
       this.running = true;
-      storage.loading().showLoading();
+      if (this.loading) {
+        this.loading.showLoading();
+      }
       try {
-        const obj = await this.viewService.load(id);
+        const ctx: any = {};
+        const obj = await this.service.load(id, ctx);
         if (!obj) {
           this.handleNotFound(this.form);
         } else {
@@ -175,16 +120,18 @@ export class ViewComponent<T, ID, W extends HistoryProps, I> extends BaseViewCom
         }
       } finally {
         this.running = false;
-        storage.loading().hideLoading();
+        if (this.loading) {
+          this.loading.hideLoading();
+        }
       }
     }
   }
   protected handleNotFound(form?: any): void {
-    const msg = message(storage.resource(), 'error_not_found', 'error');
-    if (this.form) {
-      readOnly(this.form);
+    const msg = message(this.resourceService, 'error_not_found', 'error');
+    if (form) {
+      readOnly(form);
     }
-    this.alertError(msg.message, msg.title);
+    this.showError(msg.message, msg.title);
   }
   getModel(): T {
     return this.state[this.getModelName()];
@@ -195,17 +142,34 @@ export class ViewComponent<T, ID, W extends HistoryProps, I> extends BaseViewCom
     objSet[modelName] = model;
     this.setState(objSet);
   }
+  handleError(response: any): void {
+    const r = this.resourceService;
+    const title = r.value('error');
+    let msg = r.value('error_internal');
+    if (response) {
+      if (response.status && !isNaN(response.status)) {
+        msg = messageByHttpStatus(response.status, r);
+      }
+    }
+    this.showError(msg, title);
+  }
 }
 
 export class BaseComponent<W extends HistoryProps, I> extends BaseViewComponent<W, I> {
-  constructor(props) {
-    super(props);
-    this.uiS1 = storage.ui();
+  constructor(props, resourceService: ResourceService, ui: UIService,
+      protected showError: (m: string, header?: string, detail?: string, callback?: () => void) => void,
+      getLocale?: () => Locale,
+      protected loading?: LoadingService) {
+    super(props, resourceService, getLocale);
+    this.uiS1 = ui;
+    this.showError = this.showError.bind(this);
+
     this.updateState = this.updateState.bind(this);
     this.updateFlatState = this.updateFlatState.bind(this);
     this.updatePhoneState = this.updatePhoneState.bind(this);
     this.updateDateState = this.updateDateState.bind(this);
     this.prepareCustomData = this.prepareCustomData.bind(this);
+    this.handleError = this.handleError.bind(this);
   }
   private uiS1: UIService;
   /*
@@ -248,7 +212,7 @@ export class BaseComponent<W extends HistoryProps, I> extends BaseViewComponent<
 
   protected updatePhoneState = (event) => {
     const re = /^[0-9\b]+$/;
-    const value = formatter.removePhoneFormat(event.currentTarget.value);
+    const value = removePhoneFormat(event.currentTarget.value);
     if (re.test(value) || !value) {
       this.updateState(event);
     } else {
@@ -297,7 +261,11 @@ export class BaseComponent<W extends HistoryProps, I> extends BaseViewComponent<
       const form = ctrl.form;
       const formName = form.name;
       if (!locale) {
-        locale = this.getLocale();
+        if (this.getLocale) {
+          locale = this.getLocale();
+        } else {
+          locale = enLocale;
+        }
       }
       const res = valueOf(ctrl, locale, e.type);
       if (res.mustChange) {
@@ -347,7 +315,13 @@ export class BaseComponent<W extends HistoryProps, I> extends BaseViewComponent<
               this.setState(objSet);
             }
           } else {
-            const tloc = (!locale ? this.getLocale() : locale);
+            let tmLoc = null;
+            if (this.getLocale) {
+              tmLoc = this.getLocale();
+            } else {
+              tmLoc = enLocale;
+            }
+            const tloc = (!locale ? tmLoc : locale);
             const data = valueOf(ctrl, tloc, e.type);
 
             if (data.mustChange) {
@@ -402,35 +376,84 @@ export class BaseComponent<W extends HistoryProps, I> extends BaseViewComponent<
       }
     }
   }
+  handleError(response: any): void {
+    this.running = false;
+    if (this.loading) {
+      this.loading.hideLoading();
+    }
+
+    const r = this.resourceService;
+    const title = r.value('error');
+    let msg = r.value('error_internal');
+    if (!response) {
+      this.showError(msg, title);
+      return;
+    }
+    const status = response.status;
+    if (status && !isNaN(status)) {
+      msg = messageByHttpStatus(status, r);
+    }
+    if (status === 403) {
+      msg = r.value('error_forbidden');
+      readOnly(this.form);
+      this.showError(msg, title);
+    } else if (status === 401) {
+      msg = r.value('error_unauthorized');
+      readOnly(this.form);
+      this.showError(msg, title);
+    } else {
+      this.showError(msg, title);
+    }
+  }
 }
 
 
 export interface LocaleFormatter<T> {
   format(obj: T, locale: Locale): T;
 }
-
 export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProps, I extends SearchState<T>> extends BaseComponent<W, I> implements Searchable {
-  constructor(props, protected listFormId?: string) {
-    super(props);
-    this.ui = storage.ui();
+  constructor(props,
+      resourceService: ResourceService,
+      protected ui: UIService,
+      protected showMessage: (msg: string) => void,
+      showError: (m: string, header?: string, detail?: string, callback?: () => void) => void,
+      getLocale?: () => Locale,
+      loading?: LoadingService,
+      protected listFormId?: string) {
+    super(props, resourceService, ui, showError, getLocale);
+    this.ui = ui;
+
     this.showMessage = this.showMessage.bind(this);
-    this.getSearchForm = this.getSearchForm.bind(this);
-    this.setSearchForm = this.setSearchForm.bind(this);
+
+    this.toggleFilter = this.toggleFilter.bind(this);
+    this.mergeUrlSearchModel = this.mergeUrlSearchModel.bind(this);
     this.mergeSearchModel = this.mergeSearchModel.bind(this);
     this.load = this.load.bind(this);
     this.add = this.add.bind(this);
-    this.searchOnClick = this.searchOnClick.bind(this);
-    this.sort = this.sort.bind(this);
-    this.showMore = this.showMore.bind(this);
-    this.toggleFilter = this.toggleFilter.bind(this);
-    this.doSearch = this.doSearch.bind(this);
-    this.pageChanged = this.pageChanged.bind(this);
+    this.getSearchForm = this.getSearchForm.bind(this);
+    this.setSearchForm = this.setSearchForm.bind(this);
+
+    this.setSearchModel = this.setSearchModel.bind(this);
+    this.getOriginalSearchModel = this.getOriginalSearchModel.bind(this);
+    this.getSearchModel = this.getSearchModel.bind(this);
+    this.getDisplayFields = this.getDisplayFields.bind(this);
+
     this.pageSizeChanged = this.pageSizeChanged.bind(this);
-    this.clearKeyworkOnClick = this.clearKeyworkOnClick.bind(this);
-    this.mergeUrlSearchModel = this.mergeUrlSearchModel.bind(this);
+    this.clearKeyword = this.clearKeyword.bind(this);
+    this.searchOnClick = this.searchOnClick.bind(this);
+
+    this.resetAndSearch = this.resetAndSearch.bind(this);
+    this.doSearch = this.doSearch.bind(this);
+    this.search = this.search.bind(this);
+    this.validateSearch = this.validateSearch.bind(this);
     this.showResults = this.showResults.bind(this);
     this.searchError = this.searchError.bind(this);
-    this.getDisplayFields = this.getDisplayFields.bind(this);
+    this.setList = this.setList.bind(this);
+    this.getList = this.getList.bind(this);
+    this.sort = this.sort.bind(this);
+    this.showMore = this.showMore.bind(this);
+    this.pageChanged = this.pageChanged.bind(this);
+
     this.url = (props.match ? props.match.url : props['props'].match.url);
     /*
     this.locationSearch = '';
@@ -441,14 +464,13 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
     */
   }
   protected url: string;
-  protected ui: UIService;
 
   // Pagination
   initPageSize = 20;
   pageSize = 20;
   pageIndex = 1;
-  itemTotal: number;
-  pageTotal: number;
+  itemTotal = 0;
+  pageTotal = 0;
   showPaging = false;
   append = false;
   appendMode = false;
@@ -464,7 +486,7 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
   initDisplayFields = false;
   sequenceNo = 'sequenceNo';
   triggerSearch = false;
-  tmpPageIndex: number;
+  tmpPageIndex = 1;
 
   pageMaxSize = 7;
   pageSizes: number[] = [10, 20, 40, 60, 100, 200, 400, 800];
@@ -477,11 +499,11 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
   // locationSearch: string;
   // _currentSortField: string;
 
-  viewable: boolean;
-  addable: boolean;
-  editable: boolean;
-  deletable: boolean;
-  approvable: boolean;
+  viewable = true;
+  addable = true;
+  editable = true;
+  approvable = true;
+  deletable = true;
 
   protected mergeUrlSearchModel(searchModel: any): void {
     for (const key of Object.keys(searchModel)) {
@@ -496,9 +518,6 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
 
   toggleFilter(event: any): void {
     this.hideFilter = !this.hideFilter;
-  }
-  protected showMessage(msg: string) {
-    storage.toast().showToast(msg);
   }
   protected add = (event) => {
     event.preventDefault();
@@ -577,7 +596,7 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
     this.setState(prevState => ({ isPageSizeOpenDropDown: !prevState.isPageSizeOpenDropDown }));
   }
 
-  protected clearKeyworkOnClick = () => {
+  protected clearKeyword() {
     this.setState({
       keyword: ''
     });
@@ -613,7 +632,9 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
         return;
       }
       com.running = true;
-      storage.loading().showLoading();
+      if (this.loading) {
+        this.loading.showLoading();
+      }
       if (this.ignoreUrlParam === false) {
         addParametersIntoUrl(s, isFirstLoad);
       }
@@ -651,8 +672,7 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
     if (appendMode === false) {
       com.setList(results);
       com.tmpPageIndex = s.page;
-      const r = storage.resource();
-      const m1 = buildSearchMessage(s, sr, r);
+      const m1 = buildSearchMessage(s, sr, this.resourceService);
       this.showMessage(m1);
     } else {
       if (com.append === true && s.page > 1) {
@@ -662,7 +682,9 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
       }
     }
     com.running = false;
-    storage.loading().hideLoading();
+    if (this.loading) {
+      this.loading.hideLoading();
+    }
     if (com.triggerSearch === true) {
       com.triggerSearch = false;
       com.resetAndSearch();
@@ -735,21 +757,34 @@ export interface SearchService<T, S extends SearchModel> {
   search(s: S, ctx?: any): Promise<SearchResult<T>>;
 }
 export class SearchComponent<T, S extends SearchModel, W extends HistoryProps, I extends SearchState<T>> extends BaseSearchComponent<T, S, W, I> {
-  constructor(props, protected service: SearchService<T, S>, listFormId?: string) {
-    super(props, listFormId);
+  constructor(props, protected service: SearchService<T, S>,
+      resourceService: ResourceService,
+      ui: UIService,
+      showMessage: (msg: string) => void,
+      showError: (m: string, header?: string, detail?: string, callback?: () => void) => void,
+      getLocale?: () => Locale,
+      loading?: LoadingService,
+      autoSearch?: boolean,
+      listFormId?: string) {
+    super(props, resourceService, ui, showMessage, showError, getLocale, loading, listFormId);
+    if (autoSearch === false) {
+      this.autoSearch = autoSearch;
+    }
     this.search = this.search.bind(this);
     this.componentDidMount = this.componentDidMount.bind(this);
     this.ref = React.createRef();
   }
   protected ref: any;
+  protected autoSearch = true;
   componentDidMount() {
-    this.form = initForm(this.ref.current, initMaterial);
+    this.form = initForm(this.ref.current, this.ui.initMaterial);
     const s = this.mergeSearchModel(buildFromUrl());
-    this.load(s, storage.autoSearch);
+    this.load(s, this.autoSearch);
   }
   async search(s: S) {
     try {
-      const sr = await this.service.search(s);
+      const ctx: any = {};
+      const sr = await this.service.search(s, ctx);
       this.showResults(s, sr);
     } catch (err) {
       this.searchError(err);
@@ -759,22 +794,40 @@ export class SearchComponent<T, S extends SearchModel, W extends HistoryProps, I
 
 
 export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends BaseComponent<W, I> {
-  constructor(props, protected metadata: Metadata, patchable?: boolean, backOnSaveSuccess?: boolean) {
-    super(props);
+  constructor(props, protected metadata: Metadata,
+      resourceService: ResourceService,
+      protected ui: UIService,
+      protected showMessage: (msg: string) => void,
+      showError: (m: string, title?: string, detail?: string, callback?: () => void) => void,
+      protected confirm: (m2, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
+      getLocale?: () => Locale,
+      loading?: LoadingService,
+      patchable?: boolean, backOnSaveSuccess?: boolean) {
+    super(props, resourceService, ui, showError, getLocale, loading);
     const meta = build(metadata);
     this.keys = meta.keys;
     this.version = meta.version;
-    this.ui = storage.ui();
+    this.ui = ui;
+    if (patchable === false) {
+      this.patchable = patchable;
+    }
+    if (backOnSaveSuccess === false) {
+      this.backOnSuccess = backOnSaveSuccess;
+    }
+    this.insertSuccessMsg = resourceService.value('msg_save_success');
+    this.updateSuccessMsg = resourceService.value('msg_save_success');
 
     this.showMessage = this.showMessage.bind(this);
     this.confirm = this.confirm.bind(this);
 
+    this.getModelName = this.getModelName.bind(this);
+
     this.resetState = this.resetState.bind(this);
     this.handleNotFound = this.handleNotFound.bind(this);
-    this.getModelName = this.getModelName.bind(this);
-    this.getModel = this.getModel.bind(this);
     this.showModel = this.showModel.bind(this);
+    this.getModel = this.getModel.bind(this);
     this.createModel = this.createModel.bind(this);
+
     this.newOnClick = this.newOnClick.bind(this);
     this.saveOnClick = this.saveOnClick.bind(this);
     this.onSave = this.onSave.bind(this);
@@ -784,20 +837,10 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Ba
     this.fail = this.fail.bind(this);
     this.postSave = this.postSave.bind(this);
     this.handleDuplicateKey = this.handleDuplicateKey.bind(this);
-    if (patchable === false) {
-      this.patchable = patchable;
-    }
-    if (backOnSaveSuccess === false) {
-      this.backOnSuccess = backOnSaveSuccess;
-    }
-    const r = storage.resource();
-    this.insertSuccessMsg = r.value('msg_save_success');
-    this.updateSuccessMsg = r.value('msg_save_success');
   }
   backOnSuccess = true;
   protected keys: string[];
   protected version?: string;
-  protected ui: UIService;
   protected newMode = false;
   protected setBack = false;
   protected patchable = true;
@@ -815,17 +858,18 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Ba
     this.showModel(model);
   }
   protected handleNotFound(form?: any): void {
-    const msg = message(storage.resource(), 'error_not_found', 'error');
+    const msg = message(this.resourceService, 'error_not_found', 'error');
     if (form) {
       readOnly(form);
     }
-    this.alertError(msg.message, msg.title);
+    this.showError(msg.message, msg.title);
   }
   protected getModelName() {
     return this.metadata.name;
   }
   getModel(): T {
-    return this.props[this.getModelName()] || this.state[this.getModelName()];
+    const n = this.getModelName();
+    return this.props[n] || this.state[n];
   }
   showModel(model: T) {
     const f = this.form;
@@ -874,14 +918,14 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Ba
     this.onSave(this.backOnSuccess);
   }
   onSave(isBack?: boolean) {
-    const r = storage.resource();
+    const r = this.resourceService;
     if (this.newMode === true && this.addable === false) {
       const m = message(r, 'error_permission_add', 'error_permission');
-      this.alertError(m.message, m.title);
+      this.showError(m.message, m.title);
       return;
     } else if (this.newMode === false && this.editable === false) {
       const msg = message(r, 'error_permission_edit', 'error_permission');
-      this.alertError(msg.message, msg.title);
+      this.showError(msg.message, msg.title);
       return;
     } else {
       if (this.running === true) {
@@ -893,7 +937,7 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Ba
         com.validate(obj, () => {
           const msg = message(r, 'msg_confirm_save', 'confirm', 'yes', 'no');
           this.confirm(msg.message, msg.title, () => {
-            com.save(obj, null, isBack);
+            com.save(obj, obj, isBack);
           }, msg.no, msg.yes);
         });
       } else {
@@ -911,9 +955,6 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Ba
         }
       }
     }
-  }
-  protected confirm(msg: string, title: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) {
-    storage.alert().confirm(msg, title, yesCallback, btnLeftText, btnRightText, noCallback);
   }
   protected validate(obj: T, callback: (obj2?: T) => void) {
     const valid = this.ui.validateForm(this.form, this.getLocale());
@@ -943,8 +984,8 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Ba
       this.back(null);
     }
   }
-  protected showMessage(msg: string) {
-    storage.toast().showToast(msg);
+  protected successMessage(msg: string) {
+    this.showMessage(msg);
   }
   protected fail(result: ResultInfo<T>) {
     const errors = result.errors;
@@ -959,12 +1000,14 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Ba
       }
     }
     const t = this.resource['error'];
-    this.alertError(result.message, t);
+    this.showError(result.message, t);
   }
 
   protected postSave(res: number|ResultInfo<T>, backOnSave?: boolean) {
     this.running = false;
-    storage.loading().hideLoading();
+    if (this.loading) {
+      this.loading.hideLoading();
+    }
     const newMod = this.newMode;
     const successMsg = (newMod ? this.insertSuccessMsg : this.updateSuccessMsg);
     const x: any = res;
@@ -988,36 +1031,44 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Ba
       } else if (result.status === Status.DuplicateKey) {
         this.handleDuplicateKey(result);
       } else {
-        const r = storage.resource();
+        const r = this.resourceService;
         const msg = buildMessageFromStatusCode(result.status, r);
         const title = r.value('error');
         if (msg && msg.length > 0) {
-          this.alertError(msg, title);
+          this.showError(msg, title);
         } else if (result.message && result.message.length > 0) {
-          this.alertError(result.message, title);
+          this.showError(result.message, title);
         } else {
-          this.alertError(r.value('error_internal'), title);
+          this.showError(r.value('error_internal'), title);
         }
       }
     }
   }
 
   protected handleDuplicateKey(result?: ResultInfo<T>) {
-    const msg = message(storage.resource(), 'error_duplicate_key', 'error');
-    this.alertError(msg.message, msg.title);
+    const msg = message(this.resourceService, 'error_duplicate_key', 'error');
+    this.showError(msg.message, msg.title);
   }
 }
 
 export interface GenericService<T, ID, R> extends ViewService<T, ID> {
-  patch(obj: T): Promise<R>;
-  insert(obj: T): Promise<R>;
-  update(obj: T): Promise<R>;
-  delete?(id: ID): Promise<number>;
+  patch?(obj: T, ctx?: any): Promise<R>;
+  insert(obj: T, ctx?: any): Promise<R>;
+  update(obj: T, ctx?: any): Promise<R>;
+  delete?(id: ID, ctx?: any): Promise<number>;
 }
 
 export class EditComponent<T, ID, W extends HistoryProps, I> extends BaseEditComponent<T, W, I>  {
-  constructor(props, protected service: GenericService<T, ID, number|ResultInfo<T>>, patchable?: boolean, backOnSaveSuccess?: boolean) {
-    super(props, service.metadata(), patchable, backOnSaveSuccess);
+  constructor(props, protected service: GenericService<T, ID, number|ResultInfo<T>>,
+      resourceService: ResourceService,
+      ui: UIService,
+      showMessage: (msg: string) => void,
+      showError: (m: string, title?: string, detail?: string, callback?: () => void) => void,
+      confirm: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
+      getLocale?: () => Locale,
+      loading?: LoadingService,
+      patchable?: boolean, backOnSaveSuccess?: boolean) {
+    super(props, service.metadata(), resourceService, ui, showMessage, showError, confirm, getLocale, loading, patchable, backOnSaveSuccess);
     this.load = this.load.bind(this);
     this.save = this.save.bind(this);
     this.componentDidMount = this.componentDidMount.bind(this);
@@ -1025,7 +1076,7 @@ export class EditComponent<T, ID, W extends HistoryProps, I> extends BaseEditCom
   }
   protected ref: any;
   componentDidMount() {
-    this.form = initForm(this.ref.current, initMaterial);
+    this.form = initForm(this.ref.current, this.ui.initMaterial);
     const id = buildId<ID>(this.keys, this.props);
     this.load(id);
   }
@@ -1034,21 +1085,29 @@ export class EditComponent<T, ID, W extends HistoryProps, I> extends BaseEditCom
     const com = this;
     if (id != null && id !== '') {
       try {
-        const obj = await this.service.load(id);
+        this.running = true;
+        if (this.loading) {
+          this.loading.showLoading();
+        }
+        const ctx: any = {};
+        const obj = await this.service.load(id, ctx);
         if (!obj) {
           com.handleNotFound(com.form);
         } else {
           com.resetState(false, obj, clone(obj));
         }
       } catch (err) {
-        if (err && err.status === 404) {
-          com.handleNotFound(com.form);
+        const data = (err &&  err.response) ? err.response : err;
+        if (data && data.status === 404) {
+          com.handleNotFound(this.form);
         } else {
           com.handleError(err);
         }
       } finally {
         com.running = false;
-        storage.loading().hideLoading();
+        if (this.loading) {
+          this.loading.hideLoading();
+        }
       }
     } else {
       // Call service state
@@ -1058,25 +1117,27 @@ export class EditComponent<T, ID, W extends HistoryProps, I> extends BaseEditCom
   }
   protected async save(obj: T, body?: T, isBack?: boolean) {
     this.running = true;
-    storage.loading().showLoading();
+    if (this.loading) {
+      this.loading.showLoading();
+    }
     const isBackO = (isBack == null || isBack === undefined ? this.backOnSuccess : isBack);
     const com = this;
-    if (this.newMode === false) {
-      if (this.patchable === true && body && Object.keys(body).length > 0) {
-        /*
-        if (this.versionName && this.versionName.length > 0) {
-          body[this.versionName] = obj[this.versionName];
+    try {
+      const ctx: any = {};
+      if (!this.newMode) {
+        if (this.patchable === true && body && Object.keys(body).length > 0) {
+          const result = await this.service.patch(body, ctx);
+          com.postSave(result, isBackO);
+        } else {
+          const result = await this.service.update(obj, ctx);
+          com.postSave(result, isBackO);
         }
-        */
-        const result = await this.service.patch(body);
-        com.postSave(result, isBackO);
       } else {
-        const result = await this.service.update(obj);
+        const result = await this.service.insert(obj, ctx);
         com.postSave(result, isBackO);
       }
-    } else {
-      const result = await this.service.insert(obj);
-      com.postSave(result, isBackO);
+    } catch (err) {
+      this.handleError(err);
     }
   }
 }

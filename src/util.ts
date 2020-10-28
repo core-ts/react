@@ -1,4 +1,4 @@
-import {Locale} from 'uione';
+import {Locale} from './core';
 
 const _r1 = / |,|\$|€|£|¥|'|٬|،| /g;
 const _r2 = / |\.|\$|€|£|¥|'|٬|،| /g;

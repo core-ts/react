@@ -1,9 +1,7 @@
 import {getDataFields} from 'form-util';
 import * as React from 'react';
 import {clone, diff} from 'reflectx';
-import {messageByHttpStatus, storage} from 'uione';
-import {message} from 'uione';
-import {buildId, buildKeys, Metadata} from './core';
+import {buildId, LoadingService, Locale, message, messageByHttpStatus, ResourceService} from './core';
 import {HistoryProps} from './HistoryProps';
 
 enum Status {
@@ -24,12 +22,17 @@ export interface DiffModel<T, ID> {
 }
 
 export class BaseDiffApprComponent<T, ID, W extends HistoryProps, I extends BaseDiffState> extends React.Component<W, I & any> {
-  constructor(props, protected metadata: Metadata) {
+  constructor(props, protected keys: string[], protected resourceService: ResourceService,
+      protected showMessage: (msg: string) => void,
+      protected showError: (m: string, title?: string, detail?: string, callback?: () => void) => void,
+      protected loading?: LoadingService
+    ) {
     super(props);
     // this._id = props['props'].match.params.id || props['props'].match.params.cId || props.match.params.cId;
     // this.callBackAfterUpdate = this.callBackAfterUpdate.bind(this);
+    this.resource = resourceService.resource();
     this.showMessage = this.showMessage.bind(this);
-    this.alertError = this.alertError.bind(this);
+    this.showError = this.showError.bind(this);
     this.back = this.back.bind(this);
     this.initModel = this.initModel.bind(this);
     this.postApprove = this.postApprove.bind(this);
@@ -37,16 +40,14 @@ export class BaseDiffApprComponent<T, ID, W extends HistoryProps, I extends Base
     this.format = this.format.bind(this);
     this.handleError = this.handleError.bind(this);
     this.handleNotFound = this.handleNotFound.bind(this);
-    this.keys = buildKeys(metadata);
     this.state = {
       disabled: false
     };
   }
-  protected keys: string[];
   protected id: ID = null;
   protected form: any;
   protected running: boolean;
-  protected resource: any = storage.getResource();
+  protected resource: any = {};
 
   protected back(event: any) {
     if (event) {
@@ -62,12 +63,12 @@ export class BaseDiffApprComponent<T, ID, W extends HistoryProps, I extends Base
 
   protected postApprove(status: Status, err?: any) {
     this.setState({ disabled: true });
-    const r = storage.resource();
+    const r = this.resourceService;
     if (status === Status.Success) {
       this.showMessage(r.value('msg_approve_success'));
     } else if (status === Status.VersionError) {
-      const msg = message(storage.resource(), 'msg_approve_version_error', 'error');
-      this.alertError(msg.message, msg.title);
+      const msg = message(r, 'msg_approve_version_error', 'error');
+      this.showError(msg.message, msg.title);
     } else if (status === Status.NotFound) {
       this.handleNotFound();
     } else {
@@ -77,24 +78,19 @@ export class BaseDiffApprComponent<T, ID, W extends HistoryProps, I extends Base
 
   protected postReject(status: Status, err?: any) {
     this.setState({ disabled: true });
-    const r = storage.resource();
+    const r = this.resourceService;
     if (status === Status.Success) {
       this.showMessage(r.value('msg_reject_success'));
     } else if (status === Status.VersionError) {
-      const msg = message(storage.resource(), 'msg_approve_version_error', 'error');
-      this.alertError(msg.message, msg.title);
+      const msg = message(r, 'msg_approve_version_error', 'error');
+      this.showError(msg.message, msg.title);
     } else if (status === Status.NotFound) {
       this.handleNotFound();
     } else {
       this.handleError(err);
     }
   }
-  protected showMessage(msg: string) {
-    storage.toast().showToast(msg);
-  }
-  protected alertError(msg: string, title: string) {
-    storage.alert().alertError(msg, title);
-  }
+
   format() {
     const p = this.props as any;
     const diffModel = p['diffModel'];
@@ -130,11 +126,15 @@ export class BaseDiffApprComponent<T, ID, W extends HistoryProps, I extends Base
 
   protected handleNotFound() {
     this.setState({ disabled: true });
-    const msg = message(storage.resource(), 'error_not_found', 'error');
-    this.alertError(msg.message, msg.title);
+    const msg = message(this.resourceService, 'error_not_found', 'error');
+    this.showError(msg.message, msg.title);
   }
   handleError(err: any): void {
-    const r = storage.resource();
+    this.running = false;
+    if (this.loading) {
+      this.loading.hideLoading();
+    }
+    const r = this.resourceService;
     let msg = r.value('error_internal');
     if (err) {
       if (err.status && !isNaN(err.status)) {
@@ -142,7 +142,7 @@ export class BaseDiffApprComponent<T, ID, W extends HistoryProps, I extends Base
       }
     }
     const title = r.value('error');
-    this.alertError(msg, title);
+    this.showError(msg, title);
   }
 }
 
@@ -197,8 +197,12 @@ export interface DiffState<T> {
 }
 
 export class DiffApprComponent<T, ID, W extends HistoryProps, I extends DiffState<T>> extends BaseDiffApprComponent<T, ID, W, I> {
-  constructor(props, metadata: Metadata, protected service: DiffApprService<T, ID>) {
-    super(props, metadata);
+  constructor(props, protected service: DiffApprService<T, ID>,
+      resourceService: ResourceService, protected getLocale: () => Locale,
+      showMessage: (msg: string) => void,
+      showError: (m: string, title?: string, detail?: string, callback?: () => void) => void,
+      loading?: LoadingService) {
+    super(props, service.keys(), resourceService, showMessage, showError, loading);
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
     this.formatFields = this.formatFields.bind(this);
@@ -226,6 +230,10 @@ export class DiffApprComponent<T, ID, W extends HistoryProps, I extends DiffStat
     if (id != null && id !== '') {
       this.id = _id;
       try {
+        this.running = true;
+        if (this.loading) {
+          this.loading.showLoading();
+        }
         const dobj = await this.service.diff(id);
         if (!dobj) {
           this.handleNotFound();
@@ -237,15 +245,17 @@ export class DiffApprComponent<T, ID, W extends HistoryProps, I extends DiffStat
           }, this.format);
         }
       } catch (err) {
-        if (err && err.status === 404) {
+        const data = (err &&  err.response) ? err.response : err;
+        if (data && data.status === 404) {
           this.handleNotFound();
         } else {
           this.handleError(err);
         }
-        this.handleError(err);
       } finally {
         this.running = false;
-        storage.loading().hideLoading();
+        if (this.loading) {
+          this.loading.hideLoading();
+        }
       }
     }
   }
@@ -253,22 +263,40 @@ export class DiffApprComponent<T, ID, W extends HistoryProps, I extends DiffStat
   async approve(event: any) {
     event.preventDefault();
     try {
+      this.running = true;
+      if (this.loading) {
+        this.loading.showLoading();
+      }
       const id = this.id;
       const status = await this.service.approve(id);
       this.postApprove(status, null);
     } catch (err) {
       this.postApprove(Status.Error, err);
+    } finally {
+      this.running = false;
+      if (this.loading) {
+        this.loading.hideLoading();
+      }
     }
   }
 
   async reject(event: any) {
     event.preventDefault();
     try {
+      this.running = true;
+      if (this.loading) {
+        this.loading.showLoading();
+      }
       const id = this.id;
       const status = await this.service.reject(id);
       this.postReject(status, null);
     } catch (err) {
       this.postReject(Status.Error, err);
+    } finally {
+      this.running = false;
+      if (this.loading) {
+        this.loading.hideLoading();
+      }
     }
   }
 }
