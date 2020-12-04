@@ -21,9 +21,12 @@ export interface MetaModel {
   version?: string;
 }
 export function build(model: Metadata): MetaModel {
-  if (resource.cache) {
+  if (!model){
+    return null;
+  }
+  if (resource.cache){
     let meta: MetaModel = resource._cache[model.name];
-    if (!meta) {
+    if (!meta){
       meta = buildMetaModel(model);
       resource._cache[model.name] = meta;
     }
@@ -34,19 +37,19 @@ export function build(model: Metadata): MetaModel {
 }
 
 function buildMetaModel(model: Metadata): MetaModel {
-  if (model && !model.source) {
+  if (model && !model.source){
     model.source = model.name;
   }
   const md: MetaModel = {};
   const pks: string[] = new Array<string>();
   const keys: string[] = Object.keys(model.attributes);
-  for (const key of keys) {
+  for (const key of keys){
     const attr: Attribute = model.attributes[key];
-    if (attr) {
-      if (attr.version) {
+    if (attr){
+      if (attr.version){
         md.version = key;
       }
-      if (attr.key === true) {
+      if (attr.key === true){
         pks.push(key);
       }
     }
@@ -58,9 +61,9 @@ function buildMetaModel(model: Metadata): MetaModel {
 export function createModel(model: Metadata): any {
   const obj: any = {};
   const attrs = Object.keys(model.attributes);
-  for (const k of attrs) {
+  for (const k of attrs){
     const attr = model.attributes[k];
-    switch (attr.type) {
+    switch (attr.type){
       case Type.String:
       case Type.Text:
         obj[attr.name] = '';
@@ -79,7 +82,7 @@ export function createModel(model: Metadata): any {
         obj[attr.name] = new Date();
         break;
       case Type.Object:
-        if (attr.typeof) {
+        if (attr.typeof){
           const object = this.createModel(attr.typeof);
           obj[attr.name] = object;
           break;
@@ -100,8 +103,8 @@ export function createModel(model: Metadata): any {
 
 export function initPropertyNullInModel<T>(obj: T, m: Metadata): T {
   const model = createModel(m);
-  for (const key of Object.keys(model)) {
-    if (obj && !obj.hasOwnProperty(key)) {
+  for (const key of Object.keys(model)){
+    if (obj && !obj.hasOwnProperty(key)){
       obj[key] = model[key];
     }
   }
@@ -109,21 +112,21 @@ export function initPropertyNullInModel<T>(obj: T, m: Metadata): T {
 }
 
 export function buildMessageFromStatusCode(status: Status, r: ResourceService): string {
-  if (status === Status.DuplicateKey) {
+  if (status === Status.DuplicateKey){
     return r.value('error_duplicate_key');
-  } else if (status === Status.VersionError) { // Below message for update only, not for add
+  } else if (status === Status.VersionError){ // Below message for update only, not for add
     return r.value('error_version');
-  } else if (status === Status.DataCorrupt) {
+  } else if (status === Status.DataCorrupt){
     return r.value('error_data_corrupt');
   } else {
     return '';
   }
 }
 
-export function handleVersion<T>(obj: T, version: string) {
-  if (obj && version && version.length > 0) {
+export function handleVersion<T>(obj: T, version: string){
+  if (obj && version && version.length > 0){
     const v = obj[version];
-    if (v && typeof v === 'number') {
+    if (v && typeof v === 'number'){
       obj[version] = v + 1;
     } else {
       obj[version] = 1;

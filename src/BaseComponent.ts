@@ -72,8 +72,8 @@ export class BaseViewComponent<W extends HistoryProps, I> extends React.Componen
 }
 
 export interface ViewService<T, ID> {
-  metadata(): Metadata;
-  keys(): string[];
+  metadata?(): Metadata;
+  keys?(): string[];
   load(id: ID, ctx?: any): Promise<T>;
 }
 export class ViewComponent<T, ID, W extends HistoryProps, I> extends BaseViewComponent<W, I> {
@@ -83,7 +83,9 @@ export class ViewComponent<T, ID, W extends HistoryProps, I> extends BaseViewCom
       getLocale?: () => Locale,
       protected loading?: LoadingService) {
     super(props, resourceService, getLocale);
-    this.metadata = service.metadata();
+    if (service.metadata) {
+      this.metadata = service.metadata();
+    }
     this.getModelName = this.getModelName.bind(this);
     this.load = this.load.bind(this);
     this.getModel = this.getModel.bind(this);
@@ -91,7 +93,7 @@ export class ViewComponent<T, ID, W extends HistoryProps, I> extends BaseViewCom
     this.handleError = this.handleError.bind(this);
   }
   protected form: any;
-  protected metadata: Metadata;
+  protected metadata?: Metadata;
 
   protected getModelName() {
     return (this.metadata ? this.metadata.name : '');
@@ -418,7 +420,6 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
       protected showMessage: (msg: string) => void,
       showError: (m: string, header?: string, detail?: string, callback?: () => void) => void,
       getLocale?: () => Locale,
-      loading?: LoadingService,
       protected listFormId?: string) {
     super(props, resourceService, ui, showError, getLocale);
     this.ui = ui;
@@ -763,10 +764,10 @@ export class SearchComponent<T, S extends SearchModel, W extends HistoryProps, I
       showMessage: (msg: string) => void,
       showError: (m: string, header?: string, detail?: string, callback?: () => void) => void,
       getLocale?: () => Locale,
-      loading?: LoadingService,
+      protected loading?: LoadingService,
       autoSearch?: boolean,
       listFormId?: string) {
-    super(props, resourceService, ui, showMessage, showError, getLocale, loading, listFormId);
+    super(props, resourceService, ui, showMessage, showError, getLocale, listFormId);
     if (autoSearch === false) {
       this.autoSearch = autoSearch;
     }
@@ -784,14 +785,20 @@ export class SearchComponent<T, S extends SearchModel, W extends HistoryProps, I
   async search(s: S) {
     try {
       const ctx: any = {};
+      if (this.loading) {
+        this.loading.showLoading();
+      }
       const sr = await this.service.search(s, ctx);
       this.showResults(s, sr);
     } catch (err) {
       this.searchError(err);
+    } finally {
+      if (this.loading) {
+        this.loading.hideLoading();
+      }
     }
   }
 }
-
 
 export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends BaseComponent<W, I> {
   constructor(props, protected metadata: Metadata,
@@ -805,8 +812,13 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Ba
       patchable?: boolean, backOnSaveSuccess?: boolean) {
     super(props, resourceService, ui, showError, getLocale, loading);
     const meta = build(metadata);
-    this.keys = meta.keys;
-    this.version = meta.version;
+    if (meta) {
+      this.keys = meta.keys;
+      this.version = meta.version;
+    } else {
+      this.keys = [];
+      this.version = null;
+    }
     this.ui = ui;
     if (patchable === false) {
       this.patchable = patchable;
@@ -983,9 +995,6 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Ba
     if (isBackO) {
       this.back(null);
     }
-  }
-  protected successMessage(msg: string) {
-    this.showMessage(msg);
   }
   protected fail(result: ResultInfo<T>) {
     const errors = result.errors;

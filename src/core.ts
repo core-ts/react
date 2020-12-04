@@ -113,13 +113,18 @@ export enum Type {
 }
 export interface Metadata {
   name?: string;
-  attributes: any;
+  attributes: Attributes;
   source?: string;
 }
 export interface Attribute {
+  name?: string;
   type: Type;
   key?: boolean;
   version?: boolean;
+  typeof?: Metadata;
+}
+export interface Attributes {
+  [key: string]: Attribute;
 }
 
 export function buildKeys(m: Metadata): string[] {
@@ -135,11 +140,11 @@ export function buildKeys(m: Metadata): string[] {
 }
 
 export function buildId<ID>(keys: string[], props: any): ID {
-  if (!keys || keys.length === 0 || !props) {
+  if (!props) {
     return null;
   }
   const sp = (props.match ? props : props['props']);
-  if (keys.length === 1) {
+  if (!keys || keys.length === 0 || keys.length === 1) {
     const x = sp.match.params[keys[0]];
     if (x && x !== '') {
       return x;
