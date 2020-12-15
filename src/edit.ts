@@ -102,6 +102,10 @@ export function createModel(model: Metadata): any {
 }
 
 export function initPropertyNullInModel<T>(obj: T, m: Metadata): T {
+  if (!m) {
+    const x: any = {};
+    return x;
+  }
   const model = createModel(m);
   for (const key of Object.keys(model)){
     if (obj && !obj.hasOwnProperty(key)){

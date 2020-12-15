@@ -145,9 +145,11 @@ export function buildId<ID>(keys: string[], props: any): ID {
   }
   const sp = (props.match ? props : props['props']);
   if (!keys || keys.length === 0 || keys.length === 1) {
-    const x = sp.match.params[keys[0]];
-    if (x && x !== '') {
-      return x;
+    if (keys && keys.length === 1) {
+      const x = sp.match.params[keys[0]];
+      if (x && x !== '') {
+        return x;
+      }
     }
     return sp.match.params['id'];
   }
@@ -242,4 +244,22 @@ export function initForm(form: any, initMat?: (f: any) => void) {
     }, 100);
   }
   return form;
+}
+export function error(err: any, r: ResourceService, alertError: (msg: string, header?: string, detail?: string, callback?: () => void) => void) {
+  const title = r.value('error');
+  let msg = r.value('error_internal');
+  if (!err) {
+    alertError(msg, title);
+    return;
+  }
+  const data = err && err.response ? err.response : err;
+  if (data) {
+    const status = data.status;
+    if (status && !isNaN(status)) {
+      msg = messageByHttpStatus(status, r);
+    }
+    alertError(msg, title);
+  } else {
+    alertError(msg, title);
+  }
 }
