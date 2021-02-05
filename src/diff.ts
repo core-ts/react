@@ -196,7 +196,7 @@ export interface DiffState<T> {
   disabled: boolean;
 }
 
-export class DiffApprComponent<T, ID, W extends HistoryProps, I extends DiffState<T>> extends BaseDiffApprComponent<T, ID, W, I> {
+export class Diff<T, ID, W extends HistoryProps, I extends DiffState<T>> extends BaseDiffApprComponent<T, ID, W, I> {
   constructor(props, protected service: DiffApprService<T, ID>,
       resourceService: ResourceService, protected getLocale: () => Locale,
       showMessage: (msg: string) => void,

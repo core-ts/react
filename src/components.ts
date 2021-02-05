@@ -200,7 +200,7 @@ export class ViewComponent<T, ID, W extends HistoryProps, I> extends BaseViewCom
   }
 }
 
-export class BaseComponent<W extends HistoryProps, I> extends BaseViewComponent<W, I> {
+export class Components<W extends HistoryProps, I> extends BaseViewComponent<W, I> {
   constructor(props, resourceService: ResourceService, ui: UIService,
       getLocale?: () => Locale,
       protected loading?: LoadingService) {
@@ -423,7 +423,7 @@ export class BaseComponent<W extends HistoryProps, I> extends BaseViewComponent<
 export interface LocaleFormatter<T> {
   format(obj: T, locale: Locale): T;
 }
-export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProps, I extends SearchState<T>> extends BaseComponent<W, I> implements Searchable {
+export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProps, I extends SearchState<T>> extends Components<W, I> implements Searchable {
   constructor(props,
       resourceService: ResourceService,
       protected ui: UIService,
@@ -836,7 +836,7 @@ export class SearchComponent<T, S extends SearchModel, W extends HistoryProps, I
   }
 }
 
-export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends BaseComponent<W, I> {
+export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Components<W, I> {
   constructor(props,
       resourceService: ResourceService,
       protected ui: UIService,
