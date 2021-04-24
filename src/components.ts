@@ -1,93 +1,51 @@
-import {focusFirstError, readOnly} from 'form-util';
 import * as React from 'react';
-import {setValue} from 'reflectx';
 import {clone, makeDiff} from 'reflectx';
-import {addParametersIntoUrl, append, buildSearchMessage, changePage, changePageSize, formatResults, getDisplayFields, handleSortEvent, initSearchable, mergeSearchModel, more, optimizeSearchModel, reset, Searchable, SearchModel, SearchResult, showResults} from 'search-utilities';
-import {buildId, error, initForm, LoadingService, Locale, message, messageByHttpStatus, Metadata, removePhoneFormat, ResourceService, UIService} from './core';
-import {build, buildMessageFromStatusCode, createModel, handleVersion, initPropertyNullInModel, ResultInfo, Status} from './edit';
-import {HistoryProps} from './HistoryProps';
+import {addParametersIntoUrl, append, buildSearchMessage, changePage, changePageSize, formatResultsByComponent, getDisplayFieldsFromForm, getModel, handleSortEvent, initSearchable, mergeSearchModel as mergeSearchModel2, more, reset, Searchable, showResults as showResults2, validate} from 'search-utilities';
+import {buildId, EditStatusConfig, error, getCurrencyCode, getModelName as getModelName2, HistoryProps, initForm, LoadingService, Locale, message, messageByHttpStatus, Metadata, ModelHistoryProps, ModelProps, removePhoneFormat, ResourceService, SearchModel, SearchParameter, SearchResult, SearchService, SearchState, StringMap, UIService, ViewParameter, ViewService} from './core';
+import {build, createModel as createModel2, EditParameter, GenericService, handleStatus, handleVersion, initPropertyNullInModel, ResultInfo} from './edit';
+import {focusFirstError, readOnly} from './formutil';
+import {getAutoSearch, getConfirmFunc, getEditStatusFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService} from './input';
 import {buildFromUrl} from './route';
-import {valueOf} from './util';
+import {buildFlatState, buildState, handleEvent, handleProps, localeOf} from './state';
 
-export const enLocale = {
-  'id': 'en-US',
-  'countryCode': 'US',
-  'dateFormat': 'M/d/yyyy',
-  'firstDayOfWeek': 1,
-  'decimalSeparator': '.',
-  'groupSeparator': ',',
-  'decimalDigits': 2,
-  'currencyCode': 'USD',
-  'currencySymbol': '$',
-  'currencyPattern': 0
-};
-export class BaseViewComponent<W extends HistoryProps, I> extends React.Component<W, I & any> {
-  constructor(props, protected resourceService: ResourceService, protected getLocale?: () => Locale) {
-    super(props);
-    this.resource = resourceService.resource();
-    if (getLocale) {
-      this.getLocale = this.getLocale.bind(this);
-    }
-    this.back = this.back.bind(this);
-  }
-  protected resource: any = {};
-  protected includingCurrencySymbol = false;
-  protected dateTimeFormat: string = null;
-  protected running: boolean;
-  protected form: any;
-
-  protected currencySymbol(): boolean {
-    return this.includingCurrencySymbol;
-  }
-
-  protected getCurrencyCode(): string {
-    return (this.form ? this.form.getAttribute('currency-code') : null);
-  }
-
-/*
-  protected formatDateTime(date: Date): string {
-    if (!date) {
-      return '';
-    }
-    if (this.dateTimeFormat == null) {
-      this.initDateFormat();
-    }
-    return moment(date).format(this.dateTimeFormat);
-  }
-
-  protected formatDate(date: Date, format?: string, locale?: string): string {
-    if (format) {
-      return moment(date).format(format); // DateUtil.formatDate(date, format);
-    } else {
-      moment(date).format(this.getLocale().dateFormat.toUpperCase());
-    }
-  }
-*/
-  protected back(event) {
-    if (event) {
-      event.preventDefault();
-    }
-    this.props.history.goBack();
-  }
-}
-
-export interface ViewService<T, ID> {
-  metadata?(): Metadata;
-  keys?(): string[];
-  load(id: ID, ctx?: any): Promise<T>;
-}
-export class ViewComponent<T, ID, W extends HistoryProps, I> extends BaseViewComponent<W, I> {
-  constructor(props, param: ((id: ID, ctx?: any) => Promise<T>)|ViewService<T, ID>,
-      resourceService: ResourceService,
-      protected showError: (msg: string, title?: string, detail?: string, callback?: () => void) => void,
-      getLocale?: () => Locale,
-      protected loading?: LoadingService) {
-    super(props, resourceService, getLocale);
-    if (param) {
-      if (typeof param === 'function') {
-        this.loadFn = param;
+export const scrollToFocus = (e: any, isUseTimeOut?: boolean) => {
+  try {
+    const element = e.target as HTMLInputElement;
+    const container = element.form.childNodes[1] as HTMLElement;
+    const elementRect = element.getBoundingClientRect();
+    const absoluteElementTop = elementRect.top + window.pageYOffset;
+    const middle = absoluteElementTop - (window.innerHeight / 2);
+    const scrollTop = container.scrollTop;
+    const timeOut = isUseTimeOut ? 300 : 0;
+    const isChrome = navigator.userAgent.search('Chrome') > 0;
+    setTimeout(() => {
+      if (isChrome) {
+        const scrollPosition = scrollTop === 0 ? (elementRect.top + 64) : (scrollTop + middle);
+        container.scrollTo(0, Math.abs(scrollPosition));
       } else {
-        this.service = param;
+        container.scrollTo(0, Math.abs(scrollTop + middle));
+      }
+    }, timeOut);
+  } catch (e) {
+    console.log(e);
+  }
+};
+export class ViewComponent<T, ID, P extends HistoryProps, S> extends React.Component<P, S> {
+  constructor(props: P, sv: ((id: ID, ctx?: any) => Promise<T>)|ViewService<T, ID>,
+      param: ResourceService|ViewParameter,
+      showError?: (msg: string, title?: string, detail?: string, callback?: () => void) => void,
+      getLocale?: (profile?: string) => Locale,
+      loading?: LoadingService) {
+    super(props, getLocaleFunc(param, getLocale));
+    this.resourceService = getResource(param);
+    this.resource = this.resourceService.resource();
+    this.showError = getErrorFunc(param, showError);
+    this.loading = getLoadingFunc(param, loading);
+    if (sv) {
+      if (typeof sv === 'function') {
+        this.loadData = sv;
+      } else {
+        this.service = sv;
         if (this.service.metadata) {
           const m = this.service.metadata();
           if (m) {
@@ -98,45 +56,46 @@ export class ViewComponent<T, ID, W extends HistoryProps, I> extends BaseViewCom
         }
       }
     }
+    this.back = this.back.bind(this);
     this.getModelName = this.getModelName.bind(this);
     this.load = this.load.bind(this);
     this.getModel = this.getModel.bind(this);
     this.showModel = this.showModel.bind(this);
-    this.handleError = this.handleError.bind(this);
     this.ref = React.createRef();
   }
-  protected loadFn: (id: ID, ctx?: any) => Promise<T>;
+  protected running: boolean;
+  protected resourceService: ResourceService;
+  protected resource: StringMap;
+  protected loading?: LoadingService;
+  protected showError: (msg: string, title?: string, detail?: string, callback?: () => void) => void;
+  protected loadData: (id: ID, ctx?: any) => Promise<T>;
   protected service: ViewService<T, ID>;
-  protected form: any;
+  protected form: HTMLFormElement;
   protected ref: any;
-  protected keys: string[];
+  protected keys?: string[];
   protected metadata?: Metadata;
 
-  protected getModelName() {
+  protected back(event: any) {
+    if (event) {
+      event.preventDefault();
+    }
+    this.props.history.goBack();
+  }
+  protected getModelName(): string {
     if (this.metadata) {
       return this.metadata.name;
     }
-    if (this.form) {
-      const a = this.form.getAttribute('model-name');
-      if (a && a.length > 0) {
-        return a;
-      }
-      const b = this.form.name;
-      if (b) {
-        if (b.endsWith('Form')) {
-          return b.substr(0, b.length - 4);
-        }
-        return b;
-      }
+    const n = getModelName2(this.form);
+    if (!n || n.length === 0) {
+      return 'model';
     }
-    return 'model';
   }
   componentDidMount() {
     this.form = this.ref.current;
-    const id = buildId<ID>(this.keys, this.props);
+    const id = buildId<ID>(this.props, this.keys);
     this.load(id);
   }
-  async load(_id: ID) {
+  async load(_id: ID, callback?: (m: T, showF: (model: T) => void) => void) {
     const id: any = _id;
     if (id != null && id !== '') {
       this.running = true;
@@ -146,22 +105,26 @@ export class ViewComponent<T, ID, W extends HistoryProps, I> extends BaseViewCom
       try {
         const ctx: any = {};
         let obj: T;
-        if (this.loadFn) {
-          obj = await this.loadFn(id, ctx);
+        if (this.loadData) {
+          obj = await this.loadData(id, ctx);
         } else {
           obj = await this.service.load(id, ctx);
         }
         if (!obj) {
           this.handleNotFound(this.form);
         } else {
-          this.showModel(obj);
+          if (callback) {
+            callback(obj, this.showModel);
+          } else {
+            this.showModel(obj);
+          }
         }
       } catch (err) {
         const data = (err &&  err.response) ? err.response : err;
         if (data && data.status === 404) {
           this.handleNotFound(this.form);
         } else {
-          this.handleError(err);
+          error(err, this.resourceService.value, this.showError);
         }
       } finally {
         this.running = false;
@@ -171,8 +134,8 @@ export class ViewComponent<T, ID, W extends HistoryProps, I> extends BaseViewCom
       }
     }
   }
-  protected handleNotFound(form?: any): void {
-    const msg = message(this.resourceService, 'error_not_found', 'error');
+  protected handleNotFound(form?: HTMLFormElement): void {
+    const msg = message(this.resourceService.value, 'error_not_found', 'error');
     if (form) {
       readOnly(form);
     }
@@ -187,33 +150,22 @@ export class ViewComponent<T, ID, W extends HistoryProps, I> extends BaseViewCom
     objSet[modelName] = model;
     this.setState(objSet);
   }
-  handleError(response: any): void {
-    const r = this.resourceService;
-    const title = r.value('error');
-    let msg = r.value('error_internal');
-    if (response) {
-      if (response.status && !isNaN(response.status)) {
-        msg = messageByHttpStatus(response.status, r);
-      }
-    }
-    this.showError(msg, title);
-  }
 }
 
-export class Components<W extends HistoryProps, I> extends BaseViewComponent<W, I> {
-  constructor(props, resourceService: ResourceService, ui: UIService,
-      getLocale?: () => Locale,
-      protected loading?: LoadingService) {
-    super(props, resourceService, getLocale);
-    this.uiS1 = ui;
-
+export class BaseComponent<P extends ModelProps, S> extends React.Component<P, S> {
+  constructor(props: P,
+      protected getLocale?: () => Locale,
+      private removeErr?: (ctrl: HTMLInputElement) => void) {
+    super(props);
+    this.getModelName = this.getModelName.bind(this);
     this.updateState = this.updateState.bind(this);
     this.updateFlatState = this.updateFlatState.bind(this);
     this.updatePhoneState = this.updatePhoneState.bind(this);
     this.updateDateState = this.updateDateState.bind(this);
     this.prepareCustomData = this.prepareCustomData.bind(this);
   }
-  private uiS1: UIService;
+  protected running: boolean;
+  protected form: HTMLFormElement;
   /*
   protected handleSubmitForm(e) {
     if (e.which === 13) {
@@ -227,34 +179,13 @@ export class Components<W extends HistoryProps, I> extends BaseViewComponent<W, 
     }
   }
 */
-  protected scrollToFocus = (e: any, isUseTimeOut = false) => {
-    try {
-      const element = e.target;
-      const container = e.target.form.childNodes[1];
-      const elementRect = element.getBoundingClientRect();
-      const absoluteElementTop = elementRect.top + window.pageYOffset;
-      const middle = absoluteElementTop - (window.innerHeight / 2);
-      const scrollTop = container.scrollTop;
-      const timeOut = isUseTimeOut ? 300 : 0;
-      const isChrome = navigator.userAgent.search('Chrome') > 0;
-      setTimeout(() => {
-        if (isChrome) {
-          const scrollPosition = scrollTop === 0 ? (elementRect.top + 64) : (scrollTop + middle);
-          container.scrollTo(0, Math.abs(scrollPosition));
-        } else {
-          container.scrollTo(0, Math.abs(scrollTop + middle));
-        }
-      }, timeOut);
-    } catch (e) {
-      console.log(e);
-    }
-  }
 
-  prepareCustomData(data) { }
+  prepareCustomData(data: any) { }
 
-  protected updatePhoneState = (event) => {
+  protected updatePhoneState = (event: any) => {
     const re = /^[0-9\b]+$/;
-    const value = removePhoneFormat(event.currentTarget.value);
+    const target = event.currentTarget as HTMLInputElement;
+    const value = removePhoneFormat(target.value);
     if (re.test(value) || !value) {
       this.updateState(event);
     } else {
@@ -265,151 +196,47 @@ export class Components<W extends HistoryProps, I> extends BaseViewComponent<W, 
           responseStr += element;
         }
       });
-      event.currentTarget.value = responseStr;
+      target.value = responseStr;
       this.updateState(event);
     }
   }
 
-  protected updateDateState = (name, value) => {
+  protected updateDateState = (name: string, value: any) => {
     const props: any = this.props;
-    const modelName = this.form.getAttribute('model-name');
+    const modelName = this.getModelName(this.form);
     const state = this.state[modelName];
     if (props.setGlobalState) {
       const data = props.shouldBeCustomized ? this.prepareCustomData({ [name]: value }) : { [name]: value };
       props.setGlobalState({ [modelName]: { ...state, ...data } });
     } else {
-      this.setState({[modelName]: {...state, [name]: value}});
+      const objSet: any = {[modelName]: {...state, [name]: value}};
+      this.setState(objSet);
     }
   }
-
-  protected updateState = (e: any, callback?: any, locale?: Locale) => {
-    const props: any = this.props;
-    const ctrl = e.currentTarget;
-    const updateStateMethod = props.setGlobalState;
-    const modelName = ctrl.form.getAttribute('model-name');
-    const propsDataForm = props[modelName];
-    const type = ctrl.getAttribute('type');
-    const isPreventDefault = type && (['checkbox', 'radio'].indexOf(type.toLowerCase()) >= 0 ? false : true);
-    if (isPreventDefault) {
-      e.preventDefault();
+  protected getModelName(f?: HTMLFormElement): string {
+    let f2 = f;
+    if (!f2) {
+      f2 = this.form;
     }
-    if (
-      ctrl.nodeName === 'SELECT' &&
-      ctrl.value &&
-      ctrl.classList.contains('invalid')) {
-      this.uiS1.removeErrorMessage(ctrl);
-    }
-    if (updateStateMethod) {
-      const form = ctrl.form;
-      const formName = form.name;
-      if (!locale) {
-        if (this.getLocale) {
-          locale = this.getLocale();
-        } else {
-          locale = enLocale;
-        }
-      }
-      const res = valueOf(ctrl, locale, e.type);
-      if (res.mustChange) {
-        const dataField = ctrl.getAttribute('data-field');
-        const field = (dataField ? dataField : ctrl.name);
-        if (field.indexOf('.') < 0 && field.indexOf('[') < 0) {
-          const data = props.shouldBeCustomized ? this.prepareCustomData({ [ctrl.name]: res.value }) : { [ctrl.name]: res.value };
-          props.setGlobalState({ [formName]: { ...propsDataForm, ...data } });
-        } else {
-          setValue(propsDataForm, field, ctrl.value);
-          props.setGlobalState({ [formName]: { ...propsDataForm } });
-        }
-      }
-    } else {
-      const form = ctrl.form;
-      if (form) {
-        if (modelName && modelName !== '') {
-          const ex = this.state[modelName];
-          const dataField = ctrl.getAttribute('data-field');
-          const field = (dataField ? dataField : ctrl.name);
-          const model = Object.assign({}, ex);
-          if (type && type.toLowerCase() === 'checkbox') {
-            const ctrlOnValue = ctrl.getAttribute('data-on-value');
-            const ctrlOffValue = ctrl.getAttribute('data-off-value');
-            const onValue = ctrlOnValue ? ctrlOnValue : true;
-            const offValue = ctrlOffValue ? ctrlOffValue : false;
-
-            model[field] = ctrl.checked ? onValue : offValue;
-            const objSet = {};
-            objSet[modelName] = model;
-            if (callback) {
-              this.setState(objSet, callback);
-            } else {
-              this.setState(objSet);
-            }
-          } else if (type && type.toLowerCase() === 'radio') {
-            if (field.indexOf('.') < 0 && field.indexOf('[') < 0 ) {
-              model[field] = ctrl.value;
-            } else {
-              setValue(model, field, ctrl.value);
-            }
-            const objSet = {};
-            objSet[modelName] = model;
-            if (callback) {
-              this.setState(objSet, callback);
-            } else {
-              this.setState(objSet);
-            }
-          } else {
-            let tmLoc = null;
-            if (this.getLocale) {
-              tmLoc = this.getLocale();
-            } else {
-              tmLoc = enLocale;
-            }
-            const tloc = (!locale ? tmLoc : locale);
-            const data = valueOf(ctrl, tloc, e.type);
-
-            if (data.mustChange) {
-              if (field.indexOf('.') < 0 && field.indexOf('[') < 0) {
-                model[field] = data.value;
-              } else {
-                setValue(model, field, data.value);
-              }
-              const objSet = {};
-              objSet[modelName] = model;
-              if (callback) {
-                this.setState(objSet, callback);
-              } else {
-                this.setState(objSet);
-              }
-            }
-          }
-        } else {
-          this.updateFlatState(e, callback);
-        }
-      } else {
-        this.updateFlatState(e, callback);
+    if (f2) {
+      const a = getModelName2(f2);
+      if (a && a.length > 0) {
+        return a;
       }
     }
+    return 'model';
   }
-
-  private updateFlatState(e: any, callback?: () => void, locale?: Locale) {
-    const ctrl = e.currentTarget;
-    const stateName = ctrl.name;
-    const objSet = {};
-    const type = ctrl.getAttribute('type');
-    if (type && type.toLowerCase() === 'checkbox') {
-      if (ctrl.id && stateName === ctrl.id) {
-        const origin = this.state[stateName];
-        objSet[stateName] = (origin ? !origin : true);
-        this.setState(objSet);
-      } else {
-        let value = this.state[stateName];
-        value.includes(ctrl.value) ? value = value.filter(v => v !== ctrl.value) : value.push(ctrl.value);
-        this.setState({ [ctrl.name]: value });
-      }
+  protected updateState = (e: any, callback?: () => void, lc?: Locale) => {
+    const ctrl = e.currentTarget as HTMLInputElement;
+    const modelName = this.getModelName(ctrl.form);
+    const l = localeOf(lc, this.getLocale);
+    const props = this.props;
+    handleEvent(e, this.removeErr);
+    if (props.setGlobalState) {
+      handleProps(e, props, ctrl, modelName, l, this.prepareCustomData);
     } else {
-      const tloc = (!locale ? this.getLocale() : locale);
-      const data = valueOf(ctrl, tloc, e.type);
-      if (data.mustChange) {
-        objSet[stateName] = data.value;
+      const objSet: any = buildState(e, this.state, ctrl, modelName, l);
+      if (objSet) {
         if (callback) {
           this.setState(objSet, callback);
         } else {
@@ -418,32 +245,38 @@ export class Components<W extends HistoryProps, I> extends BaseViewComponent<W, 
       }
     }
   }
+  protected updateFlatState(e: any, callback?: () => void, lc?: Locale) {
+    const l = localeOf(lc, this.getLocale);
+    const objSet: any = buildFlatState(e, this.state, l);
+    if (objSet != null) {
+      if (callback) {
+        this.setState(objSet, callback);
+      } else {
+        this.setState(objSet);
+      }
+    }
+  }
 }
-
-export interface LocaleFormatter<T> {
-  format(obj: T, locale: Locale): T;
-}
-export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProps, I extends SearchState<T>> extends Components<W, I> implements Searchable {
-  constructor(props,
-      resourceService: ResourceService,
-      protected ui: UIService,
+export class BaseSearchComponent<T, S extends SearchModel, P extends ModelHistoryProps, I extends SearchState<T, S>> extends BaseComponent<P, I> implements Searchable {
+  constructor(props: P,
+      protected resourceService: ResourceService,
       protected showMessage: (msg: string) => void,
       getLocale?: () => Locale,
+      protected ui?: UIService,
+      protected loading?: LoadingService,
       protected listFormId?: string) {
-    super(props, resourceService, ui, getLocale);
-    this.ui = ui;
+    super(props, getLocale, (ui ? ui.removeError : null));
+    this.resource = resourceService.resource();
+    this.getModelName = this.getModelName.bind(this);
     this.showMessage = this.showMessage.bind(this);
 
     this.toggleFilter = this.toggleFilter.bind(this);
-    this.mergeUrlSearchModel = this.mergeUrlSearchModel.bind(this);
-    this.mergeSearchModel = this.mergeSearchModel.bind(this);
     this.load = this.load.bind(this);
     this.add = this.add.bind(this);
     this.getSearchForm = this.getSearchForm.bind(this);
     this.setSearchForm = this.setSearchForm.bind(this);
 
     this.setSearchModel = this.setSearchModel.bind(this);
-    this.getOriginalSearchModel = this.getOriginalSearchModel.bind(this);
     this.getSearchModel = this.getSearchModel.bind(this);
     this.getDisplayFields = this.getDisplayFields.bind(this);
 
@@ -453,7 +286,7 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
 
     this.resetAndSearch = this.resetAndSearch.bind(this);
     this.doSearch = this.doSearch.bind(this);
-    this.search = this.search.bind(this);
+    this.call = this.call.bind(this);
     this.validateSearch = this.validateSearch.bind(this);
     this.showResults = this.showResults.bind(this);
     this.setList = this.setList.bind(this);
@@ -471,6 +304,7 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
     }
     */
   }
+  protected resource: StringMap;
   protected url: string;
 
   // Pagination
@@ -479,22 +313,22 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
   pageIndex = 1;
   itemTotal = 0;
   pageTotal = 0;
-  showPaging = false;
-  append = false;
-  appendMode = false;
-  appendable = false;
+  showPaging: boolean;
+  append: boolean;
+  appendMode: boolean;
+  appendable: boolean;
 
   // Sortable
   sortField: string;
   sortType: string;
-  sortTarget: any; // HTML element
+  sortTarget: HTMLElement;
 
   keys: string[];
-  formatter: LocaleFormatter<T>;
+  format?: (obj: T, locale: Locale) => T;
   displayFields: string[];
-  initDisplayFields = false;
+  initDisplayFields: boolean;
   sequenceNo = 'sequenceNo';
-  triggerSearch = false;
+  triggerSearch: boolean;
   tmpPageIndex = 1;
 
   pageMaxSize = 7;
@@ -504,7 +338,7 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
   excluding: any;
   hideFilter: boolean;
 
-  ignoreUrlParam = false;
+  ignoreUrlParam: boolean;
   // locationSearch: string;
   // _currentSortField: string;
 
@@ -514,42 +348,19 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
   approvable = true;
   deletable = true;
 
-  protected mergeUrlSearchModel(searchModel: any): void {
-    for (const key of Object.keys(searchModel)) {
-      if (searchModel[key] !== '') {
-        searchModel[key] = Array.isArray(this.state[key]) ? searchModel[key].split(',') : searchModel[key];
-      } else {
-        searchModel[key] = Array.isArray(this.state[key]) ? [] : searchModel[key];
-      }
-    }
-    this.setState(searchModel);
+  protected getModelName(): string {
+    return 'model';
   }
 
   toggleFilter(event: any): void {
     this.hideFilter = !this.hideFilter;
   }
-  protected add = (event) => {
+  protected add = (event: any) => {
     event.preventDefault();
     const url = this.props['props'].match.url + '/add';
     this.props.history.push(url);
   }
-  mergeSearchModel(obj: any, arrs?: string[]|any, b?: S): S {
-    return mergeSearchModel(obj, this.pageSizes, arrs, b);
-  }
   load(s: S, autoSearch: boolean): void {
-    /*
-    if (!this.ignoreUrlParam) {
-      const parsed = qs.parse(this.locationSearch);
-      const searchModel = initSearchable(parsed, this);
-      this.mergeUrlSearchModel(searchModel);
-    }
-    const com = this;
-    if (com.autoSearch) {
-      setTimeout(() => {
-        com.doSearch(true);
-      }, 100);
-    }
-    */
     const obj2 = initSearchable(s, this);
     this.setSearchModel(obj2);
     const com = this;
@@ -560,74 +371,73 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
     }
   }
 
-  protected setSearchForm(form: any): void {
+  protected setSearchForm(form: HTMLFormElement): void {
     this.form = form;
   }
 
-  protected getSearchForm(): any {
+  protected getSearchForm(): HTMLFormElement {
     if (!this.form && this.listFormId) {
-      this.form = document.getElementById(this.listFormId);
+      this.form = document.getElementById(this.listFormId) as HTMLFormElement;
     }
     return this.form;
   }
   setSearchModel(searchModel: S): void {
-    this.setState(searchModel);
+    this.setState(searchModel as any);
+  }
+  protected getCurrencyCode(): string {
+    return getCurrencyCode(this.form);
   }
   getSearchModel(): S {
-    const obj2: S = this.ui.decodeFromForm(this.getSearchForm(), this.getLocale(), this.getCurrencyCode());
-    const obj: any = obj2 ? obj2 : {};
-    const obj3 = optimizeSearchModel(obj, this, this.getDisplayFields());
-    obj3.excluding = this.excluding;
-    if (this.keys && this.keys.length == 1) {
-      const l = this.getList();
-      if (l && l.length > 0) {
-        const refId = l[l.length - 1][this.keys[0]]
-        if (refId) {
-          obj3.refId = '' + refId;
-        }
-      }
-    }
+    const name = this.getModelName();
+    const lc = this.getLocale();
+    const cc = this.getCurrencyCode();
+    const fields = this.getDisplayFields();
+    const l = this.getList();
+    const f = this.getSearchForm();
+    const dc = (this.ui ? this.ui.decodeFromForm : null);
+    const obj3 = getModel<T, S>(this.state, name, this, fields, this.excluding, this.keys, l, f, dc, lc, cc);
     return obj3;
   }
-  getOriginalSearchModel(): S {
-    return this.state;
-  }
   protected getDisplayFields(): string[] {
-    if (this.displayFields) {
-      return this.displayFields;
-    }
-    if (!this.initDisplayFields) {
-      if (this.form) {
-        this.displayFields = getDisplayFields(this.form);
-      }
-      this.initDisplayFields = true;
-    }
-    return this.displayFields;
+    const fs = getDisplayFieldsFromForm(this.displayFields, this.initDisplayFields, this.form);
+    this.initDisplayFields = true;
+    return fs;
   }
 
   protected pagingOnClick = (size, e) => {
-    this.setState(prevState => ({ isPageSizeOpenDropDown: !prevState.isPageSizeOpenDropDown }));
+    this.setState(prevState => ({ isPageSizeOpenDropDown: !(prevState as any).isPageSizeOpenDropDown } as any));
     this.pageSizeChanged(size);
   }
 
   protected pageSizeOnClick = () => {
-    this.setState(prevState => ({ isPageSizeOpenDropDown: !prevState.isPageSizeOpenDropDown }));
+    this.setState(prevState => ({ isPageSizeOpenDropDown: !(prevState as any).isPageSizeOpenDropDown } as any));
   }
 
-  protected clearKeyword() {
-    this.setState({
-      keyword: ''
-    });
+  protected clearKeyword(): void {
+    const m = this.state.model;
+    if (m) {
+      m.keyword = '';
+      this.setState({model: m});
+    } else {
+      this.setState({
+        keyword: ''
+      });
+    }
   }
   searchOnClick(event: any): void {
-    event.preventDefault();
-    if (event && !this.getSearchForm()) {
-      this.setSearchForm(event.target.form);
+    if (event) {
+      event.preventDefault();
+      if (!this.getSearchForm()) {
+        const f = (event.target as HTMLInputElement).form;
+        if (f) {
+          this.setSearchForm(f);
+        }
+      }
     }
     this.resetAndSearch();
   }
 
-  resetAndSearch() {
+  resetAndSearch(): void {
     this.pageIndex = 1;
     if (this.running === true) {
       this.triggerSearch = true;
@@ -638,9 +448,9 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
     this.doSearch();
   }
 
-  doSearch(isFirstLoad?: boolean) {
+  doSearch(isFirstLoad?: boolean): void {
     const listForm = this.getSearchForm();
-    if (listForm) {
+    if (listForm && this.ui) {
       this.ui.removeFormError(listForm);
     }
     const s = this.getSearchModel();
@@ -653,43 +463,38 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
       if (this.loading) {
         this.loading.showLoading();
       }
-      if (this.ignoreUrlParam === false) {
+      if (!this.ignoreUrlParam) {
         addParametersIntoUrl(s, isFirstLoad);
       }
-      com.search(s);
+      com.call(s);
     });
   }
 
-  search(s: SearchModel) {
+  call(s: S): void {
 
   }
 
-  validateSearch(se: S, callback: () => void) {
-    let valid = true;
-    const listForm = this.getSearchForm();
-    if (listForm) {
-      valid = this.ui.validateForm(listForm, this.getLocale());
-    }
-    if (valid === true) {
-      callback();
-    }
+  validateSearch(se: S, callback: () => void): void {
+    const u = this.ui;
+    const vl = (u ? u.validateForm : null);
+    validate(se, callback, this.getSearchForm(), this.getLocale(), vl);
   }
-  showResults(s: SearchModel, sr: SearchResult<T>) {
+  showResults(s: S, sr: SearchResult<T>) {
     const com = this;
     const results = sr.results;
     if (results && results.length > 0) {
-      const locale = this.getLocale();
-      formatResults(results, this.formatter, locale, this.sequenceNo, this.pageIndex, this.pageSize, this.initPageSize);
+      const lc = this.getLocale();
+      formatResultsByComponent(results, com, lc);
     }
-    const appendMode = com.appendMode;
-    showResults(s, sr, com);
-    if (appendMode === false) {
+    const am = com.appendMode;
+    showResults2(s, sr, com);
+    if (!am) {
       com.setList(results);
       com.tmpPageIndex = s.page;
       const m1 = buildSearchMessage(s, sr, this.resourceService);
       this.showMessage(m1);
     } else {
-      if (com.append === true && s.page > 1) {
+      if (com.append && s.page > 1) {
         com.appendList(results);
       } else {
         com.setList(results);
@@ -699,14 +504,14 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
     if (this.loading) {
       this.loading.hideLoading();
     }
-    if (com.triggerSearch === true) {
+    if (com.triggerSearch) {
       com.triggerSearch = false;
       com.resetAndSearch();
     }
   }
 
   appendList(results: T[]) {
-    const list = this.state.results;
+    const list = this.state.list;
     const arr = append(list, results);
 
     const listForm = this.getSearchForm();
@@ -715,19 +520,19 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
     if (setGlobalState && listForm) {
       setGlobalState({ [listForm.name]: arr });
     } else {
-      this.setState({ results: arr });
+      this.setState({ list: arr });
     }
   }
 
-  setList(results: T[]) {
+  setList(list: T[]) {
     const props: any = this.props;
     const setGlobalState = props.props.setGlobalState;
-    this.list = results;
+    this.list = list;
     const listForm = this.getSearchForm();
     if (setGlobalState && listForm) {
-      setGlobalState({ [listForm.name]: results });
+      setGlobalState({ [listForm.name]: list });
     } else {
-      this.setState({ results });
+      this.setState({ list });
     }
   }
 
@@ -738,7 +543,7 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
   sort(event: any) {
     event.preventDefault();
     handleSortEvent(event, this);
-    if (this.appendMode === false) {
+    if (!this.appendMode) {
       this.doSearch();
     } else {
       this.resetAndSearch();
@@ -751,7 +556,7 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
     this.doSearch();
   }
   pageSizeChanged = (event: any) => {
-    const size = parseInt(event.currentTarget.value, null);
+    const size = parseInt((event.currentTarget as HTMLInputElement).value, null);
     changePageSize(this, size);
     this.tmpPageIndex = 1;
     this.doSearch();
@@ -763,70 +568,70 @@ export class BaseSearchComponent<T, S extends SearchModel, W extends HistoryProp
     this.doSearch();
   }
 }
-export interface SearchState<T> {
-  keyword: string;
-  results: T[];
-}
-export interface SearchService<T, S extends SearchModel> {
-  search(s: S, ctx?: any): Promise<SearchResult<T>>;
-  keys?(): string[];
-}
-export class SearchComponent<T, S extends SearchModel, W extends HistoryProps, I extends SearchState<T>> extends BaseSearchComponent<T, S, W, I> {
-  constructor(props, param: ((s: S, ctx?: any) => Promise<SearchResult<T>>) | SearchService<T, S>,
-      resourceService: ResourceService,
-      ui: UIService,
-      showMessage: (msg: string) => void,
-      protected showError: (m: string, header?: string, detail?: string, callback?: () => void) => void,
-      getLocale?: () => Locale,
-      protected loading?: LoadingService,
-      autoSearch?: boolean,
+export class SearchComponent<T, S extends SearchModel, P extends ModelHistoryProps, I extends SearchState<T, S>> extends BaseSearchComponent<T, S, P, I> {
+  constructor(props: P, sv: ((s: S, ctx?: any) => Promise<SearchResult<T>>) | SearchService<T, S>,
+      param: ResourceService|SearchParameter,
+      showMessage?: (msg: string, option?: string) => void,
+      showError?: (m: string, header?: string, detail?: string, callback?: () => void) => void,
+      getLocale?: (profile?: string) => Locale,
+      uis?: UIService,
+      loading?: LoadingService,
       listFormId?: string) {
-    super(props, resourceService, ui, showMessage, getLocale, listFormId);
-    if (autoSearch === false) {
-      this.autoSearch = autoSearch;
-    }
-    if (param) {
-      if (typeof param === 'function') {
-        const x: any = param;
-        this.searchFn = x;
+    super(props, getResource(param), getMsgFunc(param, showMessage), getLocaleFunc(param, getLocale), getUIService(param, uis), getLoadingFunc(param, loading), listFormId);
+    this.autoSearch = getAutoSearch(param);
+    if (sv) {
+      if (typeof sv === 'function') {
+        const x: any = sv;
+        this.search = x;
       } else {
-        this.service = param;
+        this.service = sv;
         if (this.service.keys) {
           this.keys = this.service.keys();
         }
       }
     }
-    this.search = this.search.bind(this);
-    this.showError = this.showError.bind(this);
+    this.call = this.call.bind(this);
+    this.showError = getErrorFunc(param, showError);
     this.componentDidMount = this.componentDidMount.bind(this);
+    this.mergeSearchModel = this.mergeSearchModel.bind(this);
+    this.createSearchModel = this.createSearchModel.bind(this);
     this.ref = React.createRef();
   }
-  protected searchFn: (s: S, ctx?: any) => Promise<SearchResult<T>>;
+  protected showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
+  protected search?: (s: S, ctx?: any) => Promise<SearchResult<T>>;
   protected service: SearchService<T, S>;
   protected ref: any;
-  protected autoSearch = true;
+  protected autoSearch: boolean;
   componentDidMount() {
-    this.form = initForm(this.ref.current, this.ui.initMaterial);
-    const s = this.mergeSearchModel(buildFromUrl());
+    const k = (this.ui ? this.ui.registerEvents : null);
+    this.form = initForm(this.ref.current, k);
+    const s = this.mergeSearchModel(buildFromUrl<S>(), this.createSearchModel());
     this.load(s, this.autoSearch);
   }
-  async search(s: S) {
+  mergeSearchModel(obj: S, b?: S, arrs?: string[]|any): S {
+    return mergeSearchModel2<S>(obj, b, this.pageSizes, arrs);
+  }
+  createSearchModel(): S {
+    const s: any = {};
+    return s;
+  }
+  async call(s: S) {
     try {
       const ctx: any = {};
       this.running = true;
       if (this.loading) {
         this.loading.showLoading();
       }
-      if (this.searchFn) {
-        const sr = await this.searchFn(s, ctx);
-        this.showResults(s, sr);  
+      if (this.search) {
+        const sr = await this.search(s, ctx);
+        this.showResults(s, sr);
       } else {
         const sr = await this.service.search(s, ctx);
         this.showResults(s, sr);
       }
     } catch (err) {
       this.pageIndex = this.tmpPageIndex;
-      error(err, this.resourceService, this.showError)
+      error(err, this.resourceService.value, this.showError);
     } finally {
       this.running = false;
       if (this.loading) {
@@ -836,18 +641,19 @@ export class SearchComponent<T, S extends SearchModel, W extends HistoryProps, I
   }
 }
 
-export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Components<W, I> {
-  constructor(props,
-      resourceService: ResourceService,
-      protected ui: UIService,
+export abstract class BaseEditComponent<T, P extends ModelHistoryProps, S> extends BaseComponent<P, S> {
+  constructor(props: P,
+      protected resourceService: ResourceService,
       protected showMessage: (msg: string) => void,
       protected showError: (m: string, title?: string, detail?: string, callback?: () => void) => void,
-      protected confirm: (m2, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
+      protected confirm: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
       getLocale?: () => Locale,
-      loading?: LoadingService,
+      protected ui?: UIService,
+      protected loading?: LoadingService,
+      protected status?: EditStatusConfig,
       patchable?: boolean, backOnSaveSuccess?: boolean) {
-    super(props, resourceService, ui, getLocale, loading);
-    this.ui = ui;
+    super(props, getLocale, (ui ? ui.removeError : null));
+    this.resource = resourceService.resource();
     if (patchable === false) {
       this.patchable = patchable;
     }
@@ -861,6 +667,7 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Co
     this.showError = this.showError.bind(this);
     this.confirm = this.confirm.bind(this);
 
+    this.back = this.back.bind(this);
     this.getModelName = this.getModelName.bind(this);
 
     this.resetState = this.resetState.bind(this);
@@ -879,51 +686,44 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Co
     this.postSave = this.postSave.bind(this);
     this.handleDuplicateKey = this.handleDuplicateKey.bind(this);
   }
-  backOnSuccess = true;
-  protected metadata: Metadata;
-  protected keys: string[];
+  protected backOnSuccess = true;
+  protected resource: StringMap;
+  protected metadata?: Metadata;
+  protected keys?: string[];
   protected version?: string;
-  protected newMode = false;
-  protected setBack = false;
+  protected newMode: boolean;
+  protected setBack: boolean;
   protected patchable = true;
   protected orginalModel: T;
 
-  protected addable: boolean = true;
-  protected editable: boolean = true;
+  protected addable = true;
+  protected readOnly = false;
 
   insertSuccessMsg: string;
   updateSuccessMsg: string;
-
+  protected back(event: any) {
+    if (event) {
+      event.preventDefault();
+    }
+    this.props.history.goBack();
+  }
   protected resetState(newMod: boolean, model: T, originalModel: T) {
     this.newMode = newMod;
     this.orginalModel = originalModel;
     this.showModel(model);
   }
-  protected handleNotFound(form?: any): void {
-    const msg = message(this.resourceService, 'error_not_found', 'error');
+  protected handleNotFound(form?: HTMLFormElement): void {
+    const msg = message(this.resourceService.value, 'error_not_found', 'error');
     if (form) {
       readOnly(form);
     }
     this.showError(msg.message, msg.title);
   }
-  protected getModelName() {
+  protected getModelName(f?: HTMLFormElement): string {
     if (this.metadata) {
       return this.metadata.name;
     }
-    if (this.form) {
-      const a = this.form.getAttribute('model-name');
-      if (a && a.length > 0) {
-        return a;
-      }
-      const b = this.form.name;
-      if (b) {
-        if (b.endsWith('Form')) {
-          return b.substr(0, b.length - 4);
-        }
-        return b;
-      }
-    }
-    return 'model';
+    return super.getModelName(f);
   }
   getModel(): T {
     const n = this.getModelName();
@@ -935,7 +735,7 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Co
     const objSet: any = {};
     objSet[modelName] = model;
     this.setState(objSet, () => {
-      if (this.editable === false) {
+      if (this.readOnly) {
         readOnly(f);
       }
     });
@@ -944,7 +744,7 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Co
   // end of: can be in ViewComponent
   protected createModel(): T {
     if (this.metadata) {
-      const obj = createModel(this.metadata);
+      const obj = createModel2<T>(this.metadata);
       return obj;
     } else {
       const obj: any = {};
@@ -956,44 +756,46 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Co
     if (event) {
       event.preventDefault();
     }
-    if (!this.form && event && event.target && event.target.form) {
-      this.form = event.target.form;
+    if (!this.form && event && event.target && (event.target as HTMLInputElement).form) {
+      this.form = (event.target as HTMLInputElement).form;
     }
     const obj = this.createModel();
     this.resetState(true, obj, null);
     const u = this.ui;
-    const f = this.form;
-    setTimeout(() => {
-      u.removeFormError(f);
-    }, 100);
+    if (u) {
+      const f = this.form;
+      setTimeout(() => {
+        u.removeFormError(f);
+      }, 100);
+    }
   }
   protected saveOnClick = (event: any) => {
     event.preventDefault();
-    event.persist();
+    (event as any).persist();
     if (!this.form && event && event.target) {
-      this.form = event.target.form;
+      this.form = (event.target as HTMLInputElement).form;
     }
     this.onSave(this.backOnSuccess);
   }
   onSave(isBack?: boolean) {
     const r = this.resourceService;
-    if (this.newMode === true && this.addable === false) {
-      const m = message(r, 'error_permission_add', 'error_permission');
+    if (this.newMode && !this.addable) {
+      const m = message(r.value, 'error_permission_add', 'error_permission');
       this.showError(m.message, m.title);
       return;
-    } else if (this.newMode === false && this.editable === false) {
-      const msg = message(r, 'error_permission_edit', 'error_permission');
+    } else if (!this.newMode && this.readOnly) {
+      const msg = message(r.value, 'error_permission_edit', 'error_permission');
       this.showError(msg.message, msg.title);
       return;
     } else {
-      if (this.running === true) {
+      if (this.running) {
         return;
       }
       const com = this;
       const obj = com.getModel();
       if (this.newMode) {
         com.validate(obj, () => {
-          const msg = message(r, 'msg_confirm_save', 'confirm', 'yes', 'no');
+          const msg = message(r.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
           this.confirm(msg.message, msg.title, () => {
             com.save(obj, obj, isBack);
           }, msg.no, msg.yes);
@@ -1005,7 +807,7 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Co
           this.showMessage(r.value('msg_no_change'));
         } else {
           com.validate(obj, () => {
-            const msg = message(r, 'msg_confirm_save', 'confirm', 'yes', 'no');
+            const msg = message(r.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
             this.confirm(msg.message, msg.title, () => {
               com.save(obj, diffObj, isBack);
             }, msg.no, msg.yes);
@@ -1015,8 +817,12 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Co
     }
   }
   protected validate(obj: T, callback: (obj2?: T) => void) {
-    const valid = this.ui.validateForm(this.form, this.getLocale());
-    if (valid) {
+    if (this.ui) {
+      const valid = this.ui.validateForm(this.form, this.getLocale());
+      if (valid) {
+        callback(obj);
+      }
+    } else {
       callback(obj);
     }
   }
@@ -1028,7 +834,7 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Co
     if (result) {
       const model = result.value;
       this.newMode = false;
-      if (model && this.setBack === true) {
+      if (model && this.setBack) {
         this.resetState(false, model, clone(model));
       } else {
         handleVersion(this.getModel(), this.version);
@@ -1045,85 +851,77 @@ export abstract class BaseEditComponent<T, W extends HistoryProps, I> extends Co
   protected fail(result: ResultInfo<T>) {
     const errors = result.errors;
     const f = this.form;
-    const unmappedErrors = this.ui.showFormError(f, errors);
-    focusFirstError(f);
-    if (!result.message) {
-      if (errors && errors.length === 1) {
-        result.message = errors[0].message;
-      } else {
-        result.message = this.ui.buildErrorMessage(unmappedErrors);
+    const u = this.ui;
+    if (u) {
+      const unmappedErrors = u.showFormError(f, errors);
+      if (!result.message) {
+        if (errors && errors.length === 1) {
+          result.message = errors[0].message;
+        } else {
+          result.message = u.buildErrorMessage(unmappedErrors);
+        }
       }
+      focusFirstError(f);
+    } else if (errors && errors.length === 1) {
+      result.message = errors[0].message;
     }
-    const t = this.resource['error'];
+    const t = this.resourceService.value('error');
     this.showError(result.message, t);
   }
 
-  protected postSave(res: number|ResultInfo<T>, backOnSave?: boolean) {
+  protected postSave(res: number|string|ResultInfo<T>, backOnSave?: boolean) {
     this.running = false;
     if (this.loading) {
       this.loading.hideLoading();
     }
+    const st = this.status;
     const newMod = this.newMode;
     const successMsg = (newMod ? this.insertSuccessMsg : this.updateSuccessMsg);
     const x: any = res;
+    const r = this.resourceService;
     if (!isNaN(x)) {
-      if (x > 0) {
+      if (x === st.Success) {
         this.succeed(successMsg, backOnSave);
       } else {
-        if (newMod) {
+        if (newMod && x === st.DuplicateKey) {
           this.handleDuplicateKey();
-        } else {
+        } else if (!newMod && x === st.NotFound) {
           this.handleNotFound();
+        } else {
+          handleStatus(x as number, st, r.value, this.showError);
         }
       }
     } else {
       const result: ResultInfo<T> = x;
-      if (result.status === Status.Success) {
+      if (result.status === st.Success) {
         this.succeed(successMsg, backOnSave, result);
         this.showMessage(successMsg);
-      } else if (result.status === Status.Error) {
+      } else if (result.errors && result.errors.length > 0) {
         this.fail(result);
-      } else if (result.status === Status.DuplicateKey) {
+      } else if (newMod && result.status === st.DuplicateKey) {
         this.handleDuplicateKey(result);
+      } else if (!newMod && x === st.NotFound) {
+        this.handleNotFound();
       } else {
-        const r = this.resourceService;
-        const msg = buildMessageFromStatusCode(result.status, r);
-        const title = r.value('error');
-        if (msg && msg.length > 0) {
-          this.showError(msg, title);
-        } else if (result.message && result.message.length > 0) {
-          this.showError(result.message, title);
-        } else {
-          this.showError(r.value('error_internal'), title);
-        }
+        handleStatus(result.status, st, r.value, this.showError);
       }
     }
   }
-
   protected handleDuplicateKey(result?: ResultInfo<T>) {
-    const msg = message(this.resourceService, 'error_duplicate_key', 'error');
+    const msg = message(this.resourceService.value, 'error_duplicate_key', 'error');
     this.showError(msg.message, msg.title);
   }
 }
-
-export interface GenericService<T, ID, R> extends ViewService<T, ID> {
-  patch?(obj: T, ctx?: any): Promise<R>;
-  insert(obj: T, ctx?: any): Promise<R>;
-  update(obj: T, ctx?: any): Promise<R>;
-  delete?(id: ID, ctx?: any): Promise<number>;
-}
-
-export class EditComponent<T, ID, W extends HistoryProps, I> extends BaseEditComponent<T, W, I>  {
-  constructor(props, protected service: GenericService<T, ID, number|ResultInfo<T>>,
-      resourceService: ResourceService,
-      ui: UIService,
-      showMessage: (msg: string) => void,
-      showError: (m: string, title?: string, detail?: string, callback?: () => void) => void,
-      confirm: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
-      getLocale?: () => Locale,
-      loading?: LoadingService,
-      patchable?: boolean, backOnSaveSuccess?: boolean) {
-    super(props, resourceService, ui, showMessage, showError, confirm, getLocale, loading, patchable, backOnSaveSuccess);
+export class EditComponent<T, ID, P extends ModelHistoryProps, S> extends BaseEditComponent<T, P, S>  {
+  constructor(props: P, protected service: GenericService<T, ID, number|ResultInfo<T>>,
+      param: ResourceService|EditParameter,
+      showMessage?: (msg: string, option?: string) => void,
+      showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
+      confirm?: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
+      getLocale?: (profile?: string) => Locale,
+      uis?: UIService,
+      loading?: LoadingService, status?: EditStatusConfig, patchable?: boolean, backOnSaveSuccess?: boolean) {
+    super(props, getResource(param), getMsgFunc(param, showMessage), getErrorFunc(param, showError), getConfirmFunc(param, confirm), getLocaleFunc(param, getLocale), getUIService(param, uis), getLoadingFunc(param, loading), getEditStatusFunc(param, status), patchable, backOnSaveSuccess);
     if (service.metadata) {
       const metadata = service.metadata();
       if (metadata) {
@@ -1149,11 +947,12 @@ export class EditComponent<T, ID, W extends HistoryProps, I> extends BaseEditCom
   }
   protected ref: any;
   componentDidMount() {
-    this.form = initForm(this.ref.current, this.ui.initMaterial);
-    const id = buildId<ID>(this.keys, this.props);
+    const k = (this.ui ? this.ui.registerEvents : null);
+    this.form = initForm(this.ref.current, k);
+    const id = buildId<ID>(this.props, this.keys);
     this.load(id);
   }
-  async load(_id: ID) {
+  async load(_id: ID, callback?: (m: T, showM: (m2: T) => void) => void) {
     const id: any = _id;
     if (id != null && id !== '') {
       try {
@@ -1166,29 +965,28 @@ export class EditComponent<T, ID, W extends HistoryProps, I> extends BaseEditCom
         if (!obj) {
           this.handleNotFound(this.form);
         } else {
-          this.resetState(false, obj, clone(obj));
+          this.newMode = false;
+          this.orginalModel = clone(obj);
+          if (!callback) {
+            this.showModel(obj);
+          } else {
+            callback(obj, this.showModel);
+          }
         }
       } catch (err) {
         const data = (err &&  err.response) ? err.response : err;
         const r = this.resourceService;
-        const title = r.value('error');
-        let msg = r.value('error_internal');
+        const gv = r.value;
+        const title = gv('error');
+        let msg = gv('error_internal');
         if (data && data.status === 404) {
           this.handleNotFound(this.form);
-        } else if (data && (data.status === 403 || data.status === 404)) {
-          if (data.status && !isNaN(data.status)) {
-            msg = messageByHttpStatus(data.status, r);
-          }
-          if (data.status === 403) {
-            msg = r.value('error_forbidden');
-          } else if (data.status === 401) {
-            msg = r.value('error_forbidden');
-          }
-          readOnly(this.form);
-          this.showError(msg, title);
         } else {
           if (data.status && !isNaN(data.status)) {
-            msg = messageByHttpStatus(data.status, r);
+            msg = messageByHttpStatus(data.status, gv);
+          }
+          if (data && (data.status === 401 || data.status === 403)) {
+            readOnly(this.form);
           }
           this.showError(msg, title);
         }
@@ -1200,8 +998,14 @@ export class EditComponent<T, ID, W extends HistoryProps, I> extends BaseEditCom
       }
     } else {
       // Call service state
+      this.newMode = true;
+      this.orginalModel = null;
       const obj = this.createModel();
-      this.resetState(true, obj, null);
+      if (callback) {
+        callback(obj, this.showModel);
+      } else {
+        this.showModel(obj);
+      }
     }
   }
   protected async save(obj: T, body?: T, isBack?: boolean) {
@@ -1214,7 +1018,7 @@ export class EditComponent<T, ID, W extends HistoryProps, I> extends BaseEditCom
     try {
       const ctx: any = {};
       if (!this.newMode) {
-        if (this.patchable === true && body && Object.keys(body).length > 0) {
+        if (this.patchable === true && this.service.patch && body && Object.keys(body).length > 0) {
           const result = await this.service.patch(body, ctx);
           com.postSave(result, isBackO);
         } else {
@@ -1226,7 +1030,7 @@ export class EditComponent<T, ID, W extends HistoryProps, I> extends BaseEditCom
         com.postSave(result, isBackO);
       }
     } catch (err) {
-      error(err, this.resourceService, this.showError)
+      error(err, this.resourceService.value, this.showError);
     } finally {
       this.running = false;
       if (this.loading) {

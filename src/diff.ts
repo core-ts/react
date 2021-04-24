@@ -1,16 +1,15 @@
-import {getDataFields} from 'form-util';
 import * as React from 'react';
 import {clone, diff} from 'reflectx';
-import {buildId, LoadingService, Locale, message, messageByHttpStatus, ResourceService} from './core';
-import {HistoryProps} from './HistoryProps';
+import {buildId, createDiffStatus, DiffStatusConfig, error, HistoryProps, LoadingService, message, ResourceService, StringMap} from './core';
+import {getDiffStatusFunc, getErrorFunc, getLoadingFunc, getMsgFunc, getResource} from './input';
 
-enum Status {
-  NotFound = 0,
-  Success = 1,
-  VersionError = 2,
-  Error = 4,
+export interface DiffParameter {
+  resource: ResourceService;
+  showMessage: (msg: string, option?: string) => void;
+  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
+  loading?: LoadingService;
+  status?: DiffStatusConfig;
 }
-
 export interface BaseDiffState {
   disabled: boolean;
 }
@@ -21,11 +20,12 @@ export interface DiffModel<T, ID> {
   value: T;
 }
 
-export class BaseDiffApprComponent<T, ID, W extends HistoryProps, I extends BaseDiffState> extends React.Component<W, I & any> {
-  constructor(props, protected keys: string[], protected resourceService: ResourceService,
-      protected showMessage: (msg: string) => void,
+export class BaseDiffApprComponent<T, ID, P extends HistoryProps, S extends BaseDiffState> extends React.Component<P, S & any> {
+  constructor(props: P, protected keys: string[], protected resourceService: ResourceService,
+      protected showMessage: (msg: string, option?: string) => void,
       protected showError: (m: string, title?: string, detail?: string, callback?: () => void) => void,
-      protected loading?: LoadingService
+      protected loading?: LoadingService,
+      protected status?: DiffStatusConfig,
     ) {
     super(props);
     // this._id = props['props'].match.params.id || props['props'].match.params.cId || props.match.params.cId;
@@ -38,16 +38,18 @@ export class BaseDiffApprComponent<T, ID, W extends HistoryProps, I extends Base
     this.postApprove = this.postApprove.bind(this);
     this.postReject = this.postReject.bind(this);
     this.format = this.format.bind(this);
-    this.handleError = this.handleError.bind(this);
     this.handleNotFound = this.handleNotFound.bind(this);
+    if (!this.status) {
+      this.status = createDiffStatus();
+    }
     this.state = {
       disabled: false
     };
   }
-  protected id: ID = null;
-  protected form: any;
+  protected id: ID;
+  protected form: HTMLFormElement;
   protected running: boolean;
-  protected resource: any = {};
+  protected resource: StringMap;
 
   protected back(event: any) {
     if (event) {
@@ -61,33 +63,35 @@ export class BaseDiffApprComponent<T, ID, W extends HistoryProps, I extends Base
     return x;
   }
 
-  protected postApprove(status: Status, err?: any) {
+  protected postApprove(s: number|string, err?: any) {
     this.setState({ disabled: true });
     const r = this.resourceService;
-    if (status === Status.Success) {
+    const st = this.status;
+    if (s === st.Success) {
       this.showMessage(r.value('msg_approve_success'));
-    } else if (status === Status.VersionError) {
-      const msg = message(r, 'msg_approve_version_error', 'error');
+    } else if (s === st.VersionError) {
+      const msg = message(r.value, 'msg_approve_version_error', 'error');
       this.showError(msg.message, msg.title);
-    } else if (status === Status.NotFound) {
+    } else if (s === st.NotFound) {
       this.handleNotFound();
     } else {
-      this.handleError(err);
+      error(err, r.value, this.showError);
     }
   }
 
-  protected postReject(status: Status, err?: any) {
+  protected postReject(status: number|string, err?: any) {
     this.setState({ disabled: true });
     const r = this.resourceService;
-    if (status === Status.Success) {
+    const st = this.status;
+    if (status === st.Success) {
       this.showMessage(r.value('msg_reject_success'));
-    } else if (status === Status.VersionError) {
-      const msg = message(r, 'msg_approve_version_error', 'error');
+    } else if (status === st.VersionError) {
+      const msg = message(r.value, 'msg_approve_version_error', 'error');
       this.showError(msg.message, msg.title);
-    } else if (status === Status.NotFound) {
+    } else if (status === st.NotFound) {
       this.handleNotFound();
     } else {
-      this.handleError(err);
+      error(err, r.value, this.showError);
     }
   }
 
@@ -100,8 +104,8 @@ export class BaseDiffApprComponent<T, ID, W extends HistoryProps, I extends Base
       dataFields.forEach(e => {
         if (differentKeys.indexOf(e.getAttribute('data-field')) >= 0) {
           if (e.childNodes.length === 3) {
-            e.childNodes[1].classList.add('highlight');
-            e.childNodes[2].classList.add('highlight');
+            (e.childNodes[1] as HTMLElement).classList.add('highlight');
+            (e.childNodes[2] as HTMLElement).classList.add('highlight');
           } else {
             e.classList.add('highlight');
           }
@@ -114,8 +118,8 @@ export class BaseDiffApprComponent<T, ID, W extends HistoryProps, I extends Base
       dataFields.forEach(e => {
         if (differentKeys.indexOf(e.getAttribute('data-field')) >= 0) {
           if (e.childNodes.length === 3) {
-            e.childNodes[1].classList.add('highlight');
-            e.childNodes[2].classList.add('highlight');
+            (e.childNodes[1] as HTMLElement).classList.add('highlight');
+            (e.childNodes[2] as HTMLElement).classList.add('highlight');
           } else {
             e.classList.add('highlight');
           }
@@ -126,23 +130,8 @@ export class BaseDiffApprComponent<T, ID, W extends HistoryProps, I extends Base
 
   protected handleNotFound() {
     this.setState({ disabled: true });
-    const msg = message(this.resourceService, 'error_not_found', 'error');
+    const msg = message(this.resourceService.value, 'error_not_found', 'error');
     this.showError(msg.message, msg.title);
-  }
-  handleError(err: any): void {
-    this.running = false;
-    if (this.loading) {
-      this.loading.hideLoading();
-    }
-    const r = this.resourceService;
-    let msg = r.value('error_internal');
-    if (err) {
-      if (err.status && !isNaN(err.status)) {
-        msg = messageByHttpStatus(err.status, r);
-      }
-    }
-    const title = r.value('error');
-    this.showError(msg, title);
   }
 }
 
@@ -180,8 +169,8 @@ export interface DiffModel<T, ID> {
   value: T;
 }
 export interface ApprService<ID> {
-  approve(id: ID, ctx?: any): Promise<Status>;
-  reject(id: ID, ctx?: any): Promise<Status>;
+  approve(id: ID, ctx?: any): Promise<number|string>;
+  reject(id: ID, ctx?: any): Promise<number|string>;
 }
 export interface DiffService<T, ID> {
   keys(): string[];
@@ -196,13 +185,14 @@ export interface DiffState<T> {
   disabled: boolean;
 }
 
-export class Diff<T, ID, W extends HistoryProps, I extends DiffState<T>> extends BaseDiffApprComponent<T, ID, W, I> {
-  constructor(props, protected service: DiffApprService<T, ID>,
-      resourceService: ResourceService, protected getLocale: () => Locale,
-      showMessage: (msg: string) => void,
-      showError: (m: string, title?: string, detail?: string, callback?: () => void) => void,
-      loading?: LoadingService) {
-    super(props, service.keys(), resourceService, showMessage, showError, loading);
+export class DiffApprComponent<T, ID, P extends HistoryProps, S extends DiffState<T>> extends BaseDiffApprComponent<T, ID, P, S> {
+  constructor(props: P, protected service: DiffApprService<T, ID>,
+      param: ResourceService|DiffParameter,
+      showMessage?: (msg: string, option?: string) => void,
+      showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
+      loading?: LoadingService,
+      status?: DiffStatusConfig) {
+    super(props, service.keys(), getResource(param), getMsgFunc(param, showMessage), getErrorFunc(param, showError), getLoadingFunc(param, loading), getDiffStatusFunc(param, status));
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
     this.formatFields = this.formatFields.bind(this);
@@ -217,7 +207,7 @@ export class Diff<T, ID, W extends HistoryProps, I extends DiffState<T>> extends
 
   componentDidMount() {
     this.form = this.ref.current;
-    const id = buildId<ID>(this.keys, this.props);
+    const id = buildId<ID>(this.props, this.keys);
     this.load(id);
   }
 
@@ -249,7 +239,7 @@ export class Diff<T, ID, W extends HistoryProps, I extends DiffState<T>> extends
         if (data && data.status === 404) {
           this.handleNotFound();
         } else {
-          this.handleError(err);
+          error(err, this.resourceService.value, this.showError);
         }
       } finally {
         this.running = false;
@@ -271,7 +261,7 @@ export class Diff<T, ID, W extends HistoryProps, I extends DiffState<T>> extends
       const status = await this.service.approve(id);
       this.postApprove(status, null);
     } catch (err) {
-      this.postApprove(Status.Error, err);
+      this.postApprove(4, err);
     } finally {
       this.running = false;
       if (this.loading) {
@@ -291,7 +281,7 @@ export class Diff<T, ID, W extends HistoryProps, I extends DiffState<T>> extends
       const status = await this.service.reject(id);
       this.postReject(status, null);
     } catch (err) {
-      this.postReject(Status.Error, err);
+      this.postReject(4, err);
     } finally {
       this.running = false;
       if (this.loading) {
@@ -299,4 +289,22 @@ export class Diff<T, ID, W extends HistoryProps, I extends DiffState<T>> extends
       }
     }
   }
+}
+export function getDataFields(form: HTMLElement): HTMLElement[] {
+  let results: HTMLElement[] = [];
+  const attributeValue = form.getAttribute('data-field');
+  if (attributeValue && attributeValue.length > 0) {
+    results.push(form);
+  }
+  const childNodes = form.childNodes;
+  if (childNodes.length > 0) {
+    // tslint:disable-next-line:prefer-for-of
+    for (let i = 0; i < childNodes.length; i++) {
+      const childNode = childNodes[i] as HTMLElement;
+      if (childNode.nodeType === Node.ELEMENT_NODE) {
+        results = results.concat(getDataFields(childNode));
+      }
+    }
+  }
+  return results;
 }

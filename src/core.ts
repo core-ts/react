@@ -1,10 +1,125 @@
-import {focusFirstElement} from 'form-util';
+import * as H from 'history';
+import {match} from 'react-router-dom';
+import {focusFirstElement} from './formutil';
 
+export interface HistoryProps {
+  location: H.Location;
+  history: H.History;
+  match?: match;
+}
+export interface ModelMap {
+  [key: string]: any;
+}
+export interface ModelProps {
+  setGlobalState?: (m: ModelMap) => void;
+  shouldBeCustomized?: boolean;
+}
+export interface EditPermission {
+  addable?: boolean;
+  readOnly?: boolean;
+  deletable?: boolean;
+}
+export interface SearchPermission {
+  viewable?: boolean;
+  addable?: boolean;
+  editable?: boolean;
+  deletable?: boolean;
+  approvable?: boolean;
+}
+export interface SearchParameter {
+  resource: ResourceService;
+  showMessage: (msg: string, option?: string) => void;
+  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
+  ui?: UIService;
+  getLocale?: (profile?: string) => Locale;
+  loading?: LoadingService;
+  auto?: boolean;
+}
+export interface EditStatusConfig {
+  DuplicateKey: number|string;
+  NotFound: number|string;
+  Success: number|string;
+  VersionError: number|string;
+  Error?: number|string;
+  DataCorrupt?: number|string;
+}
+export function createEditStatus(status?: EditStatusConfig): EditStatusConfig {
+  if (status) {
+    return status;
+  }
+  const s: EditStatusConfig = {
+    DuplicateKey: 0,
+    NotFound: 0,
+    Success: 1,
+    VersionError: 2,
+    Error: 4,
+    DataCorrupt: 8
+  };
+  return s;
+}
+export interface DiffStatusConfig {
+  NotFound: number|string;
+  Success: number|string;
+  VersionError: number|string;
+  Error?: number|string;
+}
+export function createDiffStatus(status?: DiffStatusConfig): DiffStatusConfig {
+  if (status) {
+    return status;
+  }
+  const s: DiffStatusConfig = {
+    NotFound: 0,
+    Success: 1,
+    VersionError: 2,
+    Error: 4
+  };
+  return s;
+}
+
+export interface SearchModel {
+  keyword?: string;
+  page?: number;
+  limit?: number;
+  firstLimit?: number;
+  fields?: string[];
+  sort?: string;
+}
+export interface SearchResult<T> {
+  total?: number;
+  results: T[];
+  last?: boolean;
+}
+export interface SearchState<T, S extends SearchModel> {
+  model?: S;
+  keyword?: string;
+  list?: T[];
+}
+export interface SearchService<T, S extends SearchModel> {
+  search(s: S, ctx?: any): Promise<SearchResult<T>>;
+  keys?(): string[];
+}
+export interface ModelHistoryProps extends HistoryProps, ModelProps {
+
+}
+export interface ViewParameter {
+  resource: ResourceService;
+  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
+  getLocale?: (profile?: string) => Locale;
+  loading?: LoadingService;
+}
+export interface ViewService<T, ID> {
+  metadata?(): Metadata;
+  keys?(): string[];
+  load(id: ID, ctx?: any): Promise<T>;
+}
 // tslint:disable-next-line:class-name
 export class resource {
   static phone = / |\-|\.|\(|\)/g;
   static _cache: any = {};
   static cache = true;
+}
+export function getCurrencyCode(form: HTMLFormElement): string {
+  return (form ? form.getAttribute('currency-code') : null);
 }
 export function removePhoneFormat(phone: string): string {
   if (phone) {
@@ -13,10 +128,13 @@ export function removePhoneFormat(phone: string): string {
     return phone;
   }
 }
+export interface StringMap {
+  [key: string]: string;
+}
 export interface ResourceService {
-  resource(): any;
+  resource(): StringMap;
   value(key: string, param?: any): string;
-  format(...args: any[]): string;
+  format(f: string, ...args: any[]): string;
 }
 export interface Message {
   message: string;
@@ -24,34 +142,27 @@ export interface Message {
   yes?: string;
   no?: string;
 }
-export function message(r: ResourceService, msg: string, title?: string, yes?: string, no?: string): Message {
-  const m2 = (msg && msg.length > 0 ? r.value(msg) : '');
+export function message(gv: (key: string) => string, msg: string, title?: string, yes?: string, no?: string): Message {
+  const m2 = (msg && msg.length > 0 ? gv(msg) : '');
   const m: Message = {
     message: m2
   };
   if (title && title.length > 0) {
-    m.title = r.value(title);
+    m.title = gv(title);
   }
   if (yes && yes.length > 0) {
-    m.yes = r.value(yes);
+    m.yes = gv(yes);
   }
   if (no && no.length > 0) {
-    m.no = r.value(no);
+    m.no = gv(no);
   }
   return m;
 }
-export function messageByHttpStatus(status: number, r: ResourceService): string {
-  let msg = r.value('error_internal');
-  if (status === 401) {
-    msg = r.value('error_unauthorized');
-  } else if (status === 403) {
-    msg = r.value('error_forbidden');
-  } else if (status === 404) {
-    msg = r.value('error_not_found');
-  } else if (status === 410) {
-    msg = r.value('error_gone');
-  } else if (status === 503) {
-    msg = r.value('error_service_unavailable');
+export function messageByHttpStatus(status: number, gv: (key: string) => string): string {
+  const k = 'status_' + status;
+  let msg = gv(k);
+  if (!msg || msg.length === 0) {
+    msg = gv('error_internal');
   }
   return msg;
 }
@@ -80,37 +191,21 @@ export interface ErrorMessage {
   message?: string;
 }
 export interface UIService {
-  getValue(ctrl: any, locale?: Locale, currencyCode?: string): string|number|boolean;
-  decodeFromForm(form: any, locale: Locale, currencyCode: string): any;
+  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string|number|boolean;
+  decodeFromForm(form: HTMLFormElement, locale?: Locale, currencyCode?: string): any;
 
-  validateForm(form: any, locale: Locale, focusFirst?: boolean, scroll?: boolean): boolean;
-  removeFormError(form: any): void;
-  removeErrorMessage(ctrl: any): void;
-  showFormError(form: any, errors: ErrorMessage[], focusFirst?: boolean): ErrorMessage[];
+  validateForm(form: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean): boolean;
+  removeFormError(form: HTMLFormElement): void;
+  removeError(el: HTMLInputElement): void;
+  showFormError(form: HTMLFormElement, errors: ErrorMessage[], focusFirst?: boolean): ErrorMessage[];
   buildErrorMessage(errors: ErrorMessage[]): string;
 
-  initMaterial(form: any): void;
-}
-export interface AlertService {
-  confirm(msg: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void): void;
-  alertError(msg: string, header?: string, detail?: string, callback?: () => void): void;
+  registerEvents?(form: HTMLFormElement): void;
 }
 
-export enum Type {
-  ObjectId = 'ObjectId',
-  Date = 'date',
-  Boolean = 'boolean',
-
-  Number = 'number',
-  Integer = 'integer',
-  String = 'string',
-  Text = 'text',
-
-  Object = 'object',
-  Array = 'array',
-  Primitives =  'primitives',
-  Binary = 'binary'
-}
+export type DataType = 'ObjectId' | 'date' | 'datetime' | 'time'
+    | 'boolean' | 'number' | 'integer' | 'string' | 'text'
+    | 'object' | 'array' | 'primitives' | 'binary';
 export interface Metadata {
   name?: string;
   attributes: Attributes;
@@ -118,7 +213,7 @@ export interface Metadata {
 }
 export interface Attribute {
   name?: string;
-  type: Type;
+  type: DataType;
   key?: boolean;
   version?: boolean;
   typeof?: Metadata;
@@ -139,7 +234,7 @@ export function buildKeys(m: Metadata): string[] {
   return ps;
 }
 
-export function buildId<ID>(keys: string[], props: any): ID {
+export function buildId<ID>(props: any, keys?: string[]): ID {
   if (!props) {
     return null;
   }
@@ -234,7 +329,7 @@ export function formatCurrency(currency: string|number, locale?: Locale, currenc
 }
 */
 
-export function initForm(form: any, initMat?: (f: any) => void) {
+export function initForm(form: HTMLFormElement, initMat?: (f: HTMLFormElement) => void): HTMLFormElement {
   if (form) {
     setTimeout(() => {
       if (initMat) {
@@ -245,21 +340,37 @@ export function initForm(form: any, initMat?: (f: any) => void) {
   }
   return form;
 }
-export function error(err: any, r: ResourceService, alertError: (msg: string, header?: string, detail?: string, callback?: () => void) => void) {
-  const title = r.value('error');
-  let msg = r.value('error_internal');
+export function error(err: any, gv: (key: string) => string, ae: (msg: string, header?: string, detail?: string, callback?: () => void) => void) {
+  const title = gv('error');
+  let msg = gv('error_internal');
   if (!err) {
-    alertError(msg, title);
+    ae(msg, title);
     return;
   }
   const data = err && err.response ? err.response : err;
   if (data) {
     const status = data.status;
     if (status && !isNaN(status)) {
-      msg = messageByHttpStatus(status, r);
+      msg = messageByHttpStatus(status, gv);
     }
-    alertError(msg, title);
+    ae(msg, title);
   } else {
-    alertError(msg, title);
+    ae(msg, title);
   }
+}
+export function getModelName(form: HTMLFormElement): string {
+  if (form) {
+    const a = form.getAttribute('model-name');
+    if (a && a.length > 0) {
+      return a;
+    }
+    const b = form.name;
+    if (b) {
+      if (b.endsWith('Form')) {
+        return b.substr(0, b.length - 4);
+      }
+      return b;
+    }
+  }
+  return '';
 }

@@ -5,15 +5,15 @@ export function navigate(history: H.History, stateTo: string) {
   history.push(stateTo);
 }
 
-export function buildFromUrl(): any {
+export function buildFromUrl<S>(): S {
   return buildParameters(window.location.search);
 }
-export function buildParameters(url: string): any {
+export function buildParameters<T>(url: string): T {
   let urlSearch = url;
   const i = urlSearch.indexOf('?');
   if (i >= 0) {
     urlSearch = url.substr(i + 1);
   }
-  const parsed = qs.parse(urlSearch);
+  const parsed: any = qs.parse(urlSearch);
   return parsed;
 }

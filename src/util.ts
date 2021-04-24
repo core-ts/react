@@ -1,9 +1,9 @@
 import {Locale} from './core';
 
-const _r1 = / |,|\$|€|£|¥|'|٬|،| /g;
-const _r2 = / |\.|\$|€|£|¥|'|٬|،| /g;
+const r1 = / |,|\$|€|£|¥|'|٬|،| /g;
+const r2 = / |\.|\$|€|£|¥|'|٬|،| /g;
 
-export function valueOf(ctrl: any, locale?: Locale, eventType?: string): { mustChange: any, value?: any } {
+export function valueOf(ctrl: HTMLInputElement, locale?: Locale, eventType?: string): { mustChange: any, value?: any } {
   if (ctrl.type === 'checkbox') {
     const ctrlOnValue = ctrl.getAttribute('data-on-value');
     const ctrlOffValue = ctrl.getAttribute('data-off-value');
@@ -19,16 +19,18 @@ export function valueOf(ctrl: any, locale?: Locale, eventType?: string): { mustC
     if (datatype === 'number' || datatype === 'int') {
       let v;
       if (locale && locale.decimalSeparator !== '.') {
-        v = ctrl.value.replace(_r2, '');
+        v = ctrl.value.replace(r2, '');
         if (v.indexOf(locale.decimalSeparator) >= 0) {
           v = v.replace(locale.decimalSeparator, '.');
         }
       } else {
-        v = ctrl.value.replace(_r1, '');
+        v = ctrl.value.replace(r1, '');
       }
       return isNaN(v) ? { mustChange: false } : { mustChange: true, value: parseFloat(v) };
     } else if (datatype === 'currency' || datatype === 'string-currency') {
-      const res: any = getStringCurrency(ctrl.value, datatype, locale, ctrl.getAttribute('maxlength'), eventType === 'blur');
+      const ml = ctrl.getAttribute('maxlength');
+      const nm = (isNaN(ml as any) ? null : parseInt(ml, 10));
+      const res: any = getStringCurrency(ctrl.value, datatype, locale, nm, eventType === 'blur');
       return res;
     } else {
       return { mustChange: true, value: ctrl.value };
@@ -38,12 +40,12 @@ export function valueOf(ctrl: any, locale?: Locale, eventType?: string): { mustC
 
 function getStringCurrency(value: string, datatype: string, locale: Locale, maxLength?: number, isOnBlur?: boolean): { mustChange: any, value?: string } {
   if (locale && locale.decimalSeparator !== '.') {
-    value = value.replace(_r2, '');
+    value = value.replace(r2, '');
     if (value.indexOf(locale.decimalSeparator) >= 0) {
       value = value.replace(locale.decimalSeparator, '.');
     }
   } else {
-    value = value.replace(_r1, '');
+    value = value.replace(r1, '');
   }
   if (value === '') {
     return { mustChange: true, value: '' };
