@@ -1,11 +1,11 @@
 import {useEffect, useState} from 'react';
 import {clone, makeDiff} from 'reflectx';
-import {useBase} from './base';
 import {buildId, createEditStatus, EditPermission, EditStatusConfig, getModelName as getModelName2, initForm, LoadingService, Locale, message, messageByHttpStatus, Metadata, ModelProps, ResourceService, UIService} from './core';
 import {build, createModel as createModel2, EditParameter, GenericService, handleStatus, handleVersion, initPropertyNullInModel, ResultInfo} from './edit';
 import {focusFirstError, readOnly} from './formutil';
 import {DispatchWithCallback, useMergeState} from './merge';
 import {useRouter} from './router';
+import {useUpdate} from './update';
 
 function prepareData(data: any): void {
 }
@@ -33,12 +33,12 @@ export interface BaseEditComponentParam<T, ID> {
   createModel?: () => T;
   onSave?: (isBack?: boolean) => void;
   validate?: (obj: T, callback: (obj2?: T) => void) => void;
-  succeed?: (msg: string, isBack?: boolean, result?: ResultInfo<T>) => void;
+  succeed?: (obj: T, msg: string, version?: string, isBack?: boolean, result?: ResultInfo<T>) => void;
   fail?: (result: ResultInfo<T>) => void;
-  postSave?: (res: number|ResultInfo<T>, backOnSave?: boolean) => void;
+  postSave?: (obj: T, res: number|ResultInfo<T>, version?: string, backOnSave?: boolean) => void;
   handleDuplicateKey?: (result?: ResultInfo<T>) => void;
   load?: (i: ID, callback?: (m: T, showM: (m2: T) => void) => void) => void;
-  save?: (obj: T, diff?: T, isBack?: boolean) => void;
+  save?: (obj: T, diff?: T, version?: string, isBack?: boolean) => void;
 }
 export interface HookBaseEditParameter<T, ID, S> extends BaseEditComponentParam<T, ID> {
   refForm: any;
@@ -71,9 +71,9 @@ export const useBaseEdit = <T, ID, S>(
   p1: EditParameter,
   p2?: BaseEditComponentParam<T, ID>
   ) => {
-  return useBaseEditProps(null, refForm, initialState, service, p1, p2);
+  return useBaseEditWithProps(null, refForm, initialState, service, p1, p2);
 };
-export const useBaseEditProps = <T, ID, S, P extends ModelProps>(
+export const useBaseEditWithProps = <T, ID, S, P extends ModelProps>(
   props: P,
   refForm: any,
   initialState: S,
@@ -124,18 +124,18 @@ export const useBaseEditProps = <T, ID, S, P extends ModelProps>(
     p.readOnly = per.readOnly;
     p.deletable = per.deletable;
   }
-  return useBaseEditOneProps(p);
+  return useBaseEditOneWithProps(p);
 };
 export const useEdit = <T, ID, S, P extends ModelProps>(
   props: P,
   refForm: any,
   initialState: S,
   service: GenericService<T, ID, number|ResultInfo<T>>,
-  p1: EditParameter,
-  p2?: EditComponentParam<T, ID, S>,
+  p1: EditComponentParam<T, ID, S>,
+  p2: EditParameter,
   p3?: EditPermission
   ) => {
-  const p4: EditComponentParam<T, ID, S> = (p2 ? p2 : {} as any);
+  const p4: EditComponentParam<T, ID, S> = (p1 ? p1 : {} as any);
   const p: HookPropsEditParameter<T, ID, S, P> = {
     props,
     refForm,
@@ -143,14 +143,14 @@ export const useEdit = <T, ID, S, P extends ModelProps>(
     callback: p4.callback,
     initialState,
     service,
-    status: p1.status,
-    resourceService: p1.resource,
-    showMessage: p1.showMessage,
-    showError: p1.showError,
-    confirm: p1.confirm,
-    ui: p1.ui,
-    getLocale: p1.getLocale,
-    loading: p1.loading,
+    status: p2.status,
+    resourceService: p2.resource,
+    showMessage: p2.showMessage,
+    showError: p2.showError,
+    confirm: p2.confirm,
+    ui: p2.ui,
+    getLocale: p2.getLocale,
+    loading: p2.loading,
     backOnSuccess: p4.backOnSuccess,
     metadata: p4.metadata,
     keys: p4.keys,
@@ -173,7 +173,7 @@ export const useEdit = <T, ID, S, P extends ModelProps>(
     load: p4.load,
     save: p4.save
   };
-  const per: EditPermission = (p3 ? p3 : p2);
+  const per: EditPermission = (p3 ? p3 : p1);
   if (per) {
     p.addable = per.addable;
     p.readOnly = per.readOnly;
@@ -182,7 +182,7 @@ export const useEdit = <T, ID, S, P extends ModelProps>(
   return useEditOne(p);
 };
 export const useEditOne = <T, ID, S, P extends ModelProps>(p: HookPropsEditParameter<T, ID, S, P>) => {
-  const baseProps = useBaseEditOneProps(p);
+  const baseProps = useBaseEditOneWithProps(p);
   useEffect(() => {
     if (baseProps.refForm) {
       const registerEvents = (baseProps.ui ? baseProps.ui.registerEvents : null);
@@ -209,14 +209,14 @@ export const useEditOne = <T, ID, S, P extends ModelProps>(p: HookPropsEditParam
   }, []);
   return {...baseProps};
 };
-export const useBaseEditOneProps = <T, ID, S, P extends ModelProps>(p: HookPropsBaseEditParameter<T, ID, S, P>) => {
+export const useBaseEditOneWithProps = <T, ID, S, P extends ModelProps>(p: HookPropsBaseEditParameter<T, ID, S, P>) => {
   const {
     backOnSuccess = true,
     patchable = true,
     addable = true
   } = p;
   const {goBack} = useRouter();
-  const back = (event: any) => {
+  const back = (event?: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     if (event) {
       event.preventDefault();
     }
@@ -224,7 +224,7 @@ export const useBaseEditOneProps = <T, ID, S, P extends ModelProps>(p: HookProps
   };
 
   const [running, setRunning] = useState(undefined);
-  const baseProps = useBase<S>(p.initialState, p.getLocale);
+  const baseProps = useUpdate<S>(p.initialState, p.getLocale);
 
   const getModelName = (f?: HTMLFormElement) => {
     const metadata = (p.metadata ? p.metadata : p.service.metadata());
@@ -246,7 +246,7 @@ export const useBaseEditOneProps = <T, ID, S, P extends ModelProps>(p: HookProps
   };
 
   const { state, setState } = baseProps;
-  const [editState, setEditState] = useMergeState({
+  const [flag, setFlag] = useMergeState({
     newMode: false,
     setBack: false,
     addable,
@@ -266,7 +266,7 @@ export const useBaseEditOneProps = <T, ID, S, P extends ModelProps>(p: HookProps
   };
 
   const resetState = (newMode: boolean, model: T, originalModel: T) => {
-    setEditState({ newMode, originalModel });
+    setFlag({ newMode, originalModel });
     showModel(model);
   };
 
@@ -301,7 +301,7 @@ export const useBaseEditOneProps = <T, ID, S, P extends ModelProps>(p: HookProps
   };
   const createModel = (p.createModel ? p.createModel : _createModel);
 
-  const newOnClick = (event: any) => {
+  const newOnClick = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     event.preventDefault();
     const obj = createModel();
     resetState(true, obj, null);
@@ -313,11 +313,11 @@ export const useBaseEditOneProps = <T, ID, S, P extends ModelProps>(p: HookProps
   };
 
   const _onSave = (isBack?: boolean) => {
-    if (editState.newMode === true && editState.addable === false) {
+    if (flag.newMode === true && flag.addable === false) {
       const m = message(p.resourceService.value, 'error_permission_add', 'error_permission');
       p.showError(m.message, m.title);
       return;
-    } else if (editState.newMode === false && p.readOnly) {
+    } else if (flag.newMode === false && p.readOnly) {
       const msg = message(p.resourceService.value, 'error_permission_edit', 'error_permission');
       p.showError(msg.message, msg.title);
       return;
@@ -326,23 +326,23 @@ export const useBaseEditOneProps = <T, ID, S, P extends ModelProps>(p: HookProps
         return;
       }
       const obj = getModel();
-      if (editState.newMode) {
+      const metadata = (p.metadata ? p.metadata : p.service.metadata());
+      if ((!p.keys || !p.version) && p.service && p.service.metadata) {
+        const meta = build(metadata);
+        const keys = (p.keys ? p.keys : (meta ? meta.keys : null));
+        const version = (p.version ? p.version : (meta ? meta.version : null));
+        p.keys = keys;
+        p.version = version;
+      }
+      if (flag.newMode) {
         validate(obj, () => {
           const msg = message(p.resourceService.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
           p.confirm(msg.message, msg.title, () => {
-            save(obj, null, isBack);
+            save(obj, null, p.version, isBack);
           }, msg.no, msg.yes);
         });
       } else {
-        const metadata = (p.metadata ? p.metadata : p.service.metadata());
-        if ((!p.keys || !p.version) && p.service && p.service.metadata) {
-          const meta = build(metadata);
-          const keys = (p.keys ? p.keys : (meta ? meta.keys : null));
-          const version = (p.version ? p.version : (meta ? meta.version : null));
-          p.keys = keys;
-          p.version = version;
-        }
-        const diffObj = makeDiff(initPropertyNullInModel(editState.originalModel, metadata), obj, p.keys, p.version);
+        const diffObj = makeDiff(initPropertyNullInModel(flag.originalModel, metadata), obj, p.keys, p.version);
         const objKeys = Object.keys(diffObj);
         if (objKeys.length === 0) {
           p.showMessage(p.resourceService.value('msg_no_change'));
@@ -350,7 +350,7 @@ export const useBaseEditOneProps = <T, ID, S, P extends ModelProps>(p: HookProps
           validate(obj, () => {
             const msg = message(p.resourceService.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
             p.confirm(msg.message, msg.title, () => {
-              save(obj, diffObj, isBack);
+              save(obj, diffObj, p.version, isBack);
             }, msg.no, msg.yes);
           });
         }
@@ -359,7 +359,7 @@ export const useBaseEditOneProps = <T, ID, S, P extends ModelProps>(p: HookProps
   };
   const onSave = (p.onSave ? p.onSave : _onSave);
 
-  const saveOnClick = (event: any) => {
+  const saveOnClick = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     event.preventDefault();
     event.persist();
     onSave(backOnSuccess);
@@ -377,23 +377,17 @@ export const useBaseEditOneProps = <T, ID, S, P extends ModelProps>(p: HookProps
   };
   const validate = (p.validate ? p.validate : _validate);
 
-  const _succeed = (msg: string, isBack?: boolean, result?: ResultInfo<any>) => {
-    if (!p.version && p.service && p.service.metadata) {
-      const m = (p.metadata ? p.metadata : p.service.metadata());
-      const meta = build(m);
-      const version = (p.version ? p.version : (meta ? meta.version : null));
-      p.version = version;
-    }
+  const _succeed = (obj: T, msg: string, version?: string, isBack?: boolean, result?: ResultInfo<T>) => {
     if (result) {
       const model = result.value;
-      setEditState({ newMode: false });
-      if (model && editState.setBack === true) {
+      setFlag({ newMode: false });
+      if (model && flag.setBack === true) {
         resetState(false, model, clone(model));
       } else {
-        handleVersion(getModel(), p.version);
+        handleVersion(obj, version);
       }
     } else {
-      handleVersion(getModel(), p.version);
+      handleVersion(obj, version);
     }
     const isBackO = (isBack == null || isBack === undefined ? backOnSuccess : isBack);
     p.showMessage(msg);
@@ -403,7 +397,7 @@ export const useBaseEditOneProps = <T, ID, S, P extends ModelProps>(p: HookProps
   };
   const succeed = (p.succeed ? p.succeed : _succeed);
 
-  const _fail = (result: ResultInfo<any>) => {
+  const _fail = (result: ResultInfo<T>) => {
     const errors = result.errors;
     const f = p.refForm.current;
     const unmappedErrors = p.ui.showFormError(f, errors);
@@ -424,18 +418,18 @@ export const useBaseEditOneProps = <T, ID, S, P extends ModelProps>(p: HookProps
   };
   const fail = (p.fail ? p.fail : _fail);
 
-  const _postSave = (res: number | ResultInfo<any>, backOnSave?: boolean) => {
+  const _postSave = (obj: T, res: number | ResultInfo<T>, version?: string, backOnSave?: boolean) => {
     setRunning(false);
     if (p.loading) {
       p.loading.hideLoading();
     }
     const x: any = res;
     const successMsg = p.resourceService.value('msg_save_success');
-    const newMod = editState.newMode;
+    const newMod = flag.newMode;
     const st = createEditStatus(p.status);
     if (!isNaN(x)) {
       if (x === st.Success) {
-        succeed(successMsg, backOnSave);
+        succeed(obj, successMsg, version, backOnSave);
       } else {
         if (newMod && x === st.DuplicateKey) {
           handleDuplicateKey();
@@ -448,7 +442,7 @@ export const useBaseEditOneProps = <T, ID, S, P extends ModelProps>(p: HookProps
     } else {
       const result: ResultInfo<any> = x;
       if (result.status === st.Success) {
-        succeed(successMsg, backOnSave, result);
+        succeed(obj, successMsg, version, backOnSave, result);
         p.showMessage(successMsg);
       } else if (result.errors && result.errors.length > 0) {
         fail(result);
@@ -469,21 +463,21 @@ export const useBaseEditOneProps = <T, ID, S, P extends ModelProps>(p: HookProps
   };
   const handleDuplicateKey = (p.handleDuplicateKey ? p.handleDuplicateKey : _handleDuplicateKey);
 
-  const _save = async (obj, body?, isBack?: boolean) => {
+  const _save = async (obj: T, body?: T, version?: string, isBack?: boolean) => {
     setRunning(true);
     p.loading.showLoading();
     const isBackO = (isBack == null || isBack === undefined ? backOnSuccess : isBack);
-    if (editState.newMode === false) {
+    if (flag.newMode === false) {
       if (patchable === true && body && Object.keys(body).length > 0) {
         const result = await p.service.patch(body);
-        postSave(result, isBackO);
+        postSave(obj, result, version, isBackO);
       } else {
         const result = await p.service.update(obj);
-        postSave(result, isBackO);
+        postSave(obj, result, version, isBackO);
       }
     } else {
       const result = await p.service.insert(obj);
-      postSave(result, isBackO);
+      postSave(obj, result, version, isBackO);
     }
   };
   const save = (p.save ? p.save : _save);
@@ -496,7 +490,7 @@ export const useBaseEditOneProps = <T, ID, S, P extends ModelProps>(p: HookProps
         if (!obj) {
           handleNotFound(p.refForm.current);
         } else {
-          setEditState({ newMode: false, originalModel: clone(obj) });
+          setFlag({ newMode: false, originalModel: clone(obj) });
           if (callback) {
             callback(obj, showModel);
           } else {
@@ -527,7 +521,7 @@ export const useBaseEditOneProps = <T, ID, S, P extends ModelProps>(p: HookProps
       }
     } else {
       const obj = createModel();
-      setEditState({ newMode: true, originalModel: null });
+      setFlag({ newMode: true, originalModel: null });
       if (callback) {
         callback(obj, showModel);
       } else {
@@ -543,7 +537,7 @@ export const useBaseEditOneProps = <T, ID, S, P extends ModelProps>(p: HookProps
     refForm: p.refForm,
     ui: p.ui,
     resource: p.resourceService.resource(),
-    editState,
+    flag,
     running,
     setRunning,
     updateDateState,

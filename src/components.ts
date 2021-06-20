@@ -342,11 +342,11 @@ export class BaseSearchComponent<T, S extends SearchModel, P extends ModelHistor
   // locationSearch: string;
   // _currentSortField: string;
 
-  viewable = true;
-  addable = true;
-  editable = true;
-  approvable = true;
-  deletable = true;
+  viewable?: boolean = true;
+  addable?: boolean = true;
+  editable?: boolean = true;
+  approvable?: boolean;
+  deletable?: boolean;
 
   protected getModelName(): string {
     return 'model';
@@ -617,16 +617,15 @@ export class SearchComponent<T, S extends SearchModel, P extends ModelHistoryPro
   }
   async call(s: S) {
     try {
-      const ctx: any = {};
       this.running = true;
       if (this.loading) {
         this.loading.showLoading();
       }
       if (this.search) {
-        const sr = await this.search(s, ctx);
+        const sr = await this.search(s);
         this.showResults(s, sr);
       } else {
-        const sr = await this.service.search(s, ctx);
+        const sr = await this.service.search(s);
         this.showResults(s, sr);
       }
     } catch (err) {
@@ -696,8 +695,9 @@ export abstract class BaseEditComponent<T, P extends ModelHistoryProps, S> exten
   protected patchable = true;
   protected orginalModel: T;
 
-  protected addable = true;
-  protected readOnly = false;
+  addable?: boolean = true;
+  readOnly?: boolean;
+  deletable?: boolean;
 
   insertSuccessMsg: string;
   updateSuccessMsg: string;

@@ -8,7 +8,7 @@ export * from './components';
 export * from './diff';
 export * from './router';
 export * from './merge';
-export * from './base';
+export * from './update';
 export * from './useView';
 export * from './useEdit';
 export * from './useSearch';

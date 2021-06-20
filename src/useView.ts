@@ -2,7 +2,7 @@ import {useEffect, useState} from 'react';
 import {buildId, getModelName as getModelName2, HistoryProps, initForm, LoadingService, Locale, message, messageByHttpStatus, Metadata, ResourceService, ViewParameter, ViewService} from './core';
 import {readOnly} from './formutil';
 import {DispatchWithCallback, useMergeState} from './merge';
-import { useRouter } from './router';
+import {useRouter} from './router';
 
 export interface BaseViewComponentParam<T, ID> {
   metadata?: Metadata;
