@@ -1,4 +1,4 @@
-import {Attribute, EditStatusConfig, ErrorMessage, LoadingService, Locale, Metadata, resource, ResourceService, UIService, ViewService} from './core';
+import {Attribute, Attributes, EditStatusConfig, ErrorMessage, LoadingService, Locale, resource, ResourceService, UIService, ViewService} from './core';
 
 export interface ResultInfo<T> {
   status: number|string;
@@ -26,31 +26,36 @@ export interface MetaModel {
   keys?: string[];
   version?: string;
 }
-export function build(model: Metadata): MetaModel {
-  if (!model) {
+export function build(attributes: Attributes, name?: string): MetaModel {
+  if (!attributes) {
     return null;
   }
-  if (resource.cache) {
-    let meta: MetaModel = resource._cache[model.name];
+  if (resource.cache && name && name.length > 0) {
+    let meta: MetaModel = resource._cache[name];
     if (!meta) {
-      meta = buildMetaModel(model);
-      resource._cache[model.name] = meta;
+      meta = buildMetaModel(attributes);
+      resource._cache[name] = meta;
     }
     return meta;
   } else {
-    return buildMetaModel(model);
+    return buildMetaModel(attributes);
   }
 }
 
-function buildMetaModel(model: Metadata): MetaModel {
+function buildMetaModel(attributes: Attributes): MetaModel {
+  if (!attributes) {
+    return {};
+  }
+  /*
   if (model && !model.source) {
     model.source = model.name;
   }
+  */
   const md: MetaModel = {};
   const pks: string[] = new Array<string>();
-  const keys: string[] = Object.keys(model.attributes);
+  const keys: string[] = Object.keys(attributes);
   for (const key of keys) {
-    const attr: Attribute = model.attributes[key];
+    const attr: Attribute = attributes[key];
     if (attr) {
       if (attr.version) {
         md.version = key;
@@ -64,14 +69,14 @@ function buildMetaModel(model: Metadata): MetaModel {
   return md;
 }
 
-export function createModel<T>(model?: Metadata): T {
+export function createModel<T>(attributes?: Attributes): T {
   const obj: any = {};
-  if (!model) {
+  if (!attributes) {
     return obj;
   }
-  const attrs = Object.keys(model.attributes);
+  const attrs = Object.keys(attributes);
   for (const k of attrs) {
-    const attr = model.attributes[k];
+    const attr = attributes[k];
     switch (attr.type) {
       case 'string':
       case 'text':
@@ -110,7 +115,7 @@ export function createModel<T>(model?: Metadata): T {
   return obj;
 }
 
-export function initPropertyNullInModel<T>(obj: T, m: Metadata): T {
+export function initPropertyNullInModel<T>(obj: T, m: Attributes): T {
   if (!m) {
     const x: any = {};
     return x;

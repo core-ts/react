@@ -77,7 +77,7 @@ export function createDiffStatus(status?: DiffStatusConfig): DiffStatusConfig {
 }
 
 export interface SearchModel {
-  keyword?: string;
+  q?: string;
   page?: number;
   limit?: number;
   firstLimit?: number;
@@ -86,17 +86,18 @@ export interface SearchModel {
 }
 export interface SearchResult<T> {
   total?: number;
-  results: T[];
+  list: T[];
+  nextPageToken?: string;
   last?: boolean;
 }
 export interface SearchState<T, S extends SearchModel> {
   model?: S;
-  keyword?: string;
+  q?: string;
   list?: T[];
 }
 export interface SearchService<T, S extends SearchModel> {
-  search(s: S, ctx?: any): Promise<SearchResult<T>>;
   keys?(): string[];
+  search(s: S, limit?: number, offset?: number|string, fields?: string[]): Promise<SearchResult<T>>;
 }
 export interface ModelHistoryProps extends HistoryProps, ModelProps {
 
@@ -108,7 +109,7 @@ export interface ViewParameter {
   loading?: LoadingService;
 }
 export interface ViewService<T, ID> {
-  metadata?(): Metadata;
+  metadata?(): Attributes;
   keys?(): string[];
   load(id: ID, ctx?: any): Promise<T>;
 }
@@ -206,27 +207,32 @@ export interface UIService {
 export type DataType = 'ObjectId' | 'date' | 'datetime' | 'time'
     | 'boolean' | 'number' | 'integer' | 'string' | 'text'
     | 'object' | 'array' | 'primitives' | 'binary';
+/*
 export interface Metadata {
   name?: string;
   attributes: Attributes;
   source?: string;
 }
+*/
 export interface Attribute {
   name?: string;
-  type: DataType;
+  type?: DataType;
   key?: boolean;
   version?: boolean;
-  typeof?: Metadata;
+  typeof?: Attributes;
 }
 export interface Attributes {
   [key: string]: Attribute;
 }
 
-export function buildKeys(m: Metadata): string[] {
-  const ks = Object.keys(m.attributes);
+export function buildKeys(attributes: Attributes): string[] {
+  if (!attributes) {
+    return [];
+  }
+  const ks = Object.keys(attributes);
   const ps = [];
   for (const k of ks) {
-    const attr: Attribute = m.attributes[k];
+    const attr: Attribute = attributes[k];
     if (attr.key === true) {
       ps.push(k);
     }

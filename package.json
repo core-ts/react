@@ -1,6 +1,6 @@
 {
   "name": "react-onex",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "react",
   "main": "./lib/index.js",
   "types": "./src/index.ts",
@@ -15,7 +15,7 @@
     "react": "^16.8.0",
     "react-router-dom": "^5.2.0",
     "reflectx": "^0.0.9",
-    "search-utilities": "^0.0.9",
+    "search-utilities": "^0.0.12",
     "tslint": "5.10.0",
     "typescript": "^3.3.3333"
   },

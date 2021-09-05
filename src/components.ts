@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {clone, makeDiff} from 'reflectx';
-import {addParametersIntoUrl, append, buildSearchMessage, changePage, changePageSize, formatResultsByComponent, getDisplayFieldsFromForm, getModel, handleSortEvent, initSearchable, mergeSearchModel as mergeSearchModel2, more, reset, Searchable, showResults as showResults2, validate} from 'search-utilities';
-import {buildId, EditStatusConfig, error, getCurrencyCode, getModelName as getModelName2, HistoryProps, initForm, LoadingService, Locale, message, messageByHttpStatus, Metadata, ModelHistoryProps, ModelProps, removePhoneFormat, ResourceService, SearchModel, SearchParameter, SearchResult, SearchService, SearchState, StringMap, UIService, ViewParameter, ViewService} from './core';
+import {addParametersIntoUrl, append, buildSearchMessage, changePage, changePageSize, formatResultsByComponent, getDisplayFieldsFromForm, getModel, handleAppend, handleSortEvent, initSearchable, mergeSearchModel as mergeSearchModel2, more, reset, Searchable, showPaging, validate} from 'search-utilities';
+import {Attributes, buildId, EditStatusConfig, error, getCurrencyCode, getModelName as getModelName2, HistoryProps, initForm, LoadingService, Locale, message, messageByHttpStatus, ModelHistoryProps, ModelProps, removePhoneFormat, ResourceService, SearchModel, SearchParameter, SearchResult, SearchService, SearchState, StringMap, UIService, ViewParameter, ViewService} from './core';
 import {build, createModel as createModel2, EditParameter, GenericService, handleStatus, handleVersion, initPropertyNullInModel, ResultInfo} from './edit';
 import {focusFirstError, readOnly} from './formutil';
 import {getAutoSearch, getConfirmFunc, getEditStatusFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService} from './input';
@@ -34,13 +34,14 @@ export class ViewComponent<T, ID, P extends HistoryProps, S> extends React.Compo
   constructor(props: P, sv: ((id: ID, ctx?: any) => Promise<T>)|ViewService<T, ID>,
       param: ResourceService|ViewParameter,
       showError?: (msg: string, title?: string, detail?: string, callback?: () => void) => void,
-      getLocale?: (profile?: string) => Locale,
-      loading?: LoadingService) {
-    super(props, getLocaleFunc(param, getLocale));
+      loading?: LoadingService,
+      getLocale?: (profile?: string) => Locale) {
+    super(props);
     this.resourceService = getResource(param);
     this.resource = this.resourceService.resource();
     this.showError = getErrorFunc(param, showError);
     this.loading = getLoadingFunc(param, loading);
+    this.getLocale = getLocaleFunc(param, getLocale);
     if (sv) {
       if (typeof sv === 'function') {
         this.loadData = sv;
@@ -63,17 +64,19 @@ export class ViewComponent<T, ID, P extends HistoryProps, S> extends React.Compo
     this.showModel = this.showModel.bind(this);
     this.ref = React.createRef();
   }
+  protected name?: string;
   protected running: boolean;
   protected resourceService: ResourceService;
   protected resource: StringMap;
   protected loading?: LoadingService;
   protected showError: (msg: string, title?: string, detail?: string, callback?: () => void) => void;
+  protected getLocale?: (profile?: string) => Locale;
   protected loadData: (id: ID, ctx?: any) => Promise<T>;
   protected service: ViewService<T, ID>;
   protected form: HTMLFormElement;
   protected ref: any;
   protected keys?: string[];
-  protected metadata?: Metadata;
+  protected metadata?: Attributes;
 
   protected back(event: any) {
     if (event) {
@@ -82,8 +85,8 @@ export class ViewComponent<T, ID, P extends HistoryProps, S> extends React.Compo
     this.props.history.goBack();
   }
   protected getModelName(): string {
-    if (this.metadata) {
-      return this.metadata.name;
+    if (this.name && this.name.length > 0) {
+      return this.name;
     }
     const n = getModelName2(this.form);
     if (!n || n.length === 0) {
@@ -311,6 +314,7 @@ export class BaseSearchComponent<T, S extends SearchModel, P extends ModelHistor
   initPageSize = 20;
   pageSize = 20;
   pageIndex = 1;
+  nextPageToken?: string;
   itemTotal = 0;
   pageTotal = 0;
   showPaging: boolean;
@@ -416,11 +420,11 @@ export class BaseSearchComponent<T, S extends SearchModel, P extends ModelHistor
   protected clearKeyword(): void {
     const m = this.state.model;
     if (m) {
-      m.keyword = '';
+      m.q = '';
       this.setState({model: m});
     } else {
       this.setState({
-        keyword: ''
+        q: ''
       });
     }
   }
@@ -481,24 +485,34 @@ export class BaseSearchComponent<T, S extends SearchModel, P extends ModelHistor
   }
   showResults(s: S, sr: SearchResult<T>) {
     const com = this;
-    const results = sr.results;
+    const results = sr.list;
     if (results && results.length > 0) {
       const lc = this.getLocale();
       formatResultsByComponent(results, com, lc);
     }
     const am = com.appendMode;
-    showResults2(s, sr, com);
-    if (!am) {
-      com.setList(results);
-      com.tmpPageIndex = s.page;
-      const m1 = buildSearchMessage(s, sr, this.resourceService);
-      this.showMessage(m1);
-    } else {
+    com.pageIndex = (s.page && s.page >= 1 ? s.page : 1);
+    if (sr.total) {
+      com.itemTotal = sr.total;
+    }
+    if (am) {
+      let limit = s.limit;
+      if (s.page <= 1 && s.firstLimit && s.firstLimit > 0) {
+        limit = s.firstLimit;
+      }
+      com.nextPageToken = sr.nextPageToken;
+      handleAppend(com, limit, sr.list, sr.nextPageToken);
       if (com.append && s.page > 1) {
         com.appendList(results);
       } else {
         com.setList(results);
       }
+    } else {
+      showPaging(com, s.limit, sr.list, sr.total);
+      com.setList(results);
+      com.tmpPageIndex = s.page;
+      const m1 = buildSearchMessage(this.resourceService, s.page, s.limit, sr.list, sr.total);
+      this.showMessage(m1);
     }
     com.running = false;
     if (this.loading) {
@@ -598,7 +612,7 @@ export class SearchComponent<T, S extends SearchModel, P extends ModelHistoryPro
     this.ref = React.createRef();
   }
   protected showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
-  protected search?: (s: S, ctx?: any) => Promise<SearchResult<T>>;
+  protected search?: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>;
   protected service: SearchService<T, S>;
   protected ref: any;
   protected autoSearch: boolean;
@@ -615,17 +629,35 @@ export class SearchComponent<T, S extends SearchModel, P extends ModelHistoryPro
     const s: any = {};
     return s;
   }
-  async call(s: S) {
+  async call(se: S) {
     try {
       this.running = true;
+      const s = clone(se);
+      let page = this.pageIndex;
+      if (!page || page < 1) {
+        page = 1;
+      }
+      let offset: number;
+      if (se.firstLimit && se.firstLimit > 0) {
+        offset = se.limit * (page - 2) + se.firstLimit;
+      } else {
+        offset = se.limit * (page - 1);
+      }
+      const limit = (page <= 1 && se.firstLimit && se.firstLimit > 0 ? se.firstLimit : se.limit);
+      const next = (this.nextPageToken && this.nextPageToken.length > 0 ? this.nextPageToken : offset);
+      const fields = se.fields;
+      delete se['page'];
+      delete se['fields'];
+      delete se['limit'];
+      delete se['firstLimit'];
       if (this.loading) {
         this.loading.showLoading();
       }
       if (this.search) {
-        const sr = await this.search(s);
+        const sr = await this.search(s, limit, next, fields);
         this.showResults(s, sr);
       } else {
-        const sr = await this.service.search(s);
+        const sr = await this.service.search(s, limit, next, fields);
         this.showResults(s, sr);
       }
     } catch (err) {
@@ -685,9 +717,10 @@ export abstract class BaseEditComponent<T, P extends ModelHistoryProps, S> exten
     this.postSave = this.postSave.bind(this);
     this.handleDuplicateKey = this.handleDuplicateKey.bind(this);
   }
+  protected name?: string;
   protected backOnSuccess = true;
   protected resource: StringMap;
-  protected metadata?: Metadata;
+  protected metadata?: Attributes;
   protected keys?: string[];
   protected version?: string;
   protected newMode: boolean;
@@ -720,8 +753,8 @@ export abstract class BaseEditComponent<T, P extends ModelHistoryProps, S> exten
     this.showError(msg.message, msg.title);
   }
   protected getModelName(f?: HTMLFormElement): string {
-    if (this.metadata) {
-      return this.metadata.name;
+    if (this.name && this.name.length > 0) {
+      return this.name;
     }
     return super.getModelName(f);
   }

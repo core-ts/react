@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import {clone, makeDiff} from 'reflectx';
-import {buildId, createEditStatus, EditPermission, EditStatusConfig, getModelName as getModelName2, initForm, LoadingService, Locale, message, messageByHttpStatus, Metadata, ModelProps, ResourceService, UIService} from './core';
+import {Attributes, buildId, createEditStatus, EditPermission, EditStatusConfig, getModelName as getModelName2, initForm, LoadingService, Locale, message, messageByHttpStatus, ModelProps, ResourceService, UIService} from './core';
 import {build, createModel as createModel2, EditParameter, GenericService, handleStatus, handleVersion, initPropertyNullInModel, ResultInfo} from './edit';
 import {focusFirstError, readOnly} from './formutil';
 import {DispatchWithCallback, useMergeState} from './merge';
@@ -13,7 +13,8 @@ function prepareData(data: any): void {
 export interface BaseEditComponentParam<T, ID> {
   status?: EditStatusConfig;
   backOnSuccess?: boolean;
-  metadata?: Metadata;
+  name?: string;
+  metadata?: Attributes;
   keys?: string[];
   version?: string;
   setBack?: boolean;
@@ -227,9 +228,8 @@ export const useBaseEditOneWithProps = <T, ID, S, P extends ModelProps>(p: HookP
   const baseProps = useUpdate<S>(p.initialState, p.getLocale);
 
   const getModelName = (f?: HTMLFormElement) => {
-    const metadata = (p.metadata ? p.metadata : p.service.metadata());
-    if (metadata) {
-      return metadata.name;
+    if (p.name && p.name.length > 0) {
+      return p.name;
     }
     return getModelName2(f);
   };
@@ -509,7 +509,7 @@ export const useBaseEditOneWithProps = <T, ID, S, P extends ModelProps>(p: HookP
             msg = messageByHttpStatus(data.status, r.value);
           }
           if (data && (data.status === 401 || data.status === 403)) {
-            readOnly(this.form);
+            readOnly(p.refForm.current);
           }
           p.showError(msg, title);
         }

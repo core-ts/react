@@ -1,11 +1,11 @@
 import {useEffect, useState} from 'react';
-import {buildId, getModelName as getModelName2, HistoryProps, initForm, LoadingService, Locale, message, messageByHttpStatus, Metadata, ResourceService, ViewParameter, ViewService} from './core';
+import {buildId, getModelName as getModelName2, HistoryProps, initForm, LoadingService, Locale, message, messageByHttpStatus, ResourceService, ViewParameter, ViewService} from './core';
 import {readOnly} from './formutil';
 import {DispatchWithCallback, useMergeState} from './merge';
 import {useRouter} from './router';
 
 export interface BaseViewComponentParam<T, ID> {
-  metadata?: Metadata;
+  name?: string;
   handleNotFound?: (form?: HTMLFormElement) => void;
   getModelName?: (f?: HTMLFormElement) => string;
   showModel?: (m: T) => void;
@@ -51,13 +51,12 @@ export const useBaseView = <T, ID, S, P extends HistoryProps>(
     showError: p1.showError,
     getLocale: p1.getLocale,
     loading: p1.loading,
-    metadata: p4.metadata,
+    name: p4.name,
     handleNotFound: p4.handleNotFound,
     getModelName: p4.getModelName,
     showModel: p4.showModel,
     load: p4.load
   };
-
   return useBaseViewOne(p6);
 };
 export const useView = <T, ID, S, P extends HistoryProps>(
@@ -81,7 +80,7 @@ export const useView = <T, ID, S, P extends HistoryProps>(
     showError: p1.showError,
     getLocale: p1.getLocale,
     loading: p1.loading,
-    metadata: p4.metadata,
+    name: p4.name,
     handleNotFound: p4.handleNotFound,
     getModelName: p4.getModelName,
     showModel: p4.showModel,
@@ -118,20 +117,14 @@ export const useBaseViewOne = <T, ID, S, P extends HistoryProps>(p: HookPropsBas
   };
 
   const getModelName = (f?: HTMLFormElement) => {
-    if (p.metadata) {
-      return p.metadata.name;
-    }
-    if (typeof p.service !== 'function' && p.service.metadata) {
-      const metadata = p.service.metadata();
-      if (metadata) {
-        return metadata.name;
-      }
+    if (p.name) {
+      return p.name;
     }
     return getModelName2(f);
   };
 
   const showModel = (model: T) => {
-    const n = getModelName(p.refForm.current);
+    const n: string = getModelName(p.refForm.current);
     const objSet: any = {};
     objSet[n] = model;
     setState(objSet);

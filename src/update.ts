@@ -2,7 +2,7 @@ import {getModelName as getModelName2, Locale, ModelProps, removePhoneFormat} fr
 import {useMergeState} from './merge';
 import {buildFlatState, buildState, handleEvent, handleProps, localeOf} from './state';
 
-export const useBase = <T>(initialState: T, getLocale?: () => Locale, removeErr?: (ctrl: HTMLInputElement) => void, getName?: (f?: HTMLFormElement) => string) => {
+export const useUpdate = <T>(initialState: T, getLocale?: () => Locale, removeErr?: (ctrl: HTMLInputElement) => void, getName?: (f?: HTMLFormElement) => string) => {
   const [state, setState] = useMergeState<T>(initialState);
 
   const updatePhoneState = (event: any) => {
@@ -76,11 +76,11 @@ export const useBase = <T>(initialState: T, getLocale?: () => Locale, removeErr?
 };
 function prepareData(data: any): void {
 }
-export const useBaseProps = <T, P extends ModelProps>(props: P, initialState: T, gl?: () => Locale, removeErr?: (ctrl: HTMLInputElement) => void, getName?: (f?: HTMLFormElement) => string, prepareCustomData?: (d: any) => void) => {
+export const useUpdateWithProps = <T, P extends ModelProps>(props: P, initialState: T, gl?: () => Locale, removeErr?: (ctrl: HTMLInputElement) => void, getName?: (f?: HTMLFormElement) => string, prepareCustomData?: (d: any) => void) => {
   if (!prepareCustomData) {
     prepareCustomData = prepareData;
   }
-  const baseProps = useBase<T>(initialState, gl, removeErr, getName);
+  const baseProps = useUpdate<T>(initialState, gl, removeErr, getName);
   const {getModelName, updatePhoneState, updateFlatState, getLocale, state, setState} = baseProps;
 
   const updateState = (e: any, callback?: () => void, lc?: Locale) => {

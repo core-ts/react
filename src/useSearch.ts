@@ -1,20 +1,40 @@
 import {useEffect, useState} from 'react';
 import {useHistory, useRouteMatch} from 'react-router-dom';
-import {addParametersIntoUrl, append, buildSearchMessage, formatResults, getDisplayFieldsFromForm, getModel, handleSort, initSearchable, mergeSearchModel as mergeSearchModel2, Pagination, removeSortStatus, SearchModel, SearchResult, showResults as showResults2, Sortable, validate} from 'search-utilities';
-import {error, initForm, LoadingService, Locale, ModelProps, ResourceService, SearchParameter, SearchPermission, SearchService, UIService} from './core';
+import {clone} from 'reflectx';
+import {addParametersIntoUrl, append, buildSearchMessage, formatResults, getDisplayFieldsFromForm, getModel, handleAppend, handleSort, initSearchable, mergeSearchModel as mergeSearchModel2, Pagination, removeSortStatus, SearchModel, showPaging, Sortable, validate} from 'search-utilities';
+import {error, initForm, LoadingService, Locale, ModelProps, ResourceService, SearchParameter, SearchPermission, SearchResult, SearchService, UIService} from './core';
 import {DispatchWithCallback, useMergeState} from './merge';
 import {buildFromUrl} from './route';
 import {useUpdate, useUpdateWithProps} from './update';
 
 export interface Searchable<T> extends Pagination, Sortable {
-  excluding?: any;
+  nextPageToken?: string;
+  excluding?: string[]|number[];
   list?: T[];
 }
 function prepareData(data: any): void {
 }
-const callSearch = async <T, S extends SearchModel>(s: S, search3: (s: S, ctx?: any) => Promise<SearchResult<T>>, showResults3: (s: S, sr: SearchResult<T>, lc: Locale) => void, searchError3: (err: any) => void, lc: Locale) => {
+export const callSearch = async <T, S extends SearchModel>(se: S, search3: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>, showResults3: (s: S, sr: SearchResult<T>, lc: Locale) => void, searchError3: (err: any) => void, lc: Locale, nextPageToken?: string) => {
   try {
-    const sr = await search3(s);
+    const s = clone(se);
+    let page = se.page;
+    if (!page || page < 1) {
+      page = 1;
+    }
+    let offset: number;
+    if (se.firstLimit && se.firstLimit > 0) {
+      offset = se.limit * (page - 2) + se.firstLimit;
+    } else {
+      offset = se.limit * (page - 1);
+    }
+    const limit = (page <= 1 && se.firstLimit && se.firstLimit > 0 ? se.firstLimit : se.limit);
+    const next = (nextPageToken && nextPageToken.length > 0 ? nextPageToken : offset);
+    const fields = se.fields;
+    delete se['page'];
+    delete se['fields'];
+    delete se['limit'];
+    delete se['firstLimit'];
+    const sr = await search3(s, limit, next, fields);
     showResults3(s, sr, lc);
   } catch (err) {
     searchError3(err);
@@ -71,7 +91,7 @@ export interface SearchComponentParam<T, M extends SearchModel> {
 export interface HookBaseSearchParameter<T, S extends SearchModel, ST extends SearchComponentState<T, S>> extends SearchComponentParam<T, S> {
   refForm: any;
   initialState: ST;
-  search: ((s: S, ctx?: any) => Promise<SearchResult<T>>) | SearchService<T, S>;
+  search: ((s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>;
   resource: ResourceService;
   showMessage: (msg: string) => void;
   showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
@@ -83,6 +103,7 @@ export interface HookPropsBaseSearchParameter<T, S extends SearchModel, ST, P ex
   prepareCustomData?: (data: any) => void;
 }
 export interface SearchComponentState<T, S> extends Pagination, Sortable {
+  nextPageToken?: string;
   keys?: string[];
   model?: S;
   list?: T[];
@@ -179,7 +200,7 @@ function mergeParam<T, S extends SearchModel>(p: SearchComponentParam<T, S>, ui?
 export const useSearch = <T, S extends SearchModel, ST extends SearchComponentState<T, S>>(
   refForm: any,
   initialState: ST,
-  search: ((s: S, ctx?: any) => Promise<SearchResult<T>>) | SearchService<T, S>,
+  search: ((s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
   p1: InitSearchComponentParam<T, S, ST>,
   p2: SearchParameter,
   p3?: SearchPermission,
@@ -244,7 +265,7 @@ export const useBaseSearchWithProps = <T, S extends SearchModel, ST, P extends M
   props: P,
   refForm: any,
   initialState: ST,
-  search: ((s: S, ctx?: any) => Promise<SearchResult<T>>) | SearchService<T, S>,
+  search: ((s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
   p1: SearchComponentParam<T, S>,
   p2: SearchParameter,
   p3?: SearchPermission
@@ -361,9 +382,9 @@ export const useBaseSearchWithProps = <T, S extends SearchModel, ST, P extends M
       }
       const lc = p2.getLocale();
       if (typeof search === 'function') {
-        callSearch<T, S>(s, search, showResults, searchError, lc);
+        callSearch<T, S>(s, search, showResults, searchError, lc, se.nextPageToken);
       } else {
-        callSearch<T, S>(s, search.search, showResults, searchError, lc);
+        callSearch<T, S>(s, search.search, showResults, searchError, lc, se.nextPageToken);
       }
     });
   };
@@ -455,24 +476,30 @@ export const useBaseSearchWithProps = <T, S extends SearchModel, ST, P extends M
   const appendList = (p1.appendList ? p1.appendList : appendListOfState);
   const setList = (p1.setList ? p1.setList : setListOfState);
   const _showResults = (s: S, sr: SearchResult<T>, lc: Locale) => {
-    const results = sr.results;
+    const results = sr.list;
     if (results && results.length > 0) {
       formatResults(results, component.pageIndex, component.pageSize, component.initPageSize, p1.sequenceNo, p1.format, lc);
     }
     const am = component.appendMode;
-    showResults2(s, sr, component);
-    setComponent({ itemTotal: sr.total });
-    if (!am) {
-      setList(results, setState);
-      setComponent({ tmpPageIndex: s.page });
-      const m1 = buildSearchMessage(s, sr, p2.resource);
-      p2.showMessage(m1);
-    } else {
+    const pi = (s.page && s.page >= 1 ? s.page : 1);
+    setComponent({ itemTotal: sr.total, pageIndex: pi, nextPageToken: sr.nextPageToken });
+    if (am) {
+      let limit = s.limit;
+      if (s.page <= 1 && s.firstLimit && s.firstLimit > 0) {
+        limit = s.firstLimit;
+      }
+      handleAppend(component, limit, sr.list, sr.nextPageToken);
       if (component.append && s.page > 1) {
         appendList(results, component.list, setState);
       } else {
         setList(results, setState);
       }
+    } else {
+      showPaging(component, s.limit, sr.list, sr.total);
+      setList(results, setState);
+      setComponent({ tmpPageIndex: s.page });
+      const m1 = buildSearchMessage(p2.resource, s.page, s.limit, sr.list, sr.total);
+      p2.showMessage(m1);
     }
     setRunning(false);
     if (p1.hideLoading) {
