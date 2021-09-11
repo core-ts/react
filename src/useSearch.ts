@@ -58,7 +58,7 @@ export interface HookPropsSearchParameter<T, S extends SearchModel, ST, P extend
 export interface SearchComponentParam<T, M extends SearchModel> {
   keys?: string[];
   sequenceNo?: string;
-  modelName?: string;
+  name?: string;
   appendMode?: boolean;
   pageSizes?: number[];
   displayFields?: string[];
@@ -274,7 +274,11 @@ export const useBaseSearchWithProps = <T, S extends SearchModel, ST, P extends M
   const [running, setRunning] = useState(undefined);
 
   const _getModelName = (): string => {
-    return 'model';
+    if (p1.name && p1.name.length > 0) {
+      return p1.name;
+    } else {
+      return 'model';
+    }
   };
   const getModelName = (p1.getModelName ? p1.getModelName : _getModelName);
 

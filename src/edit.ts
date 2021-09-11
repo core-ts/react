@@ -130,9 +130,9 @@ export function initPropertyNullInModel<T>(obj: T, m: Attributes): T {
 }
 export function handleStatus(x: number|string, st: EditStatusConfig, gv: (k: string, p?: any) => string, se: (m: string, title?: string, detail?: string, callback?: () => void) => void): void {
   const title = gv('error');
-  if (x === st.VersionError) {
+  if (x === st.version_error) {
     se(gv('error_version'), title);
-  } else if (x === st.DataCorrupt) {
+  } else if (x === st.data_corrupt) {
     se(gv('error_data_corrupt'), title);
   } else {
     se(gv('error_internal'), title);

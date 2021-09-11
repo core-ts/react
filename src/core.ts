@@ -36,42 +36,42 @@ export interface SearchParameter {
   auto?: boolean;
 }
 export interface EditStatusConfig {
-  DuplicateKey: number|string;
-  NotFound: number|string;
-  Success: number|string;
-  VersionError: number|string;
-  Error?: number|string;
-  DataCorrupt?: number|string;
+  duplicate_key: number|string;
+  not_found: number|string;
+  success: number|string;
+  version_error: number|string;
+  error?: number|string;
+  data_corrupt?: number|string;
 }
 export function createEditStatus(status?: EditStatusConfig): EditStatusConfig {
   if (status) {
     return status;
   }
   const s: EditStatusConfig = {
-    DuplicateKey: 0,
-    NotFound: 0,
-    Success: 1,
-    VersionError: 2,
-    Error: 4,
-    DataCorrupt: 8
+    duplicate_key: 0,
+    not_found: 0,
+    success: 1,
+    version_error: 2,
+    error: 4,
+    data_corrupt: 8
   };
   return s;
 }
 export interface DiffStatusConfig {
-  NotFound: number|string;
-  Success: number|string;
-  VersionError: number|string;
-  Error?: number|string;
+  not_found: number|string;
+  success: number|string;
+  version_error: number|string;
+  error?: number|string;
 }
 export function createDiffStatus(status?: DiffStatusConfig): DiffStatusConfig {
   if (status) {
     return status;
   }
   const s: DiffStatusConfig = {
-    NotFound: 0,
-    Success: 1,
-    VersionError: 2,
-    Error: 4
+    not_found: 0,
+    success: 1,
+    version_error: 2,
+    error: 4
   };
   return s;
 }
@@ -113,6 +113,43 @@ export interface ViewService<T, ID> {
   keys?(): string[];
   load(id: ID, ctx?: any): Promise<T>;
 }
+
+export interface DiffParameter {
+  resource: ResourceService;
+  showMessage: (msg: string, option?: string) => void;
+  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
+  loading?: LoadingService;
+  status?: DiffStatusConfig;
+}
+export interface BaseDiffState {
+  disabled: boolean;
+}
+export interface DiffModel<T, ID> {
+  id?: ID;
+  origin?: T;
+  value: T;
+}
+export interface DiffModel<T, ID> {
+  id?: ID;
+  origin?: T;
+  value: T;
+}
+export interface ApprService<ID> {
+  approve(id: ID, ctx?: any): Promise<number|string>;
+  reject(id: ID, ctx?: any): Promise<number|string>;
+}
+export interface DiffService<T, ID> {
+  keys(): string[];
+  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>>;
+}
+export interface DiffApprService<T, ID> extends DiffService<T, ID>, ApprService<ID> {
+}
+export interface DiffState<T> {
+  origin: T;
+  value: T;
+  disabled: boolean;
+}
+
 // tslint:disable-next-line:class-name
 export class resource {
   static phone = / |\-|\.|\(|\)/g;
@@ -380,3 +417,26 @@ export function getModelName(form: HTMLFormElement): string {
   }
   return '';
 }
+
+export const scrollToFocus = (e: any, isUseTimeOut?: boolean) => {
+  try {
+    const element = e.target as HTMLInputElement;
+    const container = element.form.childNodes[1] as HTMLElement;
+    const elementRect = element.getBoundingClientRect();
+    const absoluteElementTop = elementRect.top + window.pageYOffset;
+    const middle = absoluteElementTop - (window.innerHeight / 2);
+    const scrollTop = container.scrollTop;
+    const timeOut = isUseTimeOut ? 300 : 0;
+    const isChrome = navigator.userAgent.search('Chrome') > 0;
+    setTimeout(() => {
+      if (isChrome) {
+        const scrollPosition = scrollTop === 0 ? (elementRect.top + 64) : (scrollTop + middle);
+        container.scrollTo(0, Math.abs(scrollPosition));
+      } else {
+        container.scrollTo(0, Math.abs(scrollTop + middle));
+      }
+    }, timeOut);
+  } catch (e) {
+    console.log(e);
+  }
+};

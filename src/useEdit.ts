@@ -189,7 +189,7 @@ export const useEditOne = <T, ID, S, P extends ModelProps>(p: HookPropsEditParam
       const registerEvents = (baseProps.ui ? baseProps.ui.registerEvents : null);
       initForm(baseProps.refForm.current, registerEvents);
     }
-    const n = baseProps.getModelName();
+    const n = baseProps.getModelName(p.refForm.current);
     const obj: any = {};
     obj[n] = baseProps.createNewModel();
     baseProps.setState(obj);
@@ -255,7 +255,7 @@ export const useBaseEditOneWithProps = <T, ID, S, P extends ModelProps>(p: HookP
   });
 
   const showModel = (model: T) => {
-    const n = getModelName();
+    const n = getModelName(p.refForm.current);
     const objSet: any = {};
     objSet[n] = model;
     setState(objSet);
@@ -280,7 +280,7 @@ export const useBaseEditOneWithProps = <T, ID, S, P extends ModelProps>(p: HookP
   const handleNotFound = (p.handleNotFound ? p.handleNotFound : _handleNotFound);
 
   const _getModel = () => {
-    const n = getModelName();
+    const n = getModelName(p.refForm.current);
     if (p.props) {
       return p.props[n] || state[n];
     } else {
@@ -428,12 +428,12 @@ export const useBaseEditOneWithProps = <T, ID, S, P extends ModelProps>(p: HookP
     const newMod = flag.newMode;
     const st = createEditStatus(p.status);
     if (!isNaN(x)) {
-      if (x === st.Success) {
+      if (x === st.success) {
         succeed(obj, successMsg, version, backOnSave);
       } else {
-        if (newMod && x === st.DuplicateKey) {
+        if (newMod && x === st.duplicate_key) {
           handleDuplicateKey();
-        } else if (!newMod && x === st.NotFound) {
+        } else if (!newMod && x === st.not_found) {
           handleNotFound();
         } else {
           handleStatus(x as number, st, p.resourceService.value, p.showError);
@@ -441,14 +441,14 @@ export const useBaseEditOneWithProps = <T, ID, S, P extends ModelProps>(p: HookP
       }
     } else {
       const result: ResultInfo<any> = x;
-      if (result.status === st.Success) {
+      if (result.status === st.success) {
         succeed(obj, successMsg, version, backOnSave, result);
         p.showMessage(successMsg);
       } else if (result.errors && result.errors.length > 0) {
         fail(result);
-      } else if (newMod && result.status === st.DuplicateKey) {
+      } else if (newMod && result.status === st.duplicate_key) {
         handleDuplicateKey(result);
-      } else if (!newMod && x === st.NotFound) {
+      } else if (!newMod && x === st.not_found) {
         handleNotFound();
       } else {
         handleStatus(result.status, st, p.resourceService.value, p.showError);
@@ -484,6 +484,7 @@ export const useBaseEditOneWithProps = <T, ID, S, P extends ModelProps>(p: HookP
 
   const _load = async (_id: ID, callback?: (m: T, showM: (m2: T) => void) => void) => {
     const id: any = _id;
+    debugger;
     if (id != null && id !== '') {
       try {
         const obj = await p.service.load(id);
