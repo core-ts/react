@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {buildId, getModelName as getModelName2, HistoryProps, initForm, LoadingService, Locale, message, messageByHttpStatus, ResourceService, ViewParameter, ViewService} from './core';
+import {buildId, getModelName as getModelName2, hideLoading, HistoryProps, initForm, LoadingService, Locale, message, messageByHttpStatus, ResourceService, showLoading, ViewParameter, ViewService} from './core';
 import {readOnly} from './formutil';
 import {DispatchWithCallback, useMergeState} from './merge';
 import {useRouter} from './router';
@@ -139,16 +139,13 @@ export const useBaseViewOne = <T, ID, S, P extends HistoryProps>(p: HookPropsBas
   };
   const handleNotFound = (p.handleNotFound ? p.handleNotFound : _handleNotFound);
 
-  const _load = async (_id: ID, callback?: (m: T, showM: (m2: T) => void) => void) => {
+  const _load = (_id: ID, callback?: (m: T, showM: (m2: T) => void) => void) => {
     const id: any = _id;
     if (id != null && id !== '') {
-      try {
-        let obj: T;
-        if (typeof p.service === 'function') {
-          obj = await p.service(id);
-        } else {
-          obj = await p.service.load(id);
-        }
+      setRunning(true);
+      showLoading(p.loading);
+      const fn = (typeof p.service === 'function' ? p.service : p.service.load);
+      fn(id).then(obj => {
         if (!obj) {
           handleNotFound(p.refForm.current);
         } else {
@@ -158,7 +155,9 @@ export const useBaseViewOne = <T, ID, S, P extends HistoryProps>(p: HookPropsBas
             showModel(obj);
           }
         }
-      } catch (err) {
+        setRunning(false);
+        hideLoading(p.loading);
+      }).catch(err => {
         const data = (err &&  err.response) ? err.response : err;
         const r = p.resourceService;
         const title = r.value('error');
@@ -172,12 +171,9 @@ export const useBaseViewOne = <T, ID, S, P extends HistoryProps>(p: HookPropsBas
           readOnly(p.refForm.current);
           p.showError(msg, title);
         }
-      } finally {
         setRunning(false);
-        if (p.loading) {
-          p.loading.hideLoading();
-        }
-      }
+        hideLoading(p.loading);
+      });
     }
   };
   const load = (p.load ? p.load : _load);

@@ -440,3 +440,21 @@ export const scrollToFocus = (e: any, isUseTimeOut?: boolean) => {
     console.log(e);
   }
 };
+export function showLoading(loading: LoadingService|((firstTime?: boolean) => void)): void {
+  if (loading) {
+    if (typeof loading === 'function') {
+      loading();
+    } else {
+      loading.showLoading();
+    }
+  }
+}
+export function hideLoading(loading: LoadingService|(() => void)): void {
+  if (loading) {
+    if (typeof loading === 'function') {
+      loading();
+    } else {
+      loading.hideLoading();
+    }
+  }
+}

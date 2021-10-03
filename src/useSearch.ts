@@ -2,7 +2,7 @@ import {useEffect, useState} from 'react';
 import {useHistory, useRouteMatch} from 'react-router-dom';
 import {clone} from 'reflectx';
 import {addParametersIntoUrl, append, buildSearchMessage, formatResults, getDisplayFieldsFromForm, getModel, handleAppend, handleSort, initSearchable, mergeSearchModel as mergeSearchModel2, Pagination, removeSortStatus, SearchModel, showPaging, Sortable, validate} from 'search-utilities';
-import {error, initForm, LoadingService, Locale, ModelProps, ResourceService, SearchParameter, SearchPermission, SearchResult, SearchService, UIService} from './core';
+import {error, hideLoading, initForm, LoadingService, Locale, ModelProps, ResourceService, SearchParameter, SearchPermission, SearchResult, SearchService, showLoading, UIService} from './core';
 import {DispatchWithCallback, useMergeState} from './merge';
 import {buildFromUrl} from './route';
 import {useUpdate, useUpdateWithProps} from './update';
@@ -14,31 +14,31 @@ export interface Searchable<T> extends Pagination, Sortable {
 }
 function prepareData(data: any): void {
 }
-export const callSearch = async <T, S extends SearchModel>(se: S, search3: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>, showResults3: (s: S, sr: SearchResult<T>, lc: Locale) => void, searchError3: (err: any) => void, lc: Locale, nextPageToken?: string) => {
-  try {
-    const s = clone(se);
-    let page = se.page;
-    if (!page || page < 1) {
-      page = 1;
-    }
-    let offset: number;
-    if (se.firstLimit && se.firstLimit > 0) {
-      offset = se.limit * (page - 2) + se.firstLimit;
-    } else {
-      offset = se.limit * (page - 1);
-    }
-    const limit = (page <= 1 && se.firstLimit && se.firstLimit > 0 ? se.firstLimit : se.limit);
-    const next = (nextPageToken && nextPageToken.length > 0 ? nextPageToken : offset);
-    const fields = se.fields;
-    delete se['page'];
-    delete se['fields'];
-    delete se['limit'];
-    delete se['firstLimit'];
-    const sr = await search3(s, limit, next, fields);
-    showResults3(s, sr, lc);
-  } catch (err) {
-    searchError3(err);
+export const callSearch = <T, S extends SearchModel>(se: S, search3: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>, showResults3: (s: S, sr: SearchResult<T>, lc: Locale) => void, searchError3: (err: any) => void, lc: Locale, nextPageToken?: string) => {
+  const s = clone(se);
+  let page = se.page;
+  if (!page || page < 1) {
+    page = 1;
   }
+  let offset: number;
+  if (!se.limit || se.limit <= 0) {
+    se.limit = 20;
+  }
+  if (se.firstLimit && se.firstLimit > 0) {
+    offset = se.limit * (page - 2) + se.firstLimit;
+  } else {
+    offset = se.limit * (page - 1);
+  }
+  const limit = (page <= 1 && se.firstLimit && se.firstLimit > 0 ? se.firstLimit : se.limit);
+  const next = (nextPageToken && nextPageToken.length > 0 ? nextPageToken : offset);
+  const fields = se.fields;
+  delete se['page'];
+  delete se['fields'];
+  delete se['limit'];
+  delete se['firstLimit'];
+  search3(s, limit, next, fields).then(sr => {
+    showResults3(s, sr, lc);
+  }).catch(err => searchError3(err));
 };
 const appendListOfState = <T, S extends SearchModel>(results: T[], list: T[], setState2: DispatchWithCallback<Partial<SearchComponentState<T, S>>>) => {
   const arr = append(list, results);
@@ -378,9 +378,7 @@ export const useBaseSearchWithProps = <T, S extends SearchModel, ST, P extends M
         return;
       }
       setRunning(true);
-      if (p1.showLoading) {
-        p1.showLoading();
-      }
+      showLoading(p1.showLoading);
       if (!p1.ignoreUrlParam) {
         addParametersIntoUrl(s, isFirstLoad);
       }
@@ -506,9 +504,7 @@ export const useBaseSearchWithProps = <T, S extends SearchModel, ST, P extends M
       p2.showMessage(m1);
     }
     setRunning(false);
-    if (p1.hideLoading) {
-      p1.hideLoading();
-    }
+    hideLoading(p1.hideLoading);
     if (component.triggerSearch) {
       setComponent({ triggerSearch: false });
       resetAndSearch();

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {clone, diff, makeDiff} from 'reflectx';
 import {addParametersIntoUrl, append, buildSearchMessage, changePage, changePageSize, formatResultsByComponent, getDisplayFieldsFromForm, getModel, handleAppend, handleSortEvent, initSearchable, mergeSearchModel as mergeSearchModel2, more, reset, Searchable, showPaging, validate} from 'search-utilities';
-import {BaseDiffState, createDiffStatus, DiffApprService, DiffParameter, DiffState, DiffStatusConfig} from './core';
+import {BaseDiffState, createDiffStatus, DiffApprService, DiffParameter, DiffState, DiffStatusConfig, hideLoading, showLoading} from './core';
 import {Attributes, buildId, EditStatusConfig, error, getCurrencyCode, getModelName as getModelName2, HistoryProps, initForm, LoadingService, Locale, message, messageByHttpStatus, ModelHistoryProps, ModelProps, removePhoneFormat, ResourceService, SearchModel, SearchParameter, SearchResult, SearchService, SearchState, StringMap, UIService, ViewParameter, ViewService} from './core';
 import {formatDiffModel, getDataFields} from './diff';
 import {build, createModel as createModel2, EditParameter, GenericService, handleStatus, handleVersion, initPropertyNullInModel, ResultInfo} from './edit';
@@ -78,43 +78,35 @@ export class ViewComponent<T, ID, P extends HistoryProps, S> extends React.Compo
     const id = buildId<ID>(this.props, this.keys);
     this.load(id);
   }
-  async load(_id: ID, callback?: (m: T, showF: (model: T) => void) => void) {
+  load(_id: ID, callback?: (m: T, showF: (model: T) => void) => void) {
     const id: any = _id;
     if (id != null && id !== '') {
       this.running = true;
-      if (this.loading) {
-        this.loading.showLoading();
-      }
-      try {
-        const ctx: any = {};
-        let obj: T;
-        if (this.loadData) {
-          obj = await this.loadData(id, ctx);
-        } else {
-          obj = await this.service.load(id, ctx);
-        }
+      showLoading(this.loading);
+      const com = this;
+      const fn = (this.loadData ? this.loadData : this.service.load);
+      fn(id).then(obj => {
         if (!obj) {
-          this.handleNotFound(this.form);
+          com.handleNotFound(com.form);
         } else {
           if (callback) {
-            callback(obj, this.showModel);
+            callback(obj, com.showModel);
           } else {
-            this.showModel(obj);
+            com.showModel(obj);
           }
         }
-      } catch (err) {
+        com.running = false;
+        hideLoading(com.loading);
+      }).catch(err => {
         const data = (err &&  err.response) ? err.response : err;
         if (data && data.status === 404) {
-          this.handleNotFound(this.form);
+          com.handleNotFound(com.form);
         } else {
-          error(err, this.resourceService.value, this.showError);
+          error(err, com.resourceService.value, com.showError);
         }
-      } finally {
-        this.running = false;
-        if (this.loading) {
-          this.loading.hideLoading();
-        }
-      }
+        com.running = false;
+        hideLoading(com.loading);
+      });
     }
   }
   protected handleNotFound(form?: HTMLFormElement): void {
@@ -444,9 +436,7 @@ export class BaseSearchComponent<T, S extends SearchModel, P extends ModelHistor
         return;
       }
       com.running = true;
-      if (this.loading) {
-        this.loading.showLoading();
-      }
+      showLoading(this.loading);
       if (!this.ignoreUrlParam) {
         addParametersIntoUrl(s, isFirstLoad);
       }
@@ -495,9 +485,7 @@ export class BaseSearchComponent<T, S extends SearchModel, P extends ModelHistor
       this.showMessage(m1);
     }
     com.running = false;
-    if (this.loading) {
-      this.loading.hideLoading();
-    }
+    hideLoading(com.loading);
     if (com.triggerSearch) {
       com.triggerSearch = false;
       com.resetAndSearch();
@@ -609,46 +597,39 @@ export class SearchComponent<T, S extends SearchModel, P extends ModelHistoryPro
     const s: any = {};
     return s;
   }
-  async call(se: S) {
-    try {
-      this.running = true;
-      const s = clone(se);
-      let page = this.pageIndex;
-      if (!page || page < 1) {
-        page = 1;
-      }
-      let offset: number;
-      if (se.firstLimit && se.firstLimit > 0) {
-        offset = se.limit * (page - 2) + se.firstLimit;
-      } else {
-        offset = se.limit * (page - 1);
-      }
-      const limit = (page <= 1 && se.firstLimit && se.firstLimit > 0 ? se.firstLimit : se.limit);
-      const next = (this.nextPageToken && this.nextPageToken.length > 0 ? this.nextPageToken : offset);
-      const fields = se.fields;
-      delete se['page'];
-      delete se['fields'];
-      delete se['limit'];
-      delete se['firstLimit'];
-      if (this.loading) {
-        this.loading.showLoading();
-      }
-      if (this.search) {
-        const sr = await this.search(s, limit, next, fields);
-        this.showResults(s, sr);
-      } else {
-        const sr = await this.service.search(s, limit, next, fields);
-        this.showResults(s, sr);
-      }
-    } catch (err) {
-      this.pageIndex = this.tmpPageIndex;
-      error(err, this.resourceService.value, this.showError);
-    } finally {
-      this.running = false;
-      if (this.loading) {
-        this.loading.hideLoading();
-      }
+  call(se: S) {
+    this.running = true;
+    const s = clone(se);
+    let page = this.pageIndex;
+    if (!page || page < 1) {
+      page = 1;
     }
+    let offset: number;
+    if (se.firstLimit && se.firstLimit > 0) {
+      offset = se.limit * (page - 2) + se.firstLimit;
+    } else {
+      offset = se.limit * (page - 1);
+    }
+    const limit = (page <= 1 && se.firstLimit && se.firstLimit > 0 ? se.firstLimit : se.limit);
+    const next = (this.nextPageToken && this.nextPageToken.length > 0 ? this.nextPageToken : offset);
+    const fields = se.fields;
+    delete se['page'];
+    delete se['fields'];
+    delete se['limit'];
+    delete se['firstLimit'];
+    showLoading(this.loading);
+    const com = this;
+    const fn = (this.search ? this.search : this.service.search);
+    fn(s, limit, next, fields).then(sr => {
+      com.showResults(s, sr);
+      com.running = false;
+      hideLoading(com.loading);
+    }).catch(err => {
+      com.pageIndex = com.tmpPageIndex;
+      error(err, com.resourceService.value, com.showError);
+      com.running = false;
+      hideLoading(com.loading);
+    });
   }
 }
 
@@ -884,9 +865,7 @@ export abstract class BaseEditComponent<T, P extends ModelHistoryProps, S> exten
 
   protected postSave(res: number|string|ResultInfo<T>, backOnSave?: boolean) {
     this.running = false;
-    if (this.loading) {
-      this.loading.hideLoading();
-    }
+    hideLoading(this.loading);
     const st = this.status;
     const newMod = this.newMode;
     const successMsg = (newMod ? this.insertSuccessMsg : this.updateSuccessMsg);
@@ -965,50 +944,46 @@ export class EditComponent<T, ID, P extends ModelHistoryProps, S> extends BaseEd
     const id = buildId<ID>(this.props, this.keys);
     this.load(id);
   }
-  async load(_id: ID, callback?: (m: T, showM: (m2: T) => void) => void) {
+  load(_id: ID, callback?: (m: T, showM: (m2: T) => void) => void) {
     const id: any = _id;
     if (id != null && id !== '') {
-      try {
-        this.running = true;
-        if (this.loading) {
-          this.loading.showLoading();
-        }
-        const ctx: any = {};
-        const obj = await this.service.load(id, ctx);
+      const com = this;
+      this.running = true;
+      showLoading(com.loading);
+      this.service.load(id).then(obj => {
         if (!obj) {
-          this.handleNotFound(this.form);
+          com.handleNotFound(this.form);
         } else {
-          this.newMode = false;
-          this.orginalModel = clone(obj);
+          com.newMode = false;
+          com.orginalModel = clone(obj);
           if (!callback) {
-            this.showModel(obj);
+            com.showModel(obj);
           } else {
-            callback(obj, this.showModel);
+            callback(obj, com.showModel);
           }
         }
-      } catch (err) {
+        com.running = false;
+        hideLoading(com.loading);
+      }).catch(err => {
         const data = (err &&  err.response) ? err.response : err;
-        const r = this.resourceService;
+        const r = com.resourceService;
         const gv = r.value;
         const title = gv('error');
         let msg = gv('error_internal');
         if (data && data.status === 404) {
-          this.handleNotFound(this.form);
+          com.handleNotFound(com.form);
         } else {
           if (data.status && !isNaN(data.status)) {
             msg = messageByHttpStatus(data.status, gv);
           }
           if (data && (data.status === 401 || data.status === 403)) {
-            readOnly(this.form);
+            readOnly(com.form);
           }
-          this.showError(msg, title);
+          com.showError(msg, title);
         }
-      } finally {
-        this.running = false;
-        if (this.loading) {
-          this.loading.hideLoading();
-        }
-      }
+        com.running = false;
+        hideLoading(com.loading);
+      });
     } else {
       // Call service state
       this.newMode = true;
@@ -1021,35 +996,28 @@ export class EditComponent<T, ID, P extends ModelHistoryProps, S> extends BaseEd
       }
     }
   }
-  protected async save(obj: T, body?: T, isBack?: boolean) {
+  protected save(obj: T, body?: T, isBack?: boolean) {
     this.running = true;
-    if (this.loading) {
-      this.loading.showLoading();
-    }
+    showLoading(this.loading);
     const isBackO = (isBack == null || isBack === undefined ? this.backOnSuccess : isBack);
     const com = this;
-    try {
-      const ctx: any = {};
-      if (!this.newMode) {
-        if (this.patchable === true && this.service.patch && body && Object.keys(body).length > 0) {
-          const result = await this.service.patch(body, ctx);
-          com.postSave(result, isBackO);
-        } else {
-          const result = await this.service.update(obj, ctx);
-          com.postSave(result, isBackO);
-        }
-      } else {
-        const result = await this.service.insert(obj, ctx);
-        com.postSave(result, isBackO);
-      }
-    } catch (err) {
-      error(err, this.resourceService.value, this.showError);
-    } finally {
-      this.running = false;
-      if (this.loading) {
-        this.loading.hideLoading();
+    let m = obj;
+    let fn = this.newMode ? this.service.insert : this.service.update;
+    if (!this.newMode) {
+      if (this.patchable === true && this.service.patch && body && Object.keys(body).length > 0) {
+        m = body;
+        fn = this.service.patch;
       }
     }
+    fn(m).then(result => {
+      com.postSave(result, isBackO);
+      com.running = false;
+      hideLoading(com.loading);
+    }).then(err => {
+      error(err, com.resourceService.value, com.showError);
+      com.running = false;
+      hideLoading(com.loading);
+    });
   }
 }
 
@@ -1198,78 +1166,69 @@ export class DiffApprComponent<T, ID, P extends HistoryProps, S extends DiffStat
     return value;
   }
 
-  async load(_id: ID) {
+  load(_id: ID) {
     const id: any = _id;
     if (id != null && id !== '') {
       this.id = _id;
-      try {
-        this.running = true;
-        if (this.loading) {
-          this.loading.showLoading();
-        }
-        const dobj = await this.service.diff(id);
+      const com = this;
+      this.running = true;
+      showLoading(this.loading);
+      this.service.diff(id).then(dobj => {
         if (!dobj) {
-          this.handleNotFound();
+          com.handleNotFound();
         } else {
-          const formatdDiff = formatDiffModel(dobj, this.formatFields);
-          this.setState({
+          const formatdDiff = formatDiffModel(dobj, com.formatFields);
+          com.setState({
             origin: formatdDiff.origin,
             value: formatdDiff.value
-          }, this.format);
+          }, com.format);
         }
-      } catch (err) {
+        com.running = false;
+        hideLoading(com.loading);
+      }).catch(err => {
         const data = (err &&  err.response) ? err.response : err;
         if (data && data.status === 404) {
-          this.handleNotFound();
+          com.handleNotFound();
         } else {
-          error(err, this.resourceService.value, this.showError);
+          error(err, com.resourceService.value, com.showError);
         }
-      } finally {
-        this.running = false;
-        if (this.loading) {
-          this.loading.hideLoading();
-        }
-      }
+        com.running = false;
+        hideLoading(com.loading);
+      });
     }
   }
 
-  async approve(event: any) {
+  approve(event: any) {
     event.preventDefault();
-    try {
-      this.running = true;
-      if (this.loading) {
-        this.loading.showLoading();
-      }
-      const id = this.id;
-      const status = await this.service.approve(id);
-      this.postApprove(status, null);
-    } catch (err) {
-      this.postApprove(4, err);
-    } finally {
-      this.running = false;
-      if (this.loading) {
-        this.loading.hideLoading();
-      }
-    }
+    const com = this;
+    this.running = true;
+    showLoading(this.loading);
+    const id = this.id;
+    this.service.approve(id).then(status => {
+      com.postApprove(status, null);
+      com.running = false;
+      hideLoading(com.loading);
+    }).catch(err => {
+      com.postApprove(4, err);
+      com.running = false;
+      hideLoading(com.loading);
+    });
   }
 
-  async reject(event: any) {
+  reject(event: any) {
     event.preventDefault();
-    try {
-      this.running = true;
-      if (this.loading) {
-        this.loading.showLoading();
-      }
-      const id = this.id;
-      const status = await this.service.reject(id);
-      this.postReject(status, null);
-    } catch (err) {
-      this.postReject(4, err);
-    } finally {
-      this.running = false;
-      if (this.loading) {
-        this.loading.hideLoading();
-      }
-    }
+    const com = this;
+    this.running = true;
+    showLoading(this.loading);
+    const id = this.id;
+    this.service.reject(id).then(status => {
+      com.postReject(status, null);
+      com.running = false;
+      hideLoading(com.loading);
+    }).catch(err => {
+      com.postReject(4, err);
+      com.running = false;
+      hideLoading(com.loading);
+    });
   }
 }
