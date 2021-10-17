@@ -283,7 +283,7 @@ export const useBaseSearchWithProps = <T, S extends SearchModel, ST, P extends M
   const getModelName = (p1.getModelName ? p1.getModelName : _getModelName);
 
   // const setState2: <K extends keyof S, P>(st: ((prevState: Readonly<S>, props: Readonly<P>) => (Pick<S, K> | S | null)) | (Pick<S, K> | S | null), cb?: () => void) => void;
-  const baseProps = (props ? useUpdateWithProps<ST, P>(props, initialState, p2.getLocale, p1.removeError, getModelName, p1.prepareCustomData) : useUpdate<ST>(initialState, p2.getLocale, p1.removeError, getModelName));
+  const baseProps = (props ? useUpdateWithProps<ST, P>(props, initialState, p2.getLocale, p1.removeError, getModelName, p1.prepareCustomData) : useUpdate<ST>(initialState, getModelName, p2.getLocale, p1.removeError));
   const { state, setState } = baseProps;
   const [history, match] = [useHistory(), useRouteMatch()];
 
