@@ -233,7 +233,7 @@ export const useBaseEditOneWithProps = <T, ID, S, P extends ModelProps>(p: HookP
     return getModelName2(f);
   };
   const baseProps = useUpdate<S>(p.initialState, getModelName, p.getLocale);
-  
+
   const prepareCustomData = (p.prepareCustomData ? p.prepareCustomData : prepareData);
   const updateDateState = (name: string, value: any) => {
     const modelName = getModelName(p.refForm.current);

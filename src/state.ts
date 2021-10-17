@@ -21,7 +21,7 @@ export function localeOf(lc?: Locale, glc?: (() => Locale) | Locale): Locale {
       if (typeof glc === 'function') {
         l = glc();
       } else {
-        l = glc
+        l = glc;
       }
     }
     if (!l) {
