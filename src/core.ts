@@ -413,7 +413,7 @@ export function error(err: any, gv: (key: string) => string, ae: (msg: string, h
     ae(msg, title);
   }
 }
-export function getModelName(form?: HTMLFormElement|null): string {
+export function getModelName(form?: HTMLFormElement|null, name?: string): string {
   if (form) {
     const a = form.getAttribute('model-name');
     if (a && a.length > 0) {
@@ -426,6 +426,9 @@ export function getModelName(form?: HTMLFormElement|null): string {
       }
       return b;
     }
+  }
+  if (name && name.length > 0) {
+    return name;
   }
   return '';
 }

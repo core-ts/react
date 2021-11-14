@@ -45,7 +45,7 @@ export function handleEvent(e: any, removeErr?: (ctrl: HTMLInputElement) => void
     removeErr(ctrl);
   }
 }
-export function handleProps<P extends ModelProps>(e: any, props: P, ctrl: HTMLInputElement, modelName: string, tloc: Locale, prepareData: (data: any) => void) {
+export function handleProps<P extends ModelProps>(e: any, props: P, ctrl: HTMLInputElement, modelName: string, tloc: Locale, prepareData?: (data: any) => void) {
   if (props.setGlobalState) {
     const res = valueOf(ctrl, tloc, e.type);
     if (res.mustChange) {
@@ -56,7 +56,7 @@ export function handleProps<P extends ModelProps>(e: any, props: P, ctrl: HTMLIn
       if (form) {
         const formName = form.name;
         if (field.indexOf('.') < 0 && field.indexOf('[') < 0) {
-          const data = props.shouldBeCustomized ? prepareData({ [ctrl.name]: res.value }) : { [ctrl.name]: res.value };
+          const data = props.shouldBeCustomized && prepareData ? prepareData({ [ctrl.name]: res.value }) : { [ctrl.name]: res.value };
           props.setGlobalState({ [formName]: { ...propsDataForm, ...data } });
         } else {
           setValue(propsDataForm, field, ctrl.value);
@@ -81,7 +81,7 @@ export function buildState<S, K extends keyof S>(e: any, state: Readonly<S>, ctr
           if (!value || !Array.isArray(value)) {
             value = [];
           }
-          value.includes(ctrl.value) ? value = value.filter(v => v !== ctrl.value) : value.push(ctrl.value);
+          value.includes(ctrl.value) ? value = value.filter((v: string) => v !== ctrl.value) : value.push(ctrl.value);
           model[field] = value;
         } else {
           const v = valueOfCheckbox(ctrl);
@@ -142,7 +142,7 @@ export function buildFlatState<S, K extends keyof S>(e: any, state: Readonly<S>,
       return objSet;
     } else {
       let value = (state as any)[stateName];
-      value.includes(ctrl.value) ? value = value.filter(v => v !== ctrl.value) : value.push(ctrl.value);
+      value.includes(ctrl.value) ? value = value.filter((v: string) => v !== ctrl.value) : value.push(ctrl.value);
       const objSet2: any = {[ctrl.name]: value};
       return objSet2;
     }

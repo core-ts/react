@@ -3,6 +3,9 @@ import {useMergeState} from './merge';
 import {buildFlatState, buildState, handleEvent, handleProps, localeOf} from './state';
 
 const m = 'model';
+const _getModelName = (f2?: HTMLFormElement|null): string => {
+  return getModelName2(f2, 'model');
+};
 export const useUpdate = <T>(initialState: T, getName?: ((f?: HTMLFormElement|null) => string) | string, getLocale?: (() => Locale) | Locale, removeErr?: (ctrl: HTMLInputElement) => void) => {
   const [state, setState] = useMergeState<T>(initialState);
 
@@ -24,16 +27,7 @@ export const useUpdate = <T>(initialState: T, getName?: ((f?: HTMLFormElement|nu
       updateState(event);
     }
   };
-  const _getModelName = (f2?: HTMLFormElement|null): string => {
-    if (f2) {
-      const a = getModelName2(f2);
-      if (a && a.length > 0) {
-        return a;
-      }
-    }
-    return 'model';
-  };
-  let getModelName: (f2?: HTMLFormElement|null) => string;
+  const getModelName: (f2?: HTMLFormElement|null) => string = (typeof getName === 'function' ? getName : _getModelName);
   const updateState = (e: any, callback?: () => void, lc?: Locale) => {
     const ctrl = e.currentTarget as HTMLInputElement;
     let mn: string = m;
@@ -42,11 +36,9 @@ export const useUpdate = <T>(initialState: T, getName?: ((f?: HTMLFormElement|nu
         mn = getName;
       } else {
         mn = getName(ctrl.form);
-        getModelName = getName;
       }
     } else {
       mn = _getModelName(ctrl.form);
-      getModelName = _getModelName;
     }
     const l = localeOf(lc, getLocale);
     handleEvent(e, removeErr);
