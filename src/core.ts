@@ -1,4 +1,5 @@
 import * as H from 'history';
+import {RouteComponentProps} from 'react-router';
 import {match} from 'react-router-dom';
 import {focusFirstElement} from './formutil';
 
@@ -76,7 +77,7 @@ export function createDiffStatus(status?: DiffStatusConfig): DiffStatusConfig {
   return s;
 }
 
-export interface SearchModel {
+export interface Filter {
   q?: string;
   page?: number;
   limit?: number;
@@ -90,12 +91,12 @@ export interface SearchResult<T> {
   nextPageToken?: string;
   last?: boolean;
 }
-export interface SearchState<T, S extends SearchModel> {
+export interface SearchState<T, S extends Filter> {
   model?: S;
   q?: string;
   list?: T[];
 }
-export interface SearchService<T, S extends SearchModel> {
+export interface SearchService<T, S extends Filter> {
   keys?(): string[];
   search(s: S, limit?: number, offset?: number|string, fields?: string[]): Promise<SearchResult<T>>;
 }
@@ -289,11 +290,12 @@ export function buildKeys(attributes: Attributes): string[] {
   return ps;
 }
 
-export function buildId<ID>(props: any, keys?: string[]): ID|null {
+export function buildId<ID>(props: RouteComponentProps, keys?: string[]): ID|null {
   if (!props) {
     return null;
   }
-  const sp = (props.match ? props : props['props']);
+  debugger;
+  const sp: any = ((props as any).match ? props : (props as any)['props']);
   if (!keys || keys.length === 0 || keys.length === 1) {
     if (keys && keys.length === 1) {
       const x = sp.match.params[keys[0]];
@@ -413,6 +415,9 @@ export function error(err: any, gv: (key: string) => string, ae: (msg: string, h
     ae(msg, title);
   }
 }
+export function getName(d: string, n?: string): string {
+  return (n && n.length > 0 ? n : d);
+}
 export function getModelName(form?: HTMLFormElement|null, name?: string): string {
   if (form) {
     const a = form.getAttribute('model-name');
@@ -458,21 +463,42 @@ export const scrollToFocus = (e: any, isUseTimeOut?: boolean) => {
     console.log(e);
   }
 };
-export function showLoading(loading?: LoadingService|((firstTime?: boolean) => void)): void {
-  if (loading) {
-    if (typeof loading === 'function') {
-      loading();
-    } else {
-      loading.showLoading();
-    }
+export interface LoadingParameter {
+  loading?: LoadingService;
+}
+export function showLoading(s?: LoadingService): void {
+  if (s) {
+    s.showLoading();
   }
 }
-export function hideLoading(loading?: LoadingService|(() => void)): void {
-  if (loading) {
-    if (typeof loading === 'function') {
-      loading();
-    } else {
-      loading.hideLoading();
-    }
+export function hideLoading(s?: LoadingService): void {
+  if (s) {
+    s.hideLoading();
   }
+}
+export interface UIParameter {
+  ui?: UIService;
+}
+export function getRemoveError(u?: UIParameter, rmErr?: (el: HTMLInputElement) => void): ((el: HTMLInputElement) => void)|undefined {
+  if (rmErr) {
+    return rmErr;
+  }
+  return (u && u.ui ? u.ui.removeError : undefined);
+}
+export function removeFormError(u?: UIParameter, f?: HTMLFormElement): void {
+  if (f && u && u.ui) {
+    u.ui.removeFormError(f);
+  }
+}
+export function getValidateForm(u?: UIParameter, vf?: (form: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean) => boolean): ((form: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean) => boolean)|undefined {
+  if (vf) {
+    return vf;
+  }
+  return (u && u.ui ? u.ui.validateForm : undefined);
+}
+export function getDecodeFromForm(u?: UIParameter, d?: (form: HTMLFormElement, locale?: Locale, currencyCode?: string) => any): ((form: HTMLFormElement, locale?: Locale, currencyCode?: string) => any)|undefined {
+  if (d) {
+    return d;
+  }
+  return (u && u.ui ? u.ui.decodeFromForm : undefined);
 }

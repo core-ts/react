@@ -24,7 +24,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com/common-ts/react"
+    "url": "git@github.com/core-ts/react"
   },
   "keywords": [
     "react",
