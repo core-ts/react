@@ -1,6 +1,6 @@
 {
   "name": "react-onex",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "react",
   "main": "./lib/index.js",
   "types": "./src/index.ts",
@@ -14,9 +14,9 @@
     "query-string": "^6.13.1",
     "react": "^16.8.0",
     "react-router-dom": "^5.2.0",
-    "reflectx": "^0.0.9",
-    "search-utilities": "^0.0.13",
-    "tslint": "5.10.0",
+    "reflectx": "^0.0.10",
+    "search-core": "^0.1.0",
+    "tslint": "^5.10.0",
     "typescript": "^3.3.3333"
   },
   "publishConfig": {
@@ -29,8 +29,6 @@
   "keywords": [
     "react",
     "react-plus",
-    "reactx",
-    "react-one",
-    "react-onex"
+    "react-hook-core"
   ]
 }
