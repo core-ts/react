@@ -18,5 +18,5 @@ export * from './useMessage';
 
 export const withDefaultProps = (Component: any) => (props: RouteComponentProps) => {
   // return <Component props={props} history={props.history} />;
-  return React.createElement(Component, { props: props, history: props.history });
+  return React.createElement(Component, { props, history: props.history });
 };
