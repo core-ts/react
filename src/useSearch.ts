@@ -110,7 +110,7 @@ export interface SearchComponentState<T, S> extends Pagination, Sortable {
   view?: string;
   nextPageToken?: string;
   keys?: string[];
-  model?: S;
+  filter?: S;
   list?: T[];
 
   format?: (obj: T, locale: Locale) => T;
@@ -133,7 +133,7 @@ export interface SearchComponentState<T, S> extends Pagination, Sortable {
 }
 export const pageSizes = [10, 20, 40, 60, 100, 200, 400, 800];
 
-function mergeParam<T, S extends Filter>(p?: SearchComponentParam<T, S>): void {
+function mergeParam<T, S extends Filter>(p?: SearchComponentParam<T, S>): SearchComponentParam<T, S> {
   if (p) {
     if (!p.sequenceNo) {
       p.sequenceNo = 'sequenceNo';
@@ -147,6 +147,14 @@ function mergeParam<T, S extends Filter>(p?: SearchComponentParam<T, S>): void {
     if (!p.pageMaxSize || p.pageMaxSize <= 0) {
       p.pageMaxSize = 7;
     }
+    return p;
+  } else {
+    return {
+      sequenceNo: 'sequenceNo',
+      pageSize: 20,
+      pageSizes,
+      pageMaxSize: 7
+    };
   }
 }
 export const useSearch = <T, S extends Filter, ST extends SearchComponentState<T, S>>(
@@ -156,6 +164,7 @@ export const useSearch = <T, S extends Filter, ST extends SearchComponentState<T
   p2: SearchParameter,
   p?: InitSearchComponentParam<T, S, ST>,
 ) => {
+  debugger;
   const baseProps = useCoreSearch(undefined, refForm, initialState, search, p2, p);
 
   useEffect(() => {
@@ -185,28 +194,28 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
   refForm: any,
   initialState: ST,
   search: ((s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
-  p2: SearchParameter,
-  p1?: SearchComponentParam<T, S>
+  p1: SearchParameter,
+  p2?: SearchComponentParam<T, S>
 ) => {
-  mergeParam(p1);
+  const p = mergeParam(p2);
   const [running, setRunning] = useState<boolean>();
 
   const _getModelName = (): string => {
-    return getName('filter', p1 && p1.name ? p1.name : undefined);
+    return getName('filter', p && p.name ? p.name : undefined);
   };
-  const getModelName = (p1 && p1.getModelName ? p1.getModelName : _getModelName);
+  const getModelName = (p && p.getModelName ? p.getModelName : _getModelName);
 
   // const setState2: <K extends keyof S, P>(st: ((prevState: Readonly<S>, props: Readonly<P>) => (Pick<S, K> | S | null)) | (Pick<S, K> | S | null), cb?: () => void) => void;
-  const baseProps = (props ? useUpdateWithProps<ST, P>(props, initialState, getModelName, p2.getLocale, getRemoveError(p2), p1 ? p1.prepareCustomData : undefined) : useUpdate<ST>(initialState, getModelName, p2.getLocale, getRemoveError(p2)));
+  const baseProps = (props ? useUpdateWithProps<ST, P>(props, initialState, getModelName, p1.getLocale, getRemoveError(p1), p ? p.prepareCustomData : undefined) : useUpdate<ST>(initialState, getModelName, p1.getLocale, getRemoveError(p1)));
   const { state, setState } = baseProps;
   const [history, match] = [useHistory(), useRouteMatch()];
 
   const _getCurrencyCode = (): string => {
     return refForm && refForm.current ? refForm.current.getAttribute('currency-code') : null;
   };
-  const getCurrencyCode = p1 && p1.getCurrencyCode ? p1.getCurrencyCode : _getCurrencyCode;
+  const getCurrencyCode = p && p.getCurrencyCode ? p.getCurrencyCode : _getCurrencyCode;
 
-  const prepareCustomData = (p1 && p1.prepareCustomData ? p1.prepareCustomData : prepareData);
+  const prepareCustomData = (p && p.prepareCustomData ? p.prepareCustomData : prepareData);
   const updateDateState = (name: string, value: any) => {
     const modelName = getModelName();
     const currentState = (state as any)[modelName];
@@ -220,7 +229,7 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
   };
 
   // const p = createSearchComponentState<T, S>(p1);
-  const [component, setComponent] = useMergeState<SearchComponentState<T, S>>(p1);
+  const [component, setComponent] = useMergeState<SearchComponentState<T, S>>(p);
 
   const toggleFilter = (event: any): void => {
     setComponent({ hideFilter: !component.hideFilter });
@@ -237,24 +246,24 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
     setComponent({ fields: fs, initFields: true });
     return fs;
   };
-  const getFields = p1 && p1.getFields ? p1.getFields : _getFields;
+  const getFields = p && p.getFields ? p.getFields : _getFields;
 
   const getFilter = (se?: Searchable<T>): S => {
     if (!se) {
       se = component;
     }
-    let keys = p1 && p1.keys ? p1.keys : undefined;
+    let keys = p && p.keys ? p.keys : undefined;
     if (!keys && typeof search !== 'function' && search.keys) {
       keys = search.keys();
     }
     const n = getModelName();
-    let fs = p1 && p1.fields;
+    let fs = p && p.fields;
     if (!fs || fs.length <= 0) {
       fs = getFields();
     }
-    const lc = (p2.getLocale ? p2.getLocale() : enLocale);
+    const lc = (p1.getLocale ? p1.getLocale() : enLocale);
     const cc = getCurrencyCode();
-    const obj3 = getModel<T, S>(state, n, se, fs, se.excluding, keys, se.list, refForm.current, getDecodeFromForm(p2), lc, cc);
+    const obj3 = getModel<T, S>(state, n, se, fs, se.excluding, keys, se.list, refForm.current, getDecodeFromForm(p1), lc, cc);
     return obj3;
   };
   const _setFilter = (s: S): void => {
@@ -264,7 +273,7 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
     setState(objSet);
   };
 
-  const setFilter = p1 && p1.setFilter ? p1.setFilter : _setFilter;
+  const setFilter = p && p.setFilter ? p.setFilter : _setFilter;
 
   const _load = (s: S, auto?: boolean): void => {
     const com = Object.assign({}, component);
@@ -278,10 +287,10 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
       }, 0);
     }
   };
-  const load = p1 && p1.load ? p1.load : _load;
+  const load = p && p.load ? p.load : _load;
 
   const doSearch = (se: Searchable<T>, isFirstLoad?: boolean) => {
-    removeFormError(p2, refForm.current);
+    removeFormError(p1, refForm.current);
     const s = getFilter(se);
     const isStillRunning = running;
     validateSearch(s, () => {
@@ -289,11 +298,11 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
         return;
       }
       setRunning(true);
-      showLoading(p2.loading);
-      if (p1 && !p1.ignoreUrlParam) {
+      showLoading(p1.loading);
+      if (p && !p.ignoreUrlParam) {
         addParametersIntoUrl(s, isFirstLoad);
       }
-      const lc = p2.getLocale ? p2.getLocale() : enLocale;
+      const lc = p1.getLocale ? p1.getLocale() : enLocale;
       if (typeof search === 'function') {
         callSearch<T, S>(s, search, showResults, searchError, lc, se.nextPageToken);
       } else {
@@ -303,9 +312,9 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
   };
 
   const _validateSearch = (se: S, callback: () => void) => {
-    validate(se, callback, refForm.current, (p2.getLocale ? p2.getLocale() : undefined), getValidateForm(p2));
+    validate(se, callback, refForm.current, (p1.getLocale ? p1.getLocale() : undefined), getValidateForm(p1));
   };
-  const validateSearch = p1 && p1.validateSearch ? p1.validateSearch : _validateSearch;
+  const validateSearch = p && p.validateSearch ? p.validateSearch : _validateSearch;
 
   const pageSizeChanged = (event: any) => {
     const size = parseInt(event.currentTarget.value, 10);
@@ -395,14 +404,14 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
 
   const searchError = (err: any): void => {
     setComponent({ pageIndex: component.tmpPageIndex });
-    error(err, p2.resource.value, p2.showError);
+    error(err, p1.resource.value, p1.showError);
   };
-  const appendList = (p1 && p1.appendList ? p1.appendList : appendListOfState);
-  const setList = (p1 && p1.setList ? p1.setList : setListOfState);
+  const appendList = (p && p.appendList ? p.appendList : appendListOfState);
+  const setList = (p && p.setList ? p.setList : setListOfState);
   const _showResults = (s: S, sr: SearchResult<T>, lc: Locale) => {
     const results = sr.list;
     if (results && results.length > 0) {
-      formatResults(results, component.pageIndex, component.pageSize, component.initPageSize, p1 ? p1.sequenceNo : undefined, p1 ? p1.format : undefined, lc);
+      formatResults(results, component.pageIndex, component.pageSize, component.initPageSize, p ? p.sequenceNo : undefined, p ? p.format : undefined, lc);
     }
     const am = component.appendMode;
     const pi = (s.page && s.page >= 1 ? s.page : 1);
@@ -423,18 +432,18 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
       setList(results, setState as any);
       setComponent({ tmpPageIndex: s.page });
       if (s.limit) {
-        const m1 = buildMessage(p2.resource, s.page, s.limit, sr.list, sr.total);
-        p2.showMessage(m1);
+        const m1 = buildMessage(p1.resource, s.page, s.limit, sr.list, sr.total);
+        p1.showMessage(m1);
       }
     }
     setRunning(false);
-    hideLoading(p2.loading);
+    hideLoading(p1.loading);
     if (component.triggerSearch) {
       setComponent({ triggerSearch: false });
       resetAndSearch();
     }
   };
-  const showResults = (p1 && p1.showResults ? p1.showResults : _showResults);
+  const showResults = (p && p.showResults ? p.showResults : _showResults);
 
   const showMore = (event: any) => {
     event.preventDefault();
@@ -462,10 +471,10 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
     setRunning,
     getCurrencyCode,
     updateDateState,
-    resource: p2.resource.resource(),
+    resource: p1.resource.resource(),
     setComponent,
     component,
-    showMessage: p2.showMessage,
+    showMessage: p1.showMessage,
     load,
     add,
     searchOnClick,
@@ -480,6 +489,6 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
     showResults,
     getFields,
     getModelName,
-    format: p1 ? p1.format : undefined
+    format: p ? p.format : undefined
   };
 };

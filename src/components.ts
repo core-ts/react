@@ -47,27 +47,27 @@ export class ViewComponent<T, ID, P extends RouteComponentProps, S> extends Reac
     this.showModel = this.showModel.bind(this);
     this.ref = React.createRef();
   }
-  protected name?: string;
-  protected running?: boolean;
-  protected resourceService: ResourceService;
-  protected resource: StringMap;
-  protected loading?: LoadingService;
-  protected showError: (msg: string, title?: string, detail?: string, callback?: () => void) => void;
-  protected getLocale?: (profile?: string) => Locale;
-  protected loadData?: (id: ID, ctx?: any) => Promise<T>;
+  name?: string;
+  running?: boolean;
+  resourceService: ResourceService;
+  resource: StringMap;
+  loading?: LoadingService;
+  showError: (msg: string, title?: string, detail?: string, callback?: () => void) => void;
+  getLocale?: (profile?: string) => Locale;
+  loadData?: (id: ID, ctx?: any) => Promise<T>;
   // protected service: ViewService<T, ID>;
-  protected form?: HTMLFormElement;
-  protected ref: any;
-  protected keys?: string[];
-  protected metadata?: Attributes;
+  form?: HTMLFormElement;
+  ref: any;
+  keys?: string[];
+  metadata?: Attributes;
 
-  protected back(event: any) {
+  back(event: any) {
     if (event) {
       event.preventDefault();
     }
     this.props.history.goBack();
   }
-  protected getModelName(): string {
+  getModelName(): string {
     if (this.name && this.name.length > 0) {
       return this.name;
     }
@@ -115,7 +115,7 @@ export class ViewComponent<T, ID, P extends RouteComponentProps, S> extends Reac
       });
     }
   }
-  protected handleNotFound(form?: HTMLFormElement): void {
+  handleNotFound(form?: HTMLFormElement): void {
     const msg = message(this.resourceService.value, 'error_not_found', 'error');
     if (form) {
       readOnly(form);
@@ -135,7 +135,7 @@ export class ViewComponent<T, ID, P extends RouteComponentProps, S> extends Reac
 
 export class BaseComponent<P, S> extends React.Component<P, S> {
   constructor(props: P,
-      protected getLocale?: () => Locale,
+      public getLocale?: () => Locale,
       private removeErr?: (ctrl: HTMLInputElement) => void) {
     super(props);
     this.getModelName = this.getModelName.bind(this);
@@ -145,8 +145,8 @@ export class BaseComponent<P, S> extends React.Component<P, S> {
     this.updateDateState = this.updateDateState.bind(this);
     this.prepareCustomData = this.prepareCustomData.bind(this);
   }
-  protected running?: boolean;
-  protected form?: HTMLFormElement|null;
+  running?: boolean;
+  form?: HTMLFormElement|null;
   /*
   protected handleSubmitForm(e) {
     if (e.which === 13) {
@@ -163,7 +163,7 @@ export class BaseComponent<P, S> extends React.Component<P, S> {
 
   prepareCustomData(data: any) { }
 
-  protected updatePhoneState = (event: any) => {
+  updatePhoneState = (event: any) => {
     const re = /^[0-9\b]+$/;
     const target = event.currentTarget as HTMLInputElement;
     const value = removePhoneFormat(target.value);
@@ -182,7 +182,7 @@ export class BaseComponent<P, S> extends React.Component<P, S> {
     }
   }
 
-  protected updateDateState = (name: string, value: any) => {
+  updateDateState = (name: string, value: any) => {
     const props: any = this.props;
     const modelName = this.getModelName(this.form);
     const state = (this.state as any)[modelName];
@@ -194,7 +194,7 @@ export class BaseComponent<P, S> extends React.Component<P, S> {
       this.setState(objSet);
     }
   }
-  protected getModelName(f?: HTMLFormElement|null): string {
+  getModelName(f?: HTMLFormElement|null): string {
     let f2 = f;
     if (!f2) {
       f2 = this.form;
@@ -207,7 +207,7 @@ export class BaseComponent<P, S> extends React.Component<P, S> {
     }
     return 'model';
   }
-  protected updateState = (e: any, callback?: () => void, lc?: Locale) => {
+  updateState = (e: any, callback?: () => void, lc?: Locale) => {
     const ctrl = e.currentTarget as HTMLInputElement;
     const modelName = this.getModelName(ctrl.form);
     const l = localeOf(lc, this.getLocale);
@@ -226,7 +226,7 @@ export class BaseComponent<P, S> extends React.Component<P, S> {
       }
     }
   }
-  protected updateFlatState(e: any, callback?: () => void, lc?: Locale) {
+  updateFlatState(e: any, callback?: () => void, lc?: Locale) {
     const l = localeOf(lc, this.getLocale);
     const objSet: any = buildFlatState(e, this.state, l);
     if (objSet != null) {
@@ -255,7 +255,7 @@ export class MessageComponent<S extends MessageOnlyState, P> extends BaseCompone
   ref: any;
   name?: string;
   alertClass = '';
-  protected getModelName(f?: HTMLFormElement|null): string {
+  getModelName(f?: HTMLFormElement|null): string {
     if (this.name && this.name.length > 0) {
       return this.name;
     }
@@ -291,7 +291,7 @@ export class MessageComponent<S extends MessageOnlyState, P> extends BaseCompone
     this.setState({ message: '' });
   }
 }
-export class BaseSearchComponent<T, S extends Filter, P extends RouteComponentProps, I extends SearchState<T, S>> extends BaseComponent<P, I> implements Searchable {
+export class BaseSearchComponent<T, S extends Filter, P, I extends SearchState<T, S>> extends BaseComponent<P, I> implements Searchable {
   constructor(props: P,
       protected resourceService: ResourceService,
       protected showMessage: (msg: string) => void,
@@ -306,7 +306,6 @@ export class BaseSearchComponent<T, S extends Filter, P extends RouteComponentPr
 
     this.toggleFilter = this.toggleFilter.bind(this);
     this.load = this.load.bind(this);
-    this.add = this.add.bind(this);
     this.getSearchForm = this.getSearchForm.bind(this);
     this.setSearchForm = this.setSearchForm.bind(this);
 
@@ -329,7 +328,8 @@ export class BaseSearchComponent<T, S extends Filter, P extends RouteComponentPr
     this.showMore = this.showMore.bind(this);
     this.pageChanged = this.pageChanged.bind(this);
 
-    this.url = (props.match ? props.match.url : (props as any)['props'].match.url);
+    const currentUrl = window.location.host + window.location.pathname;
+    this.url = removeUrlParams(currentUrl);
     /*
     this.locationSearch = '';
     const location = (props.location ? props.location : props['props'].location);
@@ -338,9 +338,10 @@ export class BaseSearchComponent<T, S extends Filter, P extends RouteComponentPr
     }
     */
   }
-  protected resource: StringMap;
-  protected url: string;
+  resource: StringMap;
+  url: string;
 
+  filter?: S;
   // Pagination
   initPageSize = 20;
   pageSize = 20;
@@ -383,17 +384,12 @@ export class BaseSearchComponent<T, S extends Filter, P extends RouteComponentPr
   approvable?: boolean;
   deletable?: boolean;
 
-  protected getModelName(): string {
+  getModelName(): string {
     return 'filter';
   }
 
   toggleFilter(event: any): void {
     this.hideFilter = !this.hideFilter;
-  }
-  protected add = (event: any) => {
-    event.preventDefault();
-    const url = (this.props as any)['props'].match.url + '/add';
-    this.props.history.push(url);
   }
   load(s: S, autoSearch: boolean): void {
     const obj2 = initFilter(s, this);
@@ -406,20 +402,23 @@ export class BaseSearchComponent<T, S extends Filter, P extends RouteComponentPr
     }
   }
 
-  protected setSearchForm(form: HTMLFormElement): void {
+  setSearchForm(form: HTMLFormElement): void {
     this.form = form;
   }
 
-  protected getSearchForm(): HTMLFormElement|undefined|null {
+  getSearchForm(): HTMLFormElement|undefined|null {
     if (!this.form && this.listFormId) {
       this.form = document.getElementById(this.listFormId) as HTMLFormElement;
     }
     return this.form;
   }
   setFilter(filter: S): void {
-    this.setState(filter as any);
+    const modelName = this.getModelName();
+    const objSet: any = {};
+    objSet[modelName] = filter;
+    this.setState(objSet);
   }
-  protected getCurrencyCode(): string|undefined {
+  getCurrencyCode(): string|undefined {
     return getCurrencyCode(this.form);
   }
   getFilter(): S {
@@ -439,7 +438,7 @@ export class BaseSearchComponent<T, S extends Filter, P extends RouteComponentPr
     const obj3 = getModel<T, S>(this.state, name, this, fields, this.excluding, this.keys, l, f, dc, lc, cc);
     return obj3;
   }
-  protected getFields(): string[]|undefined {
+  getFields(): string[]|undefined {
     const fs = getFieldsFromForm(this.fields, this.initFields, this.form);
     this.initFields = true;
     return fs;
@@ -450,11 +449,11 @@ export class BaseSearchComponent<T, S extends Filter, P extends RouteComponentPr
     this.pageSizeChanged(size);
   }
 */
-  protected pageSizeOnClick = () => {
+  pageSizeOnClick = () => {
     this.setState(prevState => ({ isPageSizeOpenDropDown: !(prevState as any).isPageSizeOpenDropDown } as any));
   }
 
-  protected clearQ(): void {
+  clearQ(): void {
     const m = this.state.model;
     if (m) {
       m.q = '';
@@ -638,6 +637,7 @@ export class SearchComponent<T, S extends Filter, P extends RouteComponentProps,
         }
       }
     }
+    this.add = this.add.bind(this);
     this.call = this.call.bind(this);
     this.showError = getErrorFunc(param, showError);
     this.componentDidMount = this.componentDidMount.bind(this);
@@ -662,6 +662,11 @@ export class SearchComponent<T, S extends Filter, P extends RouteComponentProps,
   createFilter(): S {
     const s: any = {};
     return s;
+  }
+  add = (event: any) => {
+    event.preventDefault();
+    const url = this.url + '/add';
+    this.props.history.push(url);
   }
   call(se: S) {
     this.running = true;
@@ -766,25 +771,25 @@ export abstract class BaseEditComponent<T, P extends RouteComponentProps, S> ext
 
   insertSuccessMsg: string;
   updateSuccessMsg: string;
-  protected back(event: any) {
+  back(event: any) {
     if (event) {
       event.preventDefault();
     }
     this.props.history.goBack();
   }
-  protected resetState(newMod: boolean, model: T, originalModel?: T) {
+  resetState(newMod: boolean, model: T, originalModel?: T) {
     this.newMode = newMod;
     this.orginalModel = originalModel;
     this.showModel(model);
   }
-  protected handleNotFound(form?: HTMLFormElement|null): void {
+  handleNotFound(form?: HTMLFormElement|null): void {
     const msg = message(this.resourceService.value, 'error_not_found', 'error');
     if (form) {
       readOnly(form);
     }
     this.showError(msg.message, msg.title);
   }
-  protected getModelName(f?: HTMLFormElement): string {
+  getModelName(f?: HTMLFormElement): string {
     if (this.name && this.name.length > 0) {
       return this.name;
     }
@@ -807,7 +812,7 @@ export abstract class BaseEditComponent<T, P extends RouteComponentProps, S> ext
   }
 
   // end of: can be in ViewComponent
-  protected createModel(): T {
+  createModel(): T {
     if (this.metadata) {
       const obj = createModel2<T>(this.metadata);
       return obj;
@@ -834,7 +839,7 @@ export abstract class BaseEditComponent<T, P extends RouteComponentProps, S> ext
       }, 100);
     }
   }
-  protected saveOnClick = (event: any) => {
+  saveOnClick = (event: any) => {
     event.preventDefault();
     (event as any).persist();
     if (!this.form && event && event.target) {
@@ -881,7 +886,7 @@ export abstract class BaseEditComponent<T, P extends RouteComponentProps, S> ext
       }
     }
   }
-  protected validate(obj: T, callback: (obj2?: T) => void) {
+  validate(obj: T, callback: (obj2?: T) => void) {
     if (this.ui && this.form) {
       const valid = this.ui.validateForm(this.form, localeOf(undefined, this.getLocale));
       if (valid) {
@@ -892,10 +897,10 @@ export abstract class BaseEditComponent<T, P extends RouteComponentProps, S> ext
     }
   }
 
-  protected save(obj: T, dif?: T, isBack?: boolean) {
+  save(obj: T, dif?: T, isBack?: boolean) {
   }
 
-  protected succeed(msg: string, isBack?: boolean, result?: ResultInfo<T>) {
+  succeed(msg: string, isBack?: boolean, result?: ResultInfo<T>) {
     if (result) {
       const model = result.value;
       this.newMode = false;
@@ -913,7 +918,7 @@ export abstract class BaseEditComponent<T, P extends RouteComponentProps, S> ext
       this.back(null);
     }
   }
-  protected fail(result: ResultInfo<T>) {
+  fail(result: ResultInfo<T>) {
     const errors = result.errors;
     const f = this.form;
     const u = this.ui;
@@ -936,7 +941,7 @@ export abstract class BaseEditComponent<T, P extends RouteComponentProps, S> ext
     }
   }
 
-  protected postSave(res: number|string|ResultInfo<T>, backOnSave?: boolean) {
+  postSave(res: number|string|ResultInfo<T>, backOnSave?: boolean) {
     this.running = false;
     hideLoading(this.loading);
     const st = this.status;
@@ -972,7 +977,7 @@ export abstract class BaseEditComponent<T, P extends RouteComponentProps, S> ext
       }
     }
   }
-  protected handleDuplicateKey(result?: ResultInfo<T>) {
+  handleDuplicateKey(result?: ResultInfo<T>) {
     const msg = message(this.resourceService.value, 'error_duplicate_key', 'error');
     this.showError(msg.message, msg.title);
   }
@@ -1012,7 +1017,7 @@ export class EditComponent<T, ID, P extends RouteComponentProps, S> extends Base
     this.componentDidMount = this.componentDidMount.bind(this);
     this.ref = React.createRef();
   }
-  protected ref: any;
+  ref: any;
   componentDidMount() {
     const k = (this.ui ? this.ui.registerEvents : undefined);
     this.form = initForm(this.ref.current, k);
@@ -1073,7 +1078,7 @@ export class EditComponent<T, ID, P extends RouteComponentProps, S> extends Base
       }
     }
   }
-  protected save(obj: T, body?: T, isBack?: boolean) {
+  save(obj: T, body?: T, isBack?: boolean) {
     this.running = true;
     showLoading(this.loading);
     const isBackO = (isBack == null || isBack === undefined ? this.backOnSuccess : isBack);
@@ -1122,25 +1127,25 @@ export class BaseDiffApprComponent<T, ID, P extends RouteComponentProps, S exten
       disabled: false
     };
   }
-  protected status: DiffStatusConfig;
-  protected id?: ID;
-  protected form?: HTMLFormElement;
-  protected running?: boolean;
-  protected resource: StringMap;
+  status: DiffStatusConfig;
+  id?: ID;
+  form?: HTMLFormElement;
+  running?: boolean;
+  resource: StringMap;
 
-  protected back(event: any) {
+  back(event: any) {
     if (event) {
       event.preventDefault();
     }
     this.props.history.goBack();
   }
 
-  protected initModel(): T {
+  initModel(): T {
     const x: any = {};
     return x;
   }
 
-  protected postApprove(s: number|string, err?: any) {
+  postApprove(s: number|string, err?: any) {
     this.setState({ disabled: true });
     const r = this.resourceService;
     const st = this.status;
@@ -1156,7 +1161,7 @@ export class BaseDiffApprComponent<T, ID, P extends RouteComponentProps, S exten
     }
   }
 
-  protected postReject(status: number|string, err?: any) {
+  postReject(status: number|string, err?: any) {
     this.setState({ disabled: true });
     const r = this.resourceService;
     const st = this.status;
@@ -1211,7 +1216,7 @@ export class BaseDiffApprComponent<T, ID, P extends RouteComponentProps, S exten
     }
   }
 
-  protected handleNotFound() {
+  handleNotFound() {
     this.setState({ disabled: true });
     const msg = message(this.resourceService.value, 'error_not_found', 'error');
     this.showError(msg.message, msg.title);
@@ -1235,7 +1240,7 @@ export class DiffApprComponent<T, ID, P extends RouteComponentProps, S extends D
       disabled: false,
     };
   }
-  protected ref: any;
+  ref: any;
 
   componentDidMount() {
     this.form = this.ref.current;
@@ -1316,4 +1321,8 @@ export class DiffApprComponent<T, ID, P extends RouteComponentProps, S extends D
       });
     }
   }
+}
+export function removeUrlParams(url: string): string {
+  const startParams = url.indexOf('?');
+  return startParams !== -1 ? url.substring(0, startParams) : url;
 }
