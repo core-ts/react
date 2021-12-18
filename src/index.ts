@@ -16,6 +16,19 @@ export * from './useEdit';
 export * from './useSearch';
 export * from './useMessage';
 
+export function checked(s: string[]|string|undefined, v: string): boolean|undefined {
+  if (s) {
+    if (Array.isArray(s)) {
+      return s.includes(v);
+    } else {
+      return s === v;
+    }
+  }
+  return false;
+}
+export function value<T>(obj?: T): T {
+  return (obj ? obj : {} as any);
+}
 export const withDefaultProps = (Component: any) => (props: RouteComponentProps) => {
   // return <Component props={props} history={props.history} />;
   return React.createElement(Component, { props, history: props.history });

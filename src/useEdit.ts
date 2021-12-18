@@ -98,11 +98,13 @@ export const useEditProps = <T, ID, S, P extends RouteComponentProps>(
     let keys: string[]|undefined;
     if (p && !p.keys && service && service.metadata) {
       const metadata = (p.metadata ? p.metadata : service.metadata());
-      const meta = build(metadata);
-      keys = (p.keys ? p.keys : (meta ? meta.keys : undefined));
-      const version = (p.version ? p.version : (meta ? meta.version : undefined));
-      p.keys = keys;
-      p.version = version;
+      if (metadata) {
+        const meta = build(metadata);
+        keys = (p.keys ? p.keys : (meta ? meta.keys : undefined));
+        const version = (p.version ? p.version : (meta ? meta.version : undefined));
+        p.keys = keys;
+        p.version = version;
+      }
     }
     const id = buildId<ID>(props, keys);
     if (id) {

@@ -54,7 +54,7 @@ export class ViewComponent<T, ID, P extends RouteComponentProps, S> extends Reac
   loading?: LoadingService;
   showError: (msg: string, title?: string, detail?: string, callback?: () => void) => void;
   getLocale?: (profile?: string) => Locale;
-  loadData?: (id: ID, ctx?: any) => Promise<T>;
+  loadData?: (id: ID) => Promise<T|null>;
   // protected service: ViewService<T, ID>;
   form?: HTMLFormElement;
   ref: any;
