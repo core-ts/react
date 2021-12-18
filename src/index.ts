@@ -32,9 +32,9 @@ export const Loading = (props: LoadingProps) => {
     'boxShadow': 'none'
   };
   if (props.error) {
-    return React.createElement("div", null, "Error Load Module!");// return (<div>Error Load Module!</div>);
+    return React.createElement('div', null, 'Error Load Module!'); // return (<div>Error Load Module!</div>);
   } else {
-    return (React.createElement("div", { className: 'loader-wrapper' }, React.createElement("div", { className: 'loader-sign', style: loadingStyle }, React.createElement("div", { className: 'loader' }))));
+    return (React.createElement('div', { className: 'loader-wrapper' }, React.createElement('div', { className: 'loader-sign', style: loadingStyle }, React.createElement('div', { className: 'loader' }))));
     /*
     return (
       <div className='loader-wrapper'>

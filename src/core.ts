@@ -1,8 +1,13 @@
 import {RouteComponentProps} from 'react-router';
 import {focusFirstElement} from './formutil';
 
+export const pageSizes = [12, 24, 60, 100, 120, 180, 300, 600];
 export interface ModelMap {
   [key: string]: any;
+}
+export interface PageChange {
+  page: number; // currentPage
+  size: number; // itemsPerPage
 }
 export interface ModelProps {
   setGlobalState?: (m: ModelMap) => void;

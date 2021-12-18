@@ -41,7 +41,7 @@ export interface BaseEditComponentParam<T, ID> {
   postSave?: (obj: T, res: number|ResultInfo<T>, version?: string, backOnSave?: boolean) => void;
   handleDuplicateKey?: (result?: ResultInfo<T>) => void;
   load?: (i: ID, callback?: (m: T, showM: (m2: T) => void) => void) => void;
-  save?: (obj: T, diff?: T, version?: string, isBack?: boolean) => void;
+  doSave?: (obj: T, diff?: T, version?: string, isBack?: boolean) => void;
   prepareCustomData?: (data: any) => void; // need to review
 }
 export interface HookBaseEditParameter<T, ID, S> extends BaseEditComponentParam<T, ID> {
@@ -222,7 +222,7 @@ export const useCoreEdit = <T, ID, S, P>(
   };
   const createModel = (p && p.createModel ? p.createModel : _createModel);
 
-  const newOnClick = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+  const create = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     event.preventDefault();
     const obj = createModel();
     resetState(true, obj, undefined);
@@ -260,7 +260,7 @@ export const useCoreEdit = <T, ID, S, P>(
         validate(obj, () => {
           const msg = message(p1.resource.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
           p1.confirm(msg.message, msg.title, () => {
-            save(obj, undefined, version, isBack);
+            doSave(obj, undefined, version, isBack);
           }, msg.no, msg.yes);
         });
       } else {
@@ -272,7 +272,7 @@ export const useCoreEdit = <T, ID, S, P>(
           validate(obj, () => {
             const msg = message(p1.resource.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
             p1.confirm(msg.message, msg.title, () => {
-              save(obj, diffObj, version, isBack);
+              doSave(obj, diffObj, version, isBack);
             }, msg.no, msg.yes);
           });
         }
@@ -281,7 +281,7 @@ export const useCoreEdit = <T, ID, S, P>(
   };
   const onSave = (p && p.onSave ? p.onSave : _onSave);
 
-  const saveOnClick = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+  const save = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     event.preventDefault();
     event.persist();
     onSave();
@@ -387,7 +387,7 @@ export const useCoreEdit = <T, ID, S, P>(
   };
   const handleDuplicateKey = (p && p.handleDuplicateKey ? p.handleDuplicateKey : _handleDuplicateKey);
 
-  const _save = (obj: T, body?: T, version?: string, isBack?: boolean) => {
+  const _doSave = (obj: T, body?: T, version?: string, isBack?: boolean) => {
     setRunning(true);
     showLoading(p1.loading);
     const isBackO = (isBack == null || isBack === undefined ? true : isBack);
@@ -402,7 +402,7 @@ export const useCoreEdit = <T, ID, S, P>(
       service.insert(obj).then(result => postSave(obj, result, version, isBackO));
     }
   };
-  const save = (p && p.save ? p.save : _save);
+  const doSave = (p && p.doSave ? p.doSave : _doSave);
 
   const _load = (_id: ID, callback?: (m: T, showM: (m2: T) => void) => void) => {
     const id: any = _id;
@@ -469,8 +469,8 @@ export const useCoreEdit = <T, ID, S, P>(
     handleNotFound,
     getModel,
     createNewModel: createModel,
-    newOnClick,
-    saveOnClick,
+    newOnClick: create,
+    save,
     onSave,
     confirm,
     validate,
@@ -480,6 +480,6 @@ export const useCoreEdit = <T, ID, S, P>(
     postSave,
     handleDuplicateKey,
     load,
-    save
+    doSave
   };
 };

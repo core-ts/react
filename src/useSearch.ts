@@ -3,7 +3,7 @@ import {RouteComponentProps} from 'react-router';
 import {useHistory, useRouteMatch} from 'react-router-dom';
 import {clone} from 'reflectx';
 import {addParametersIntoUrl, append, buildMessage, Filter, formatResults, getFieldsFromForm, getModel, handleAppend, handleSort, initFilter, mergeFilter as mergeFilter2, Pagination, removeSortStatus, showPaging, Sortable, validate} from 'search-core';
-import {error, getDecodeFromForm, getName, getRemoveError, getValidateForm, hideLoading, initForm, Locale, removeFormError, ResourceService, SearchParameter, SearchResult, SearchService, showLoading} from './core';
+import {error, getDecodeFromForm, getName, getRemoveError, getValidateForm, hideLoading, initForm, Locale, PageChange, pageSizes, removeFormError, ResourceService, SearchParameter, SearchResult, SearchService, showLoading} from './core';
 import {DispatchWithCallback, useMergeState} from './merge';
 import {buildFromUrl} from './route';
 import {enLocale} from './state';
@@ -24,7 +24,7 @@ export const callSearch = <T, S extends Filter>(se: S, search3: (s: S, limit?: n
   }
   let offset: number;
   if (!se.limit || se.limit <= 0) {
-    se.limit = 20;
+    se.limit = 24;
   }
   if (se.firstLimit && se.firstLimit > 0) {
     offset = se.limit * (page - 2) + se.firstLimit;
@@ -95,7 +95,7 @@ export interface SearchComponentParam<T, M extends Filter> {
 export interface HookBaseSearchParameter<T, S extends Filter, ST extends SearchComponentState<T, S>> extends SearchComponentParam<T, S> {
   refForm: any;
   initialState: ST;
-  search: ((s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>;
+  service: ((s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>;
   resource: ResourceService;
   showMessage: (msg: string) => void;
   showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
@@ -131,7 +131,6 @@ export interface SearchComponentState<T, S> extends Pagination, Sortable {
   approvable?: boolean;
   deletable?: boolean;
 }
-export const pageSizes = [10, 20, 40, 60, 100, 200, 400, 800];
 
 function mergeParam<T, S extends Filter>(p?: SearchComponentParam<T, S>): SearchComponentParam<T, S> {
   if (p) {
@@ -139,7 +138,7 @@ function mergeParam<T, S extends Filter>(p?: SearchComponentParam<T, S>): Search
       p.sequenceNo = 'sequenceNo';
     }
     if (!p.pageSize) {
-      p.pageSize = 20;
+      p.pageSize = 24;
     }
     if (!p.pageSizes) {
       p.pageSizes = pageSizes;
@@ -151,7 +150,7 @@ function mergeParam<T, S extends Filter>(p?: SearchComponentParam<T, S>): Search
   } else {
     return {
       sequenceNo: 'sequenceNo',
-      pageSize: 20,
+      pageSize: 24,
       pageSizes,
       pageMaxSize: 7
     };
@@ -160,12 +159,11 @@ function mergeParam<T, S extends Filter>(p?: SearchComponentParam<T, S>): Search
 export const useSearch = <T, S extends Filter, ST extends SearchComponentState<T, S>>(
   refForm: any,
   initialState: ST,
-  search: ((s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
+  service: ((s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
   p2: SearchParameter,
   p?: InitSearchComponentParam<T, S, ST>,
 ) => {
-  debugger;
-  const baseProps = useCoreSearch(undefined, refForm, initialState, search, p2, p);
+  const baseProps = useCoreSearch(undefined, refForm, initialState, service, p2, p);
 
   useEffect(() => {
     const { load, setState, component } = baseProps;
@@ -184,16 +182,16 @@ export const useSearch = <T, S extends Filter, ST extends SearchComponentState<T
   return { ...baseProps };
 };
 export const useSearchOneProps = <T, S extends Filter, ST extends SearchComponentState<T, S>, P extends RouteComponentProps>(p: HookPropsSearchParameter<T, S, ST, P>) => {
-  return useSearch(p.refForm, p.initialState, p.search, p, p);
+  return useSearch(p.refForm, p.initialState, p.service, p, p);
 };
 export const useSearchOne = <T, S extends Filter, ST extends SearchComponentState<T, S>>(p: HookBaseSearchParameter<T, S, ST>) => {
-  return useCoreSearch(undefined, p.refForm, p.initialState, p.search, p, p);
+  return useCoreSearch(undefined, p.refForm, p.initialState, p.service, p, p);
 };
 export const useCoreSearch = <T, S extends Filter, ST, P>(
   props: P|undefined,
   refForm: any,
   initialState: ST,
-  search: ((s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
+  service: ((s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
   p1: SearchParameter,
   p2?: SearchComponentParam<T, S>
 ) => {
@@ -253,8 +251,8 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
       se = component;
     }
     let keys = p && p.keys ? p.keys : undefined;
-    if (!keys && typeof search !== 'function' && search.keys) {
-      keys = search.keys();
+    if (!keys && typeof service !== 'function' && service.keys) {
+      keys = service.keys();
     }
     const n = getModelName();
     let fs = p && p.fields;
@@ -303,10 +301,10 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
         addParametersIntoUrl(s, isFirstLoad);
       }
       const lc = p1.getLocale ? p1.getLocale() : enLocale;
-      if (typeof search === 'function') {
-        callSearch<T, S>(s, search, showResults, searchError, lc, se.nextPageToken);
+      if (typeof service === 'function') {
+        callSearch<T, S>(s, service, showResults, searchError, lc, se.nextPageToken);
       } else {
-        callSearch<T, S>(s, search.search, showResults, searchError, lc, se.nextPageToken);
+        callSearch<T, S>(s, service.search, showResults, searchError, lc, se.nextPageToken);
       }
     });
   };
@@ -343,7 +341,7 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
     }
   };
 
-  const searchOnClick = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void => {
+  const search = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void => {
     if (event) {
       event.preventDefault();
     }
@@ -411,11 +409,12 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
   const _showResults = (s: S, sr: SearchResult<T>, lc: Locale) => {
     const results = sr.list;
     if (results && results.length > 0) {
-      formatResults(results, component.pageIndex, component.pageSize, component.initPageSize, p ? p.sequenceNo : undefined, p ? p.format : undefined, lc);
+      debugger;
+      formatResults(results, component.pageIndex, component.pageSize, component.pageSize, p ? p.sequenceNo : undefined, p ? p.format : undefined, lc);
     }
     const am = component.appendMode;
     const pi = (s.page && s.page >= 1 ? s.page : 1);
-    setComponent({ itemTotal: sr.total, pageIndex: pi, nextPageToken: sr.nextPageToken });
+    setComponent({ total: sr.total, pageIndex: pi, nextPageToken: sr.nextPageToken });
     if (am) {
       let limit = s.limit;
       if ((!s.page || s.page <= 1) && s.firstLimit && s.firstLimit > 0) {
@@ -456,11 +455,11 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
     doSearch(component);
   };
 
-  const pageChanged = (data: any) => {
-    const { currentPage, itemsPerPage } = data;
-    setComponent({ pageIndex: currentPage, pageSize: itemsPerPage, append: false });
-    component.pageIndex = currentPage;
-    component.pageSize = itemsPerPage;
+  const pageChanged = (data: PageChange) => {
+    const { page, size } = data;
+    setComponent({ pageIndex: page, pageSize: size, append: false });
+    component.pageIndex = page;
+    component.pageSize = size;
     component.append = false;
     doSearch(component);
   };
@@ -477,7 +476,7 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
     showMessage: p1.showMessage,
     load,
     add,
-    searchOnClick,
+    searchOnClick: search,
     sort,
     changeView,
     showMore,

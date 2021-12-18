@@ -1,9 +1,9 @@
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
 import {clone, diff, makeDiff} from 'reflectx';
-import {addParametersIntoUrl, append, buildMessage, changePage, changePageSize, formatResultsByComponent, getFieldsFromForm, getModel, handleAppend, handleSortEvent, initFilter, mergeFilter as mergeFilter2, more, reset, Searchable, showPaging, validate} from 'search-core';
+import {addParametersIntoUrl, append, buildMessage, changePage, changePageSize, formatResults, getFieldsFromForm, getModel, handleAppend, handleSortEvent, initFilter, mergeFilter as mergeFilter2, more, reset, Searchable, showPaging, validate} from 'search-core';
 import {BaseDiffState, createDiffStatus, createEditStatus, DiffApprService, DiffParameter, DiffState, DiffStatusConfig, hideLoading, showLoading} from './core';
-import {Attributes, buildId, EditStatusConfig, error, ErrorMessage, Filter, getCurrencyCode, getModelName as getModelName2, initForm, LoadingService, Locale, message, messageByHttpStatus, removePhoneFormat, ResourceService, SearchParameter, SearchResult, SearchService, SearchState, StringMap, UIService, ViewParameter, ViewService} from './core';
+import {Attributes, buildId, EditStatusConfig, error, ErrorMessage, Filter, getCurrencyCode, getModelName as getModelName2, initForm, LoadingService, Locale, message, messageByHttpStatus, PageChange, pageSizes, removePhoneFormat, ResourceService, SearchParameter, SearchResult, SearchService, SearchState, StringMap, UIService, ViewParameter, ViewService} from './core';
 import {formatDiffModel, getDataFields} from './diff';
 import {build, createModel as createModel2, EditParameter, GenericService, handleStatus, handleVersion, initPropertyNullInModel, ResultInfo} from './edit';
 import {focusFirstError, readOnly} from './formutil';
@@ -291,7 +291,7 @@ export class MessageComponent<S extends MessageOnlyState, P> extends BaseCompone
     this.setState({ message: '' });
   }
 }
-export class BaseSearchComponent<T, S extends Filter, P, I extends SearchState<T, S>> extends BaseComponent<P, I> implements Searchable {
+export class BaseSearchComponent<T, F extends Filter, P, I extends SearchState<T, F>> extends BaseComponent<P, I> implements Searchable {
   constructor(props: P,
       protected resourceService: ResourceService,
       protected showMessage: (msg: string) => void,
@@ -315,7 +315,7 @@ export class BaseSearchComponent<T, S extends Filter, P, I extends SearchState<T
 
     this.pageSizeChanged = this.pageSizeChanged.bind(this);
     this.clearQ = this.clearQ.bind(this);
-    this.searchOnClick = this.searchOnClick.bind(this);
+    this.search = this.search.bind(this);
 
     this.resetAndSearch = this.resetAndSearch.bind(this);
     this.doSearch = this.doSearch.bind(this);
@@ -341,14 +341,14 @@ export class BaseSearchComponent<T, S extends Filter, P, I extends SearchState<T
   resource: StringMap;
   url: string;
 
-  filter?: S;
+  filter?: F;
   // Pagination
-  initPageSize = 20;
-  pageSize = 20;
+  initPageSize = 24;
+  pageSize = 24;
   pageIndex?: number = 1;
   nextPageToken?: string;
-  itemTotal = 0;
-  pageTotal = 0;
+  total = 0;
+  pages = 0;
   showPaging?: boolean;
   append?: boolean;
   appendMode?: boolean;
@@ -368,7 +368,7 @@ export class BaseSearchComponent<T, S extends Filter, P, I extends SearchState<T
   tmpPageIndex?: number = 1;
 
   pageMaxSize = 7;
-  pageSizes: number[] = [10, 20, 40, 60, 100, 200, 400, 800];
+  pageSizes: number[] = pageSizes;
 
   list?: T[];
   excluding?: string[]|number[];
@@ -391,7 +391,7 @@ export class BaseSearchComponent<T, S extends Filter, P, I extends SearchState<T
   toggleFilter(event: any): void {
     this.hideFilter = !this.hideFilter;
   }
-  load(s: S, autoSearch: boolean): void {
+  load(s: F, autoSearch: boolean): void {
     const obj2 = initFilter(s, this);
     this.setFilter(obj2);
     const com = this;
@@ -412,7 +412,7 @@ export class BaseSearchComponent<T, S extends Filter, P, I extends SearchState<T
     }
     return this.form;
   }
-  setFilter(filter: S): void {
+  setFilter(filter: F): void {
     const modelName = this.getModelName();
     const objSet: any = {};
     objSet[modelName] = filter;
@@ -421,7 +421,7 @@ export class BaseSearchComponent<T, S extends Filter, P, I extends SearchState<T
   getCurrencyCode(): string|undefined {
     return getCurrencyCode(this.form);
   }
-  getFilter(): S {
+  getFilter(): F {
     const name = this.getModelName();
     let lc: Locale|undefined;
     if (this.getLocale) {
@@ -435,7 +435,7 @@ export class BaseSearchComponent<T, S extends Filter, P, I extends SearchState<T
     const l = this.getList();
     const f = this.getSearchForm();
     const dc = (this.ui ? this.ui.decodeFromForm : undefined);
-    const obj3 = getModel<T, S>(this.state, name, this, fields, this.excluding, this.keys, l, f, dc, lc, cc);
+    const obj3 = getModel<T, F>(this.state, name, this, fields, this.excluding, this.keys, l, f, dc, lc, cc);
     return obj3;
   }
   getFields(): string[]|undefined {
@@ -464,7 +464,7 @@ export class BaseSearchComponent<T, S extends Filter, P, I extends SearchState<T
       });
     }
   }
-  searchOnClick(event: any): void {
+  search(event: any): void {
     if (event) {
       event.preventDefault();
       if (!this.getSearchForm()) {
@@ -508,26 +508,27 @@ export class BaseSearchComponent<T, S extends Filter, P, I extends SearchState<T
     });
   }
 
-  call(s: S): void {
+  call(s: F): void {
 
   }
 
-  validateSearch(se: S, callback: () => void): void {
+  validateSearch(se: F, callback: () => void): void {
     const u = this.ui;
     const vl = (u ? u.validateForm : undefined);
     validate(se, callback, this.getSearchForm(), localeOf(undefined, this.getLocale), vl);
   }
-  showResults(s: S, sr: SearchResult<T>) {
+  showResults(s: F, sr: SearchResult<T>) {
     const com = this;
     const results = sr.list;
     if (results && results.length > 0) {
       const lc = localeOf(undefined, this.getLocale);
-      formatResultsByComponent(results, com, lc);
+      // formatResultsByComponent(results, com, lc);
+      formatResults(results, com.pageIndex, com.pageSize, com.pageSize, com.sequenceNo, com.format, lc);
     }
     const am = com.appendMode;
     com.pageIndex = (s.page && s.page >= 1 ? s.page : 1);
     if (sr.total) {
-      com.itemTotal = sr.total;
+      com.total = sr.total;
     }
     if (am) {
       let limit = s.limit;
@@ -609,9 +610,9 @@ export class BaseSearchComponent<T, S extends Filter, P, I extends SearchState<T
     this.doSearch();
   }
 
-  pageChanged(data: any) {
-    const { currentPage, itemsPerPage } = data;
-    changePage(this, currentPage, itemsPerPage);
+  pageChanged(data: PageChange) {
+    const { page, size } = data;
+    changePage(this, page, size);
     this.doSearch();
   }
 }
@@ -629,9 +630,9 @@ export class SearchComponent<T, S extends Filter, P extends RouteComponentProps,
     if (sv) {
       if (typeof sv === 'function') {
         const x: any = sv;
-        this.search = x;
+        this.service = x;
       } else {
-        this.search = sv.search;
+        this.service = sv.search;
         if (sv.keys) {
           this.keys = sv.keys();
         }
@@ -646,7 +647,7 @@ export class SearchComponent<T, S extends Filter, P extends RouteComponentProps,
     this.ref = React.createRef();
   }
   protected showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
-  protected search?: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>;
+  protected service?: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>;
   // protected service: SearchService<T, S>;
   protected ref: any;
   protected autoSearch: boolean;
@@ -692,8 +693,8 @@ export class SearchComponent<T, S extends Filter, P extends RouteComponentProps,
     delete se['firstLimit'];
     showLoading(this.loading);
     const com = this;
-    if (this.search) {
-      this.search(s, limit, next, fields).then(sr => {
+    if (this.service) {
+      this.service(s, limit, next, fields).then(sr => {
         com.showResults(s, sr);
         com.running = undefined;
         hideLoading(com.loading);
@@ -743,11 +744,11 @@ export abstract class BaseEditComponent<T, P extends RouteComponentProps, S> ext
     this.getModel = this.getModel.bind(this);
     this.createModel = this.createModel.bind(this);
 
-    this.newOnClick = this.newOnClick.bind(this);
-    this.saveOnClick = this.saveOnClick.bind(this);
+    this.create = this.create.bind(this);
+    this.save = this.save.bind(this);
     this.onSave = this.onSave.bind(this);
     this.validate = this.validate.bind(this);
-    this.save = this.save.bind(this);
+    this.doSave = this.doSave.bind(this);
     this.succeed = this.succeed.bind(this);
     this.fail = this.fail.bind(this);
     this.postSave = this.postSave.bind(this);
@@ -822,7 +823,7 @@ export abstract class BaseEditComponent<T, P extends RouteComponentProps, S> ext
     }
   }
 
-  newOnClick = (event: any) => {
+  create = (event: any) => {
     if (event) {
       event.preventDefault();
     }
@@ -839,7 +840,7 @@ export abstract class BaseEditComponent<T, P extends RouteComponentProps, S> ext
       }, 100);
     }
   }
-  saveOnClick = (event: any) => {
+  save = (event: any) => {
     event.preventDefault();
     (event as any).persist();
     if (!this.form && event && event.target) {
@@ -867,7 +868,7 @@ export abstract class BaseEditComponent<T, P extends RouteComponentProps, S> ext
         com.validate(obj, () => {
           const msg = message(r.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
           this.confirm(msg.message, msg.title, () => {
-            com.save(obj, obj, isBack);
+            com.doSave(obj, obj, isBack);
           }, msg.no, msg.yes);
         });
       } else {
@@ -879,7 +880,7 @@ export abstract class BaseEditComponent<T, P extends RouteComponentProps, S> ext
           com.validate(obj, () => {
             const msg = message(r.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
             this.confirm(msg.message, msg.title, () => {
-              com.save(obj, diffObj, isBack);
+              com.doSave(obj, diffObj, isBack);
             }, msg.no, msg.yes);
           });
         }
@@ -897,7 +898,7 @@ export abstract class BaseEditComponent<T, P extends RouteComponentProps, S> ext
     }
   }
 
-  save(obj: T, dif?: T, isBack?: boolean) {
+  doSave(obj: T, dif?: T, isBack?: boolean) {
   }
 
   succeed(msg: string, isBack?: boolean, result?: ResultInfo<T>) {
@@ -1013,7 +1014,7 @@ export class EditComponent<T, ID, P extends RouteComponentProps, S> extends Base
       this.keys = [];
     }
     this.load = this.load.bind(this);
-    this.save = this.save.bind(this);
+    this.doSave = this.doSave.bind(this);
     this.componentDidMount = this.componentDidMount.bind(this);
     this.ref = React.createRef();
   }
@@ -1078,7 +1079,7 @@ export class EditComponent<T, ID, P extends RouteComponentProps, S> extends Base
       }
     }
   }
-  save(obj: T, body?: T, isBack?: boolean) {
+  doSave(obj: T, body?: T, isBack?: boolean) {
     this.running = true;
     showLoading(this.loading);
     const isBackO = (isBack == null || isBack === undefined ? this.backOnSuccess : isBack);
