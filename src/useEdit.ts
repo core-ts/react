@@ -40,7 +40,7 @@ export interface BaseEditComponentParam<T, ID> {
   fail?: (result: ResultInfo<T>) => void;
   postSave?: (obj: T, res: number|ResultInfo<T>, version?: string, backOnSave?: boolean) => void;
   handleDuplicateKey?: (result?: ResultInfo<T>) => void;
-  load?: (i: ID, callback?: (m: T, showM: (m2: T) => void) => void) => void;
+  load?: (i: ID|null, callback?: (m: T, showM: (m2: T) => void) => void) => void;
   doSave?: (obj: T, diff?: T, version?: string, isBack?: boolean) => void;
   prepareCustomData?: (data: any) => void; // need to review
 }
@@ -57,11 +57,11 @@ export interface HookBaseEditParameter<T, ID, S> extends BaseEditComponentParam<
   loading?: LoadingService;
 }
 export interface EditComponentParam<T, ID, S> extends BaseEditComponentParam<T, ID> {
-  initialize?: (id: ID, ld: (i: ID, cb?: (m: T, showF: (model: T) => void) => void) => void, setState2: DispatchWithCallback<Partial<S>>, callback?: (m: T, showF: (model: T) => void) => void) => void;
+  initialize?: (id: ID|null, ld: (i: ID|null, cb?: (m: T, showF: (model: T) => void) => void) => void, setState2: DispatchWithCallback<Partial<S>>, callback?: (m: T, showF: (model: T) => void) => void) => void;
   callback?: (m: T, showF: (model: T) => void) => void;
 }
 export interface HookPropsEditParameter<T, ID, S, P extends RouteComponentProps> extends HookPropsBaseEditParameter<T, ID, S, P> {
-  initialize?: (id: ID, ld: (i: ID, cb?: (m: T, showF: (model: T) => void) => void) => void, setState2: DispatchWithCallback<Partial<S>>, callback?: (m: T, showF: (model: T) => void) => void) => void;
+  initialize?: (id: ID|null, ld: (i: ID|null, cb?: (m: T, showF: (model: T) => void) => void) => void, setState2: DispatchWithCallback<Partial<S>>, callback?: (m: T, showF: (model: T) => void) => void) => void;
   callback?: (m: T, showF: (model: T) => void) => void;
 }
 export interface HookPropsBaseEditParameter<T, ID, S, P extends RouteComponentProps> extends HookBaseEditParameter<T, ID, S> {
@@ -107,12 +107,10 @@ export const useEditProps = <T, ID, S, P extends RouteComponentProps>(
       }
     }
     const id = buildId<ID>(props, keys);
-    if (id) {
-      if (p && p.initialize) {
-        p.initialize(id, baseProps.load, baseProps.setState, p.callback);
-      } else {
-        baseProps.load(id, p ? p.callback : undefined);
-      }
+    if (p && p.initialize) {
+      p.initialize(id, baseProps.load, baseProps.setState, p.callback);
+    } else {
+      baseProps.load(id, p ? p.callback : undefined);
     }
   }, []);
   return {...baseProps};
@@ -406,7 +404,7 @@ export const useCoreEdit = <T, ID, S, P>(
   };
   const doSave = (p && p.doSave ? p.doSave : _doSave);
 
-  const _load = (_id: ID, callback?: (m: T, showM: (m2: T) => void) => void) => {
+  const _load = (_id: ID|null, callback?: (m: T, showM: (m2: T) => void) => void) => {
     const id: any = _id;
     if (id != null && id !== '') {
       setRunning(true);

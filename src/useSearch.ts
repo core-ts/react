@@ -3,7 +3,7 @@ import {RouteComponentProps} from 'react-router';
 import {useHistory, useRouteMatch} from 'react-router-dom';
 import {clone} from 'reflectx';
 import {addParametersIntoUrl, append, buildMessage, Filter, formatResults, getFieldsFromForm, getModel, handleAppend, handleSort, initFilter, mergeFilter as mergeFilter2, Pagination, removeSortStatus, showPaging, Sortable, validate} from 'search-core';
-import {error, getDecodeFromForm, getName, getRemoveError, getValidateForm, hideLoading, initForm, Locale, PageChange, pageSizes, removeFormError, ResourceService, SearchParameter, SearchResult, SearchService, showLoading} from './core';
+import {error, getDecodeFromForm, getName, getRemoveError, getValidateForm, handleToggle, hideLoading, initForm, Locale, PageChange, pageSizes, removeFormError, ResourceService, SearchParameter, SearchResult, SearchService, showLoading} from './core';
 import {DispatchWithCallback, useMergeState} from './merge';
 import {buildFromUrl} from './route';
 import {enLocale} from './state';
@@ -58,8 +58,14 @@ export interface HookPropsSearchParameter<T, S extends Filter, ST, P extends Rou
   initialize?: (ld: (s: S, auto?: boolean) => void, setState2: DispatchWithCallback<Partial<ST>>, com?: SearchComponentState<T, S>) => void;
 }
 export interface SearchComponentParam<T, M extends Filter> {
+  addable?: boolean;
+  editable?: boolean;
+  approvable?: boolean;
+  deletable?: boolean;
+
   keys?: string[];
   sequenceNo?: string;
+  hideFilter?: boolean;
   name?: string;
   fields?: string[];
   appendMode?: boolean;
@@ -121,7 +127,7 @@ export interface SearchComponentState<T, S> extends Pagination, Sortable {
 
   pageMaxSize?: number;
   pageSizes?: number[];
-  excluding?: any;
+  excluding?: string[]|number[];
   hideFilter?: boolean;
 
   ignoreUrlParam?: boolean;
@@ -146,13 +152,33 @@ function mergeParam<T, S extends Filter>(p?: SearchComponentParam<T, S>): Search
     if (!p.pageMaxSize || p.pageMaxSize <= 0) {
       p.pageMaxSize = 7;
     }
+    if (p.hideFilter === undefined) {
+      p.hideFilter = true;
+    }
+    if (p.addable === undefined) {
+      p.addable = true;
+    }
+    if (p.editable === undefined) {
+      p.editable = true;
+    }
+    if (p.approvable === undefined) {
+      p.approvable = true;
+    }
+    if (p.deletable === undefined) {
+      p.deletable = true;
+    }
     return p;
   } else {
     return {
       sequenceNo: 'sequenceNo',
       pageSize: 24,
       pageSizes,
-      pageMaxSize: 7
+      pageMaxSize: 7,
+      hideFilter: true,
+      addable: true,
+      editable: true,
+      approvable: true,
+      deletable: true
     };
   }
 }
@@ -229,8 +255,10 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
   // const p = createSearchComponentState<T, S>(p1);
   const [component, setComponent] = useMergeState<SearchComponentState<T, S>>(p);
 
-  const toggleFilter = (event: any): void => {
-    setComponent({ hideFilter: !component.hideFilter });
+  const toggleFilter = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void => {
+    const x = !component.hideFilter;
+    handleToggle(event.target as HTMLInputElement, !x);
+    setComponent({ hideFilter: x });
   };
 
   const add = (event: any) => {
@@ -409,7 +437,6 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
   const _showResults = (s: S, sr: SearchResult<T>, lc: Locale) => {
     const results = sr.list;
     if (results && results.length > 0) {
-      debugger;
       formatResults(results, component.pageIndex, component.pageSize, component.pageSize, p ? p.sequenceNo : undefined, p ? p.format : undefined, lc);
     }
     const am = component.appendMode;
@@ -476,7 +503,7 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
     showMessage: p1.showMessage,
     load,
     add,
-    searchOnClick: search,
+    search,
     sort,
     changeView,
     showMore,

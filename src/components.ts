@@ -2,7 +2,7 @@ import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
 import {clone, diff, makeDiff} from 'reflectx';
 import {addParametersIntoUrl, append, buildMessage, changePage, changePageSize, formatResults, getFieldsFromForm, getModel, handleAppend, handleSortEvent, initFilter, mergeFilter as mergeFilter2, more, reset, Searchable, showPaging, validate} from 'search-core';
-import {BaseDiffState, createDiffStatus, createEditStatus, DiffApprService, DiffParameter, DiffState, DiffStatusConfig, hideLoading, showLoading} from './core';
+import {BaseDiffState, createDiffStatus, createEditStatus, DiffApprService, DiffParameter, DiffState, DiffStatusConfig, handleToggle, hideLoading, showLoading} from './core';
 import {Attributes, buildId, EditStatusConfig, error, ErrorMessage, Filter, getCurrencyCode, getModelName as getModelName2, initForm, LoadingService, Locale, message, messageByHttpStatus, PageChange, pageSizes, removePhoneFormat, ResourceService, SearchParameter, SearchResult, SearchService, SearchState, StringMap, UIService, ViewParameter, ViewService} from './core';
 import {formatDiffModel, getDataFields} from './diff';
 import {build, createModel as createModel2, EditParameter, GenericService, handleStatus, handleVersion, initPropertyNullInModel, ResultInfo} from './edit';
@@ -301,6 +301,7 @@ export class BaseSearchComponent<T, F extends Filter, P, I extends SearchState<T
       protected listFormId?: string) {
     super(props, getLocale, (ui ? ui.removeError : undefined));
     this.resource = resourceService.resource();
+    this.hideFilter = true;
     this.getModelName = this.getModelName.bind(this);
     this.showMessage = this.showMessage.bind(this);
 
@@ -388,8 +389,10 @@ export class BaseSearchComponent<T, F extends Filter, P, I extends SearchState<T
     return 'filter';
   }
 
-  toggleFilter(event: any): void {
-    this.hideFilter = !this.hideFilter;
+  toggleFilter(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void {
+    const x = !this.hideFilter;
+    handleToggle(event.target as HTMLInputElement, !x);
+    this.hideFilter = x;
   }
   load(s: F, autoSearch: boolean): void {
     const obj2 = initFilter(s, this);
@@ -1023,11 +1026,9 @@ export class EditComponent<T, ID, P extends RouteComponentProps, S> extends Base
     const k = (this.ui ? this.ui.registerEvents : undefined);
     this.form = initForm(this.ref.current, k);
     const id = buildId<ID>(this.props, this.keys);
-    if (id) {
-      this.load(id);
-    }
+    this.load(id);
   }
-  load(_id: ID, callback?: (m: T, showM: (m2: T) => void) => void) {
+  load(_id: ID|null, callback?: (m: T, showM: (m2: T) => void) => void) {
     const id: any = _id;
     if (id != null && id !== '') {
       const com = this;
