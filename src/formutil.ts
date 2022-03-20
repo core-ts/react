@@ -74,7 +74,7 @@ export function focusFirstError(form?: HTMLFormElement|null, className?: string)
       const ctrl = form[i] as HTMLInputElement;
       const parent = ctrl.parentElement;
       if (ctrl.classList.contains(className)
-        || parent && parent.classList.contains(className)) {
+        || (parent && parent.classList.contains(className))) {
         ctrl.focus();
         ctrl.scrollIntoView();
         return;

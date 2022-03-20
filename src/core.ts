@@ -1,4 +1,4 @@
-import {RouteComponentProps} from 'react-router';
+import {Params} from 'react-router';
 import {focusFirstElement} from './formutil';
 
 export const pageSizes = [12, 24, 60, 100, 120, 180, 300, 600];
@@ -284,26 +284,22 @@ export function buildKeys(attributes: Attributes): string[] {
   }
   return ps;
 }
-
-export function buildId<ID>(props: RouteComponentProps, keys?: string[]): ID|null {
-  if (!props) {
-    return null;
-  }
-  const sp: any = ((props as any).match ? props : (props as any)['props']);
+type Readonly<T> = {
+  readonly [P in keyof T]: T[P];
+};
+export function buildId<ID>(p: Readonly<Params<string>>, keys?: string[]): ID|null {
   if (!keys || keys.length === 0 || keys.length === 1) {
     if (keys && keys.length === 1) {
-      const x = sp.match.params[keys[0]];
-      if (x && x !== '') {
-        return x;
-      }
+      const id = p[keys[0]];
+      return id as any;
     }
-    return sp.match.params['id'];
+    return p['id'] as any;
   }
   const id: any = {};
   for (const key of keys) {
-    let v = sp.match.params[key];
+    let v = p[key];
     if (!v) {
-      v = sp[key];
+      v = p[key];
       if (!v) {
         return null;
       }
@@ -312,8 +308,6 @@ export function buildId<ID>(props: RouteComponentProps, keys?: string[]): ID|nul
   }
   return id;
 }
-
-
 export function dateToDefaultString(date: Date): string {
   return '' + date.getFullYear() + '-' + addZero(date.getMonth() + 1, 2) + '-' + addZero(date.getDate(), 2); // DateUtil.formatDate(date, 'YYYY-MM-DD');
 }

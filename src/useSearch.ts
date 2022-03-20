@@ -1,18 +1,23 @@
 import {useEffect, useState} from 'react';
-import {RouteComponentProps} from 'react-router';
-import {useHistory, useRouteMatch} from 'react-router-dom';
 import {clone} from 'reflectx';
-import {addParametersIntoUrl, append, buildMessage, Filter, formatResults, getFieldsFromForm, getModel, handleAppend, handleSort, initFilter, mergeFilter as mergeFilter2, Pagination, removeSortStatus, showPaging, Sortable, validate} from 'search-core';
 import {error, getDecodeFromForm, getName, getRemoveError, getValidateForm, handleToggle, hideLoading, initForm, Locale, PageChange, pageSizes, removeFormError, ResourceService, SearchParameter, SearchResult, SearchService, showLoading} from './core';
 import {DispatchWithCallback, useMergeState} from './merge';
 import {buildFromUrl} from './route';
+import {addParametersIntoUrl, append, buildMessage, formatResults, getFieldsFromForm, getModel, handleAppend, handleSort, initFilter, mergeFilter as mergeFilter2, Pagination, removeSortStatus, showPaging, Sortable, validate} from './search';
 import {enLocale} from './state';
-import {useUpdate, useUpdateWithProps} from './update';
+import {useUpdate} from './update';
 
 export interface Searchable<T> extends Pagination, Sortable {
   nextPageToken?: string;
   excluding?: string[]|number[];
   list?: T[];
+}
+interface Filter {
+  page?: number;
+  limit?: number;
+  firstLimit?: number;
+  fields?: string[];
+  sort?: string;
 }
 function prepareData(data: any): void {
 }
@@ -53,7 +58,7 @@ export interface InitSearchComponentParam<T, M extends Filter, S> extends Search
   createFilter?: () => M;
   initialize?: (ld: (s: M, auto?: boolean) => void, setState2: DispatchWithCallback<Partial<S>>, com?: SearchComponentState<T, M>) => void;
 }
-export interface HookPropsSearchParameter<T, S extends Filter, ST, P extends RouteComponentProps> extends HookPropsBaseSearchParameter<T, S, ST, P> {
+export interface HookPropsSearchParameter<T, S extends Filter, ST, P> extends HookPropsBaseSearchParameter<T, S, ST, P> {
   createFilter?: () => S;
   initialize?: (ld: (s: S, auto?: boolean) => void, setState2: DispatchWithCallback<Partial<ST>>, com?: SearchComponentState<T, S>) => void;
 }
@@ -207,7 +212,7 @@ export const useSearch = <T, S extends Filter, ST extends SearchComponentState<T
   }, []);
   return { ...baseProps };
 };
-export const useSearchOneProps = <T, S extends Filter, ST extends SearchComponentState<T, S>, P extends RouteComponentProps>(p: HookPropsSearchParameter<T, S, ST, P>) => {
+export const useSearchOneProps = <T, S extends Filter, ST extends SearchComponentState<T, S>, P>(p: HookPropsSearchParameter<T, S, ST, P>) => {
   return useSearch(p.refForm, p.initialState, p.service, p, p);
 };
 export const useSearchOne = <T, S extends Filter, ST extends SearchComponentState<T, S>>(p: HookBaseSearchParameter<T, S, ST>) => {
@@ -230,9 +235,8 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
   const getModelName = (p && p.getModelName ? p.getModelName : _getModelName);
 
   // const setState2: <K extends keyof S, P>(st: ((prevState: Readonly<S>, props: Readonly<P>) => (Pick<S, K> | S | null)) | (Pick<S, K> | S | null), cb?: () => void) => void;
-  const baseProps = (props ? useUpdateWithProps<ST, P>(props, initialState, getModelName, p1.getLocale, getRemoveError(p1), p ? p.prepareCustomData : undefined) : useUpdate<ST>(initialState, getModelName, p1.getLocale, getRemoveError(p1)));
+  const baseProps = useUpdate<ST>(initialState, getModelName, p1.getLocale, getRemoveError(p1));
   const { state, setState } = baseProps;
-  const [history, match] = [useHistory(), useRouteMatch()];
 
   const _getCurrencyCode = (): string => {
     return refForm && refForm.current ? refForm.current.getAttribute('currency-code') : null;
@@ -259,11 +263,6 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
     const x = !component.hideFilter;
     handleToggle(event.target as HTMLInputElement, !x);
     setComponent({ hideFilter: x });
-  };
-
-  const add = (event: any) => {
-    event.preventDefault();
-    history.push(match.url + '/add');
   };
 
   const _getFields = (): string[]|undefined => {
@@ -502,7 +501,6 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
     component,
     showMessage: p1.showMessage,
     load,
-    add,
     search,
     sort,
     changeView,

@@ -1,17 +1,18 @@
 import * as React from 'react';
-import {RouteComponentProps} from 'react-router';
 import {clone, diff, makeDiff} from 'reflectx';
-import {addParametersIntoUrl, append, buildMessage, changePage, changePageSize, formatResults, getFieldsFromForm, getModel, handleAppend, handleSortEvent, initFilter, mergeFilter as mergeFilter2, more, reset, Searchable, showPaging, validate} from 'search-core';
 import {BaseDiffState, createDiffStatus, createEditStatus, DiffApprService, DiffParameter, DiffState, DiffStatusConfig, handleToggle, hideLoading, showLoading} from './core';
-import {Attributes, buildId, EditStatusConfig, error, ErrorMessage, Filter, getCurrencyCode, getModelName as getModelName2, initForm, LoadingService, Locale, message, messageByHttpStatus, PageChange, pageSizes, removePhoneFormat, ResourceService, SearchParameter, SearchResult, SearchService, SearchState, StringMap, UIService, ViewParameter, ViewService} from './core';
+import {Attributes, EditStatusConfig, error, ErrorMessage, Filter, getCurrencyCode, getModelName as getModelName2, initForm, LoadingService, Locale, message, messageByHttpStatus, PageChange, pageSizes, removePhoneFormat, ResourceService, SearchParameter, SearchResult, SearchService, SearchState, StringMap, UIService, ViewParameter, ViewService} from './core';
 import {formatDiffModel, getDataFields} from './diff';
 import {build, createModel as createModel2, EditParameter, GenericService, handleStatus, handleVersion, initPropertyNullInModel, ResultInfo} from './edit';
 import {focusFirstError, readOnly} from './formutil';
 import {getAutoSearch, getConfirmFunc, getDiffStatusFunc, getEditStatusFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService} from './input';
 import {buildFromUrl} from './route';
+import {addParametersIntoUrl, append, buildMessage, changePage, changePageSize, formatResults, getFieldsFromForm, getModel, handleAppend, handleSortEvent, initFilter, mergeFilter as mergeFilter2, more, Pagination, reset, showPaging, Sortable, validate} from './search';
 import {buildFlatState, buildState, enLocale, handleEvent, handleProps, localeOf} from './state';
 
-export class ViewComponent<T, ID, P extends RouteComponentProps, S> extends React.Component<P, S> {
+interface Searchable extends Pagination, Sortable {
+}
+export class ViewComponent<T, ID, P, S> extends React.Component<P, S> {
   constructor(props: P, sv: ((id: ID, ctx?: any) => Promise<T>)|ViewService<T, ID>,
       param: ResourceService|ViewParameter,
       showError?: (msg: string, title?: string, detail?: string, callback?: () => void) => void,
@@ -40,7 +41,6 @@ export class ViewComponent<T, ID, P extends RouteComponentProps, S> extends Reac
         }
       }
     }
-    this.back = this.back.bind(this);
     this.getModelName = this.getModelName.bind(this);
     this.load = this.load.bind(this);
     this.getModel = this.getModel.bind(this);
@@ -61,12 +61,6 @@ export class ViewComponent<T, ID, P extends RouteComponentProps, S> extends Reac
   keys?: string[];
   metadata?: Attributes;
 
-  back(event: any) {
-    if (event) {
-      event.preventDefault();
-    }
-    this.props.history.goBack();
-  }
   getModelName(): string {
     if (this.name && this.name.length > 0) {
       return this.name;
@@ -76,13 +70,6 @@ export class ViewComponent<T, ID, P extends RouteComponentProps, S> extends Reac
       return 'model';
     } else {
       return n;
-    }
-  }
-  componentDidMount() {
-    this.form = this.ref.current;
-    const id = buildId<ID>(this.props, this.keys);
-    if (id) {
-      this.load(id);
     }
   }
   load(_id: ID, callback?: (m: T, showF: (model: T) => void) => void) {
@@ -619,7 +606,7 @@ export class BaseSearchComponent<T, F extends Filter, P, I extends SearchState<T
     this.doSearch();
   }
 }
-export class SearchComponent<T, S extends Filter, P extends RouteComponentProps, I extends SearchState<T, S>> extends BaseSearchComponent<T, S, P, I> {
+export class SearchComponent<T, S extends Filter, P, I extends SearchState<T, S>> extends BaseSearchComponent<T, S, P, I> {
   constructor(props: P, sv: ((s: S, ctx?: any) => Promise<SearchResult<T>>) | SearchService<T, S>,
       param: ResourceService|SearchParameter,
       showMessage?: (msg: string, option?: string) => void,
@@ -641,7 +628,6 @@ export class SearchComponent<T, S extends Filter, P extends RouteComponentProps,
         }
       }
     }
-    this.add = this.add.bind(this);
     this.call = this.call.bind(this);
     this.showError = getErrorFunc(param, showError);
     this.componentDidMount = this.componentDidMount.bind(this);
@@ -666,11 +652,6 @@ export class SearchComponent<T, S extends Filter, P extends RouteComponentProps,
   createFilter(): S {
     const s: any = {};
     return s;
-  }
-  add = (event: any) => {
-    event.preventDefault();
-    const url = this.url + '/add';
-    this.props.history.push(url);
   }
   call(se: S) {
     this.running = true;
@@ -711,7 +692,7 @@ export class SearchComponent<T, S extends Filter, P extends RouteComponentProps,
   }
 }
 
-export abstract class BaseEditComponent<T, P extends RouteComponentProps, S> extends BaseComponent<P, S> {
+export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
   constructor(props: P,
       protected resourceService: ResourceService,
       protected showMessage: (msg: string) => void,
@@ -779,7 +760,6 @@ export abstract class BaseEditComponent<T, P extends RouteComponentProps, S> ext
     if (event) {
       event.preventDefault();
     }
-    this.props.history.goBack();
   }
   resetState(newMod: boolean, model: T, originalModel?: T) {
     this.newMode = newMod;
@@ -986,7 +966,7 @@ export abstract class BaseEditComponent<T, P extends RouteComponentProps, S> ext
     this.showError(msg.message, msg.title);
   }
 }
-export class EditComponent<T, ID, P extends RouteComponentProps, S> extends BaseEditComponent<T, P, S>  {
+export class EditComponent<T, ID, P, S> extends BaseEditComponent<T, P, S>  {
   constructor(props: P, protected service: GenericService<T, ID, number|ResultInfo<T>>,
       param: ResourceService|EditParameter,
       showMessage?: (msg: string, option?: string) => void,
@@ -1018,16 +998,9 @@ export class EditComponent<T, ID, P extends RouteComponentProps, S> extends Base
     }
     this.load = this.load.bind(this);
     this.doSave = this.doSave.bind(this);
-    this.componentDidMount = this.componentDidMount.bind(this);
     this.ref = React.createRef();
   }
   ref: any;
-  componentDidMount() {
-    const k = (this.ui ? this.ui.registerEvents : undefined);
-    this.form = initForm(this.ref.current, k);
-    const id = buildId<ID>(this.props, this.keys);
-    this.load(id);
-  }
   load(_id: ID|null, callback?: (m: T, showM: (m2: T) => void) => void) {
     const id: any = _id;
     if (id != null && id !== '') {
@@ -1105,7 +1078,7 @@ export class EditComponent<T, ID, P extends RouteComponentProps, S> extends Base
   }
 }
 
-export class BaseDiffApprComponent<T, ID, P extends RouteComponentProps, S extends BaseDiffState> extends React.Component<P, S & any> {
+export class BaseDiffApprComponent<T, ID, P, S extends BaseDiffState> extends React.Component<P, S & any> {
   constructor(props: P, protected keys: string[], protected resourceService: ResourceService,
       protected showMessage: (msg: string, option?: string) => void,
       protected showError: (m: string, title?: string, detail?: string, callback?: () => void) => void,
@@ -1118,7 +1091,6 @@ export class BaseDiffApprComponent<T, ID, P extends RouteComponentProps, S exten
     this.resource = resourceService.resource();
     this.showMessage = this.showMessage.bind(this);
     this.showError = this.showError.bind(this);
-    this.back = this.back.bind(this);
     this.initModel = this.initModel.bind(this);
     this.postApprove = this.postApprove.bind(this);
     this.postReject = this.postReject.bind(this);
@@ -1134,13 +1106,6 @@ export class BaseDiffApprComponent<T, ID, P extends RouteComponentProps, S exten
   form?: HTMLFormElement;
   running?: boolean;
   resource: StringMap;
-
-  back(event: any) {
-    if (event) {
-      event.preventDefault();
-    }
-    this.props.history.goBack();
-  }
 
   initModel(): T {
     const x: any = {};
@@ -1224,7 +1189,7 @@ export class BaseDiffApprComponent<T, ID, P extends RouteComponentProps, S exten
     this.showError(msg.message, msg.title);
   }
 }
-export class DiffApprComponent<T, ID, P extends RouteComponentProps, S extends DiffState<T>> extends BaseDiffApprComponent<T, ID, P, S> {
+export class DiffApprComponent<T, ID, P, S extends DiffState<T>> extends BaseDiffApprComponent<T, ID, P, S> {
   constructor(props: P, protected service: DiffApprService<T, ID>,
       param: ResourceService|DiffParameter,
       showMessage?: (msg: string, option?: string) => void,
@@ -1243,14 +1208,6 @@ export class DiffApprComponent<T, ID, P extends RouteComponentProps, S extends D
     };
   }
   ref: any;
-
-  componentDidMount() {
-    this.form = this.ref.current;
-    const id = buildId<ID>(this.props, this.keys);
-    if (id) {
-      this.load(id);
-    }
-  }
 
   formatFields(value: T): T {
     return value;

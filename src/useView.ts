@@ -1,9 +1,8 @@
 import {useEffect, useState} from 'react';
-import {RouteComponentProps} from 'react-router';
+import {useNavigate, useParams} from 'react-router';
 import {buildId, getModelName as getModelName2, hideLoading, initForm, LoadingService, Locale, message, messageByHttpStatus, ResourceService, showLoading, ViewParameter, ViewService} from './core';
 import {readOnly} from './formutil';
 import {DispatchWithCallback, useMergeState} from './merge';
-import {useRouter} from './router';
 
 export interface BaseViewComponentParam<T, ID> {
   name?: string;
@@ -26,7 +25,7 @@ export interface ViewComponentParam<T, ID, S> extends BaseViewComponentParam<T, 
   initialize?: (id: ID, ld: (i: ID, cb?: (m: T, showF: (model: T) => void) => void) => void, setState2: DispatchWithCallback<Partial<S>>, callback?: (m: T, showF: (model: T) => void) => void) => void;
   callback?: (m: T, showF: (model: T) => void) => void;
 }
-export interface HookPropsViewParameter<T, ID, S, P extends RouteComponentProps> extends HookPropsBaseViewParameter<T, ID, S, P> {
+export interface HookPropsViewParameter<T, ID, S, P> extends HookPropsBaseViewParameter<T, ID, S, P> {
   keys?: string[];
   initialize?: (id: ID, ld: (i: ID, cb?: (m: T, showF: (model: T) => void) => void) => void, setState2: DispatchWithCallback<Partial<S>>, callback?: (m: T, showF: (model: T) => void) => void) => void;
   callback?: (m: T, showF: (model: T) => void) => void;
@@ -34,11 +33,8 @@ export interface HookPropsViewParameter<T, ID, S, P extends RouteComponentProps>
 export interface HookPropsBaseViewParameter<T, ID, S, P> extends HookBaseViewParameter<T, ID, S> {
   props: P;
 }
-export const useViewOneProps = <T, ID, S, P extends RouteComponentProps>(p: HookPropsViewParameter<T, ID, S, P>) => {
-  return useViewProps(p.props, p.refForm, p.initialState, p.service, p, p);
-};
 export const useViewOne = <T, ID, S>(p: HookBaseViewParameter<T, ID, S>) => {
-  return useView(p.refForm, p.initialState, p.service, p, p);
+  return useCoreView(p.refForm, p.initialState, p.service, p, p);
 };
 export const useView = <T, ID, S>(
   refForm: any,
@@ -47,15 +43,41 @@ export const useView = <T, ID, S>(
   p1: ViewParameter,
   p?: ViewComponentParam<T, ID, S>
   ) => {
+  const baseProps = useCoreView(refForm, initialState, service, p1, p);
+  const [, setState] = useMergeState<S>(initialState);
+  const params = useParams();
+  useEffect(() => {
+    if (baseProps.refForm) {
+      initForm(baseProps.refForm.current);
+    }
+    const id = buildId<ID>(params, p ? p.keys : undefined);
+    if (id) {
+      if (p && p.initialize) {
+        p.initialize(id, baseProps.load, setState, p.callback);
+      } else {
+        baseProps.load(id, p ? p.callback : undefined);
+      }
+    }
+  }, []);
+  return {...baseProps};
+};
+
+export const useCoreView = <T, ID, S>(
+  refForm: any,
+  initialState: S,
+  service: ((id: ID, ctx?: any) => Promise<T>)|ViewService<T, ID>,
+  p1: ViewParameter,
+  p?: ViewComponentParam<T, ID, S>
+  ) => {
   const [state, setState] = useMergeState<S>(initialState);
   const [running, setRunning] = useState<boolean>();
-  const {goBack} = useRouter();
+  const navigate = useNavigate();
 
   const back = (event: any) => {
     if (event) {
       event.preventDefault();
     }
-    goBack();
+    navigate(-1);
   };
 
   const getModelName = (f?: HTMLFormElement) => {
@@ -133,29 +155,4 @@ export const useView = <T, ID, S>(
     load,
     back
   };
-};
-export const useViewProps = <T, ID, S, P extends RouteComponentProps>(
-  props: P,
-  refForm: any,
-  initialState: S,
-  service: ((id: ID, ctx?: any) => Promise<T>)|ViewService<T, ID>,
-  p1: ViewParameter,
-  p?: ViewComponentParam<T, ID, S>
-  ) => {
-  const baseProps = useView(refForm, initialState, service, p1, p);
-  const [state, setState] = useMergeState<S>(initialState);
-  useEffect(() => {
-    if (baseProps.refForm) {
-      initForm(baseProps.refForm.current);
-    }
-    const id = buildId<ID>(props, p ? p.keys : undefined);
-    if (id) {
-      if (p && p.initialize) {
-        p.initialize(id, baseProps.load, setState, p.callback);
-      } else {
-        baseProps.load(id, p ? p.callback : undefined);
-      }
-    }
-  }, []);
-  return {...baseProps};
 };

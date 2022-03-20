@@ -1,20 +1,18 @@
 import * as React from 'react';
-import { RouteComponentProps } from 'react-router';
 export * from './formutil';
 export * from './util';
 export * from './core';
 export * from './state';
 export * from './edit';
 export * from './route';
-export * from './components';
 export * from './diff';
-export * from './router';
 export * from './merge';
 export * from './update';
-export * from './useView';
-export * from './useEdit';
 export * from './useSearch';
 export * from './useMessage';
+export * from './useEdit';
+export * from './components';
+export * from './search';
 
 export function checked(s: string[]|string|undefined, v: string): boolean|undefined {
   if (s) {
@@ -29,10 +27,6 @@ export function checked(s: string[]|string|undefined, v: string): boolean|undefi
 export function value<T>(obj?: T): T {
   return (obj ? obj : {} as any);
 }
-export const withDefaultProps = (Component: any) => (props: RouteComponentProps) => {
-  // return <Component props={props} history={props.history} />;
-  return React.createElement(Component, { props, history: props.history });
-};
 export interface LoadingProps {
   error?: any;
 }

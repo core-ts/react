@@ -1,11 +1,10 @@
 import {useEffect, useState} from 'react';
-import {RouteComponentProps} from 'react-router';
+import {useNavigate, useParams} from 'react-router';
 import {clone, makeDiff} from 'reflectx';
 import {Attributes, buildId, createEditStatus, EditStatusConfig, getModelName as getModelName2, hideLoading, initForm, LoadingService, Locale, message, messageByHttpStatus, ResourceService, showLoading, UIService} from './core';
 import {build, createModel as createModel2, EditParameter, GenericService, handleStatus, handleVersion, initPropertyNullInModel, ResultInfo} from './edit';
 import {focusFirstError, readOnly as setReadOnly} from './formutil';
 import {DispatchWithCallback, useMergeState} from './merge';
-import {useRouter} from './router';
 import {localeOf} from './state';
 import {useUpdate} from './update';
 
@@ -60,11 +59,11 @@ export interface EditComponentParam<T, ID, S> extends BaseEditComponentParam<T, 
   initialize?: (id: ID|null, ld: (i: ID|null, cb?: (m: T, showF: (model: T) => void) => void) => void, setState2: DispatchWithCallback<Partial<S>>, callback?: (m: T, showF: (model: T) => void) => void) => void;
   callback?: (m: T, showF: (model: T) => void) => void;
 }
-export interface HookPropsEditParameter<T, ID, S, P extends RouteComponentProps> extends HookPropsBaseEditParameter<T, ID, S, P> {
+export interface HookPropsEditParameter<T, ID, S, P> extends HookPropsBaseEditParameter<T, ID, S, P> {
   initialize?: (id: ID|null, ld: (i: ID|null, cb?: (m: T, showF: (model: T) => void) => void) => void, setState2: DispatchWithCallback<Partial<S>>, callback?: (m: T, showF: (model: T) => void) => void) => void;
   callback?: (m: T, showF: (model: T) => void) => void;
 }
-export interface HookPropsBaseEditParameter<T, ID, S, P extends RouteComponentProps> extends HookBaseEditParameter<T, ID, S> {
+export interface HookPropsBaseEditParameter<T, ID, S, P> extends HookBaseEditParameter<T, ID, S> {
   props: P;
   prepareCustomData?: (data: any) => void;
 }
@@ -72,12 +71,42 @@ export const useEdit = <T, ID, S>(
   refForm: any,
   initialState: S,
   service: GenericService<T, ID, number|ResultInfo<T>>,
-  p1: EditParameter,
-  p2?: BaseEditComponentParam<T, ID>
+  p2: EditParameter,
+  p?: EditComponentParam<T, ID, S>
   ) => {
-  return useCoreEdit(undefined, refForm, initialState, service, p1, p2);
+  const params = useParams();
+  const baseProps = useCoreEdit(undefined, refForm, initialState, service, p2, p);
+  useEffect(() => {
+    if (refForm) {
+      const registerEvents = (p2.ui ? p2.ui.registerEvents : undefined);
+      initForm(baseProps.refForm.current, registerEvents);
+    }
+    const n = baseProps.getModelName(refForm.current);
+    const obj: any = {};
+    obj[n] = baseProps.createNewModel();
+    baseProps.setState(obj);
+    let keys: string[]|undefined;
+    if (p && !p.keys && service && service.metadata) {
+      const metadata = (p.metadata ? p.metadata : service.metadata());
+      if (metadata) {
+        const meta = build(metadata);
+        keys = (p.keys ? p.keys : (meta ? meta.keys : undefined));
+        const version = (p.version ? p.version : (meta ? meta.version : undefined));
+        p.keys = keys;
+        p.version = version;
+      }
+    }
+    const id = buildId<ID>(params, keys);
+    debugger;
+    if (p && p.initialize) {
+      p.initialize(id, baseProps.load, baseProps.setState, p.callback);
+    } else {
+      baseProps.load(id, p ? p.callback : undefined);
+    }
+  }, []);
+  return {...baseProps};
 };
-export const useEditProps = <T, ID, S, P extends RouteComponentProps>(
+export const useEditProps = <T, ID, S, P>(
   props: P,
   refForm: any,
   initialState: S,
@@ -85,6 +114,7 @@ export const useEditProps = <T, ID, S, P extends RouteComponentProps>(
   p2: EditParameter,
   p?: EditComponentParam<T, ID, S>
   ) => {
+  const params = useParams();
   const baseProps = useCoreEdit<T, ID, S, P>(props, refForm, initialState, service, p2, p);
   useEffect(() => {
     if (refForm) {
@@ -106,7 +136,7 @@ export const useEditProps = <T, ID, S, P extends RouteComponentProps>(
         p.version = version;
       }
     }
-    const id = buildId<ID>(props, keys);
+    const id = buildId<ID>(params, keys);
     if (p && p.initialize) {
       p.initialize(id, baseProps.load, baseProps.setState, p.callback);
     } else {
@@ -115,7 +145,7 @@ export const useEditProps = <T, ID, S, P extends RouteComponentProps>(
   }, []);
   return {...baseProps};
 };
-export const useEditOneProps = <T, ID, S, P extends RouteComponentProps>(p: HookPropsEditParameter<T, ID, S, P>) => {
+export const useEditOneProps = <T, ID, S, P>(p: HookPropsEditParameter<T, ID, S, P>) => {
   return useEditProps(p.props, p.refForm, p.initialState, p.service, p, p);
 };
 export const useEditOne = <T, ID, S>(p: HookBaseEditParameter<T, ID, S>) => {
@@ -135,13 +165,13 @@ export const useCoreEdit = <T, ID, S, P>(
     patchable = true,
     addable = true
   } = p; */
+  const navigate = useNavigate();
   const addable = (p && p.patchable !== false ? true : undefined);
-  const {goBack} = useRouter();
   const back = (event?: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     if (event) {
       event.preventDefault();
     }
-    goBack();
+    navigate(-1);
   };
 
   const [running, setRunning] = useState<boolean>();
@@ -472,6 +502,7 @@ export const useCoreEdit = <T, ID, S, P>(
     newOnClick: create,
     save,
     onSave,
+    // eslint-disable-next-line no-restricted-globals
     confirm,
     validate,
     showMessage: p1.showMessage,
