@@ -8,9 +8,6 @@ import {DispatchWithCallback, useMergeState} from './merge';
 import {localeOf} from './state';
 import {useUpdate} from './update';
 
-function prepareData(data: any): void {
-}
-
 export interface BaseEditComponentParam<T, ID> {
   status?: EditStatusConfig;
   backOnSuccess?: boolean;
@@ -41,7 +38,7 @@ export interface BaseEditComponentParam<T, ID> {
   handleDuplicateKey?: (result?: ResultInfo<T>) => void;
   load?: (i: ID|null, callback?: (m: T, showM: (m2: T) => void) => void) => void;
   doSave?: (obj: T, diff?: T, version?: string, isBack?: boolean) => void;
-  prepareCustomData?: (data: any) => void; // need to review
+  // prepareCustomData?: (data: any) => void; // need to review
 }
 export interface HookBaseEditParameter<T, ID, S> extends BaseEditComponentParam<T, ID> {
   refForm: any;
@@ -65,7 +62,7 @@ export interface HookPropsEditParameter<T, ID, S, P> extends HookPropsBaseEditPa
 }
 export interface HookPropsBaseEditParameter<T, ID, S, P> extends HookBaseEditParameter<T, ID, S> {
   props: P;
-  prepareCustomData?: (data: any) => void;
+  // prepareCustomData?: (data: any) => void;
 }
 export const useEdit = <T, ID, S>(
   refForm: any,
@@ -75,7 +72,7 @@ export const useEdit = <T, ID, S>(
   p?: EditComponentParam<T, ID, S>
   ) => {
   const params = useParams();
-  const baseProps = useCoreEdit(undefined, refForm, initialState, service, p2, p);
+  const baseProps = useCoreEdit(refForm, initialState, service, p2, p);
   useEffect(() => {
     if (refForm) {
       const registerEvents = (p2.ui ? p2.ui.registerEvents : undefined);
@@ -115,7 +112,7 @@ export const useEditProps = <T, ID, S, P>(
   p?: EditComponentParam<T, ID, S>
   ) => {
   const params = useParams();
-  const baseProps = useCoreEdit<T, ID, S, P>(props, refForm, initialState, service, p2, p);
+  const baseProps = useCoreEdit<T, ID, S, P>(refForm, initialState, service, p2, p, props);
   useEffect(() => {
     if (refForm) {
       const registerEvents = (p2.ui ? p2.ui.registerEvents : undefined);
@@ -152,12 +149,12 @@ export const useEditOne = <T, ID, S>(p: HookBaseEditParameter<T, ID, S>) => {
   return useEdit(p.refForm, p.initialState, p.service, p, p);
 };
 export const useCoreEdit = <T, ID, S, P>(
-  props: P|undefined,
   refForm: any,
   initialState: S,
   service: GenericService<T, ID, number|ResultInfo<T>>,
   p1: EditParameter,
-  p?: BaseEditComponentParam<T, ID>
+  p?: BaseEditComponentParam<T, ID>,
+  props?: P
   ) => {
     /*
   const {
@@ -183,18 +180,6 @@ export const useCoreEdit = <T, ID, S, P>(
     return getModelName2(f);
   };
   const baseProps = useUpdate<S>(initialState, getModelName, p1.getLocale);
-
-  const prepareCustomData = (p && p.prepareCustomData ? p.prepareCustomData : prepareData);
-  const updateDateState = (name: string, value: any) => {
-    const modelName = getModelName(refForm.current);
-    const currentState = (state as any)[modelName];
-    if (props && (props as any).setGlobalState) {
-      const data = (props as any).shouldBeCustomized ? prepareCustomData({ [name]: value }) : { [name]: value };
-      (props as any).setGlobalState({ [modelName]: { ...currentState, ...data } });
-    } else {
-      setState({[modelName]: {...currentState, [name]: value}} as T);
-    }
-  };
 
   const { state, setState } = baseProps;
   const [flag, setFlag] = useMergeState({
@@ -492,7 +477,6 @@ export const useCoreEdit = <T, ID, S, P>(
     flag,
     running,
     setRunning,
-    updateDateState,
     showModel,
     getModelName,
     resetState,

@@ -19,8 +19,7 @@ interface Filter {
   fields?: string[];
   sort?: string;
 }
-function prepareData(data: any): void {
-}
+
 export const callSearch = <T, S extends Filter>(se: S, search3: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>, showResults3: (s: S, sr: SearchResult<T>, lc: Locale) => void, searchError3: (err: any) => void, lc: Locale, nextPageToken?: string) => {
   const s = clone(se);
   let page = se.page;
@@ -88,7 +87,7 @@ export interface SearchComponentParam<T, M extends Filter> {
   getFilter?: () => M;
   getFields?: () => string[]|undefined;
   validateSearch?: (se: M, callback: () => void) => void;
-  prepareCustomData?: (data: any) => void;
+  // prepareCustomData?: (data: any) => void;
   format?(obj: T, locale?: Locale): T;
   showResults?(s: M, sr: SearchResult<T>, lc: Locale): void;
   appendList?(results: T[], list: T[]|undefined, s: DispatchWithCallback<Partial<SearchComponentState<T, M>>>): void;
@@ -115,7 +114,7 @@ export interface HookBaseSearchParameter<T, S extends Filter, ST extends SearchC
 }
 export interface HookPropsBaseSearchParameter<T, S extends Filter, ST, P> extends HookBaseSearchParameter<T, S, ST> {
   props?: P;
-  prepareCustomData?: (data: any) => void;
+  // prepareCustomData?: (data: any) => void;
 }
 export interface SearchComponentState<T, S> extends Pagination, Sortable {
   view?: string;
@@ -194,7 +193,7 @@ export const useSearch = <T, S extends Filter, ST extends SearchComponentState<T
   p2: SearchParameter,
   p?: InitSearchComponentParam<T, S, ST>,
 ) => {
-  const baseProps = useCoreSearch(undefined, refForm, initialState, service, p2, p);
+  const baseProps = useCoreSearch(refForm, initialState, service, p2, p);
 
   useEffect(() => {
     const { load, setState, component } = baseProps;
@@ -216,15 +215,15 @@ export const useSearchOneProps = <T, S extends Filter, ST extends SearchComponen
   return useSearch(p.refForm, p.initialState, p.service, p, p);
 };
 export const useSearchOne = <T, S extends Filter, ST extends SearchComponentState<T, S>>(p: HookBaseSearchParameter<T, S, ST>) => {
-  return useCoreSearch(undefined, p.refForm, p.initialState, p.service, p, p);
+  return useCoreSearch(p.refForm, p.initialState, p.service, p, p);
 };
 export const useCoreSearch = <T, S extends Filter, ST, P>(
-  props: P|undefined,
   refForm: any,
   initialState: ST,
   service: ((s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
   p1: SearchParameter,
-  p2?: SearchComponentParam<T, S>
+  p2?: SearchComponentParam<T, S>,
+  props?: P
 ) => {
   const p = mergeParam(p2);
   const [running, setRunning] = useState<boolean>();
@@ -242,19 +241,6 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
     return refForm && refForm.current ? refForm.current.getAttribute('currency-code') : null;
   };
   const getCurrencyCode = p && p.getCurrencyCode ? p.getCurrencyCode : _getCurrencyCode;
-
-  const prepareCustomData = (p && p.prepareCustomData ? p.prepareCustomData : prepareData);
-  const updateDateState = (name: string, value: any) => {
-    const modelName = getModelName();
-    const currentState = (state as any)[modelName];
-    if (props && (props as any).setGlobalState) {
-      const data = (props as any).shouldBeCustomized ? prepareCustomData({ [name]: value }) : { [name]: value };
-      (props as any).setGlobalState({ [modelName]: { ...currentState, ...data } });
-    } else {
-      setState({ [modelName]: { ...currentState, [name]: value } } as T);
-    }
-    setState({ [modelName]: { ...currentState, [name]: value } } as T);
-  };
 
   // const p = createSearchComponentState<T, S>(p1);
   const [component, setComponent] = useMergeState<SearchComponentState<T, S>>(p);
@@ -495,7 +481,6 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
     running,
     setRunning,
     getCurrencyCode,
-    updateDateState,
     resource: p1.resource.resource(),
     setComponent,
     component,
