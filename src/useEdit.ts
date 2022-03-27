@@ -1,10 +1,10 @@
 import {useEffect, useState} from 'react';
 import {useNavigate, useParams} from 'react-router';
-import {clone, makeDiff} from 'reflectx';
 import {Attributes, buildId, createEditStatus, EditStatusConfig, getModelName as getModelName2, hideLoading, initForm, LoadingService, Locale, message, messageByHttpStatus, ResourceService, showLoading, UIService} from './core';
 import {build, createModel as createModel2, EditParameter, GenericService, handleStatus, handleVersion, initPropertyNullInModel, ResultInfo} from './edit';
 import {focusFirstError, readOnly as setReadOnly} from './formutil';
 import {DispatchWithCallback, useMergeState} from './merge';
+import {clone, makeDiff} from './reflect';
 import {localeOf} from './state';
 import {useUpdate} from './update';
 
@@ -94,12 +94,12 @@ export const useEdit = <T, ID, S>(
       }
     }
     const id = buildId<ID>(params, keys);
-    debugger;
     if (p && p.initialize) {
       p.initialize(id, baseProps.load, baseProps.setState, p.callback);
     } else {
       baseProps.load(id, p ? p.callback : undefined);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return {...baseProps};
 };
@@ -139,6 +139,7 @@ export const useEditProps = <T, ID, S, P>(
     } else {
       baseProps.load(id, p ? p.callback : undefined);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return {...baseProps};
 };

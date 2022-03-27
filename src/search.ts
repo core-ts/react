@@ -395,8 +395,7 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
         if (key !== fields) {
           if (typeof objValue === 'string' || typeof objValue === 'number') {
             if (key === limit) {
-              // tslint:disable-next-line:triple-equals
-              if (objValue != resources.limit) {
+              if (objValue !== resources.limit) {
                 if (url.indexOf('?') === -1) {
                   url += `?${key}=${objValue}`;
                 } else {
@@ -436,8 +435,8 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
                 }
               } else {
                 const keysLvl2 = Object.keys(objValue);
-                keysLvl2.forEach((key2, idx) => {
-                  const objValueLvl2 = objValue[keysLvl2[idx]];
+                for (const key2 of keysLvl2) {
+                  const objValueLvl2 = objValue[key2];
                   if (url.indexOf('?') === -1) {
                     if (objValueLvl2 instanceof Date) {
                       url += `?${key}.${key2}=${objValueLvl2.toISOString()}`;
@@ -451,7 +450,7 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
                       url += `&${key}.${key2}=${objValueLvl2}`;
                     }
                   }
-                });
+                }
               }
             }
           }

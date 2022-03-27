@@ -86,7 +86,7 @@ export function focusFirstError(form?: HTMLFormElement|null, className?: string)
       const parent = ctrl.parentElement;
       if (ctrl.classList.contains('invalid')
         || ctrl.classList.contains('.ng-invalid')
-        || parent && parent.classList.contains('invalid')) {
+        || (parent && parent.classList.contains('invalid'))) {
         ctrl.focus();
         ctrl.scrollIntoView();
         return;

@@ -1,5 +1,5 @@
-import {setValue} from 'reflectx';
 import {Locale, ModelProps} from './core';
+import {setValue} from './reflect';
 import {valueOf} from './util';
 
 export const enLocale = {

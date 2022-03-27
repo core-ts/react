@@ -1,5 +1,5 @@
-import {clone} from 'reflectx';
 import {DiffModel} from './core';
+import {clone} from './reflect';
 
 export function formatDiffModel<T, ID>(obj: DiffModel<T, ID>, formatFields?: (obj3: T) => T): DiffModel<T, ID> {
   if (!obj) {

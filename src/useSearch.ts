@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
-import {clone} from 'reflectx';
 import {error, getDecodeFromForm, getName, getRemoveError, getValidateForm, handleToggle, hideLoading, initForm, Locale, PageChange, pageSizes, removeFormError, ResourceService, SearchParameter, SearchResult, SearchService, showLoading} from './core';
 import {DispatchWithCallback, useMergeState} from './merge';
+import {clone} from './reflect';
 import {buildFromUrl} from './route';
 import {addParametersIntoUrl, append, buildMessage, formatResults, getFieldsFromForm, getModel, handleAppend, handleSort, initFilter, mergeFilter as mergeFilter2, Pagination, removeSortStatus, showPaging, Sortable, validate} from './search';
 import {enLocale} from './state';
@@ -208,6 +208,7 @@ export const useSearch = <T, S extends Filter, ST extends SearchComponentState<T
       const s: any = mergeFilter2(buildFromUrl<S>(), se, component.pageSizes);
       load(s, p2.auto);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return { ...baseProps };
 };
