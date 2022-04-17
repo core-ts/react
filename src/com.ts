@@ -26,7 +26,7 @@ export interface Props {
   pageSizeChanged?: (event: any) => void;
   search?: React.MouseEventHandler<HTMLElement>;
   toggle?: React.MouseEventHandler<HTMLElement>;
-  clear?: React.MouseEventHandler<HTMLElement>;
+  clear?: React.MouseEventHandler<HTMLButtonElement>;
   onChange?: (e: any, callback?: (() => void) | undefined, lc?: Locale | undefined) => void;
 }
 export function Search(p: Props) {
