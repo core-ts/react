@@ -84,7 +84,7 @@ export interface SearchComponentParam<T, M extends Filter> {
   getModelName?: () => string;
   getCurrencyCode?: () => string;
   setFilter?: (s: M) => void;
-  getFilter?: () => M;
+  getFilter?: (se?: Searchable<T>) => M;
   getFields?: () => string[]|undefined;
   validateSearch?: (se: M, callback: () => void) => void;
   // prepareCustomData?: (data: any) => void;
@@ -142,7 +142,7 @@ export interface SearchComponentState<T, S> extends Pagination, Sortable {
   deletable?: boolean;
 }
 
-function mergeParam<T, S extends Filter>(p?: SearchComponentParam<T, S>): SearchComponentParam<T, S> {
+export function mergeParam<T, S extends Filter>(p?: SearchComponentParam<T, S>): SearchComponentParam<T, S> {
   if (p) {
     if (!p.sequenceNo) {
       p.sequenceNo = 'sequenceNo';
@@ -218,13 +218,12 @@ export const useSearchOneProps = <T, S extends Filter, ST extends SearchComponen
 export const useSearchOne = <T, S extends Filter, ST extends SearchComponentState<T, S>>(p: HookBaseSearchParameter<T, S, ST>) => {
   return useCoreSearch(p.refForm, p.initialState, p.service, p, p);
 };
-export const useCoreSearch = <T, S extends Filter, ST, P>(
+export const useCoreSearch = <T, S extends Filter, ST>(
   refForm: any,
   initialState: ST,
   service: ((s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
   p1: SearchParameter,
-  p2?: SearchComponentParam<T, S>,
-  props?: P
+  p2?: SearchComponentParam<T, S>
 ) => {
   const p = mergeParam(p2);
   const [running, setRunning] = useState<boolean>();
@@ -260,7 +259,7 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
   };
   const getFields = p && p.getFields ? p.getFields : _getFields;
 
-  const getFilter = (se?: Searchable<T>): S => {
+  const _getFilter = (se?: Searchable<T>): S => {
     if (!se) {
       se = component;
     }
@@ -278,6 +277,7 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
     const obj3 = getModel<T, S>(state, n, se, fs, se.excluding, keys, se.list, refForm.current, getDecodeFromForm(p1), lc, cc);
     return obj3;
   };
+  const getFilter = p && p.getFilter ? p.getFilter : _getFilter;
   const _setFilter = (s: S): void => {
     const objSet: any = {};
     const n = getModelName();
@@ -341,12 +341,15 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
     doSearch(component);
   };
 
-  const clearQ = (event?: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+  const clearQ = (e?: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    if (e) {
+      e.preventDefault();
+    }
     const n = getModelName();
     if (n && n.length > 0) {
       const m = (state as any)[n];
       if (m) {
-        m.keyword = '';
+        m.q = '';
         const setObj: any = {};
         setObj[n] = m;
         setState(setObj);
@@ -495,7 +498,7 @@ export const useCoreSearch = <T, S extends Filter, ST, P>(
     doSearch,
     pageChanged,
     pageSizeChanged,
-    clearKeyworkOnClick: clearQ,
+    clearQ,
     showResults,
     getFields,
     getModelName,

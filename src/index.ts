@@ -14,8 +14,7 @@ export * from './useEdit';
 export * from './components';
 export * from './search';
 export * from './reflect';
-
-import {pageSizes} from './core';
+export * from './com';
 
 export function checked(s: string[]|string|undefined, v: string): boolean|undefined {
   if (s) {
@@ -55,17 +54,4 @@ export const Loading = (props: LoadingProps) => {
     );*/
   }
 };
-export interface Props {
-  id?: string;
-  name?: string;
-  size?: number;
-  sizes?: number[];
-  onChange?: React.ChangeEventHandler<HTMLSelectElement>;
-}
-export function PageSizeSelect(p: Props) {
-  const g = p.sizes;
-  const s = (!g || g.length === 0 ? pageSizes : g);
-  const opts = s.map(pgSize => React.createElement('option', { key: pgSize, value: pgSize }, pgSize));
-  return React.createElement('select', { id: p.id, name: p.name, defaultValue: p.size, onChange: p.onChange }, opts);
-}
 export type OnClick = React.MouseEvent<HTMLElement, MouseEvent>;

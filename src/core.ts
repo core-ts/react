@@ -2,6 +2,7 @@ import { Params } from 'react-router';
 import { focusFirstElement } from './formutil';
 
 export const pageSizes = [12, 24, 60, 100, 120, 180, 300, 600];
+export const size = pageSizes;
 export interface ModelMap {
   [key: string]: any;
 }
