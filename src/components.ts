@@ -443,18 +443,23 @@ export class BaseSearchComponent<T, F extends Filter, P, I extends SearchState<T
     this.setState(prevState => ({ isPageSizeOpenDropDown: !(prevState as any).isPageSizeOpenDropDown } as any));
   }
 
-  clearQ(): void {
-    const m = this.state.model;
-    if (m) {
-      m.q = '';
-      this.setState({model: m});
-    } else {
-      this.setState({
-        q: ''
-      });
+  clearQ(e?: React.MouseEvent<HTMLButtonElement, MouseEvent>): void {
+    if (e) {
+      e.preventDefault();
+    }
+    const n = this.getModelName();
+    if (n && n.length > 0) {
+      const m = (this.state as any)[n];
+      if (m) {
+        m.q = '';
+        const setObj: any = {};
+        setObj[n] = m;
+        this.setState(setObj);
+        return;
+      }
     }
   }
-  search(event: any): void {
+  search(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void {
     if (event) {
       event.preventDefault();
       if (!this.getSearchForm()) {
@@ -806,7 +811,7 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
     }
   }
 
-  create = (event: any) => {
+  create = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     if (event) {
       event.preventDefault();
     }
@@ -823,9 +828,9 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
       }, 100);
     }
   }
-  save = (event: any) => {
+  save = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     event.preventDefault();
-    (event as any).persist();
+    event.persist();
     if (!this.form && event && event.target) {
       this.form = (event.target as HTMLInputElement).form;
     }
@@ -856,7 +861,7 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
         });
       } else {
         const diffObj = makeDiff(initPropertyNullInModel(this.orginalModel, this.metadata), obj, this.keys, this.version);
-        const keys = Object.keys(diffObj);
+        const keys = Object.keys(diffObj as any);
         if (keys.length === 0) {
           this.showMessage(r.value('msg_no_change'));
         } else {
@@ -881,7 +886,7 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
     }
   }
 
-  doSave(obj: T, dif?: T, isBack?: boolean) {
+  doSave(obj: T, dif?: Partial<T>, isBack?: boolean) {
   }
 
   succeed(msg: string, isBack?: boolean, result?: ResultInfo<T>) {
@@ -1053,12 +1058,12 @@ export class EditComponent<T, ID, P, S> extends BaseEditComponent<T, P, S>  {
       }
     }
   }
-  doSave(obj: T, body?: T, isBack?: boolean) {
+  doSave(obj: T, body?: Partial<T>, isBack?: boolean) {
     this.running = true;
     showLoading(this.loading);
     const isBackO = (isBack == null || isBack === undefined ? this.backOnSuccess : isBack);
     const com = this;
-    let m = obj;
+    let m: T|Partial<T> = obj;
     let fn = this.newMode ? this.service.insert : this.service.update;
     if (!this.newMode) {
       if (this.patchable === true && this.service.patch && body && Object.keys(body).length > 0) {
@@ -1066,7 +1071,7 @@ export class EditComponent<T, ID, P, S> extends BaseEditComponent<T, P, S>  {
         fn = this.service.patch;
       }
     }
-    fn(m).then(result => {
+    fn(m as any).then(result => {
       com.postSave(result, isBackO);
       com.running = false;
       hideLoading(com.loading);

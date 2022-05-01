@@ -80,7 +80,7 @@ export const useEdit = <T, ID, S>(
     }
     const n = baseProps.getModelName(refForm.current);
     const obj: any = {};
-    obj[n] = baseProps.createNewModel();
+    obj[n] = baseProps.createModel();
     baseProps.setState(obj);
     let keys: string[]|undefined;
     if (p && !p.keys && service && service.metadata) {
@@ -120,7 +120,7 @@ export const useEditProps = <T, ID, S, P>(
     }
     const n = baseProps.getModelName(refForm.current);
     const obj: any = {};
-    obj[n] = baseProps.createNewModel();
+    obj[n] = baseProps.createModel();
     baseProps.setState(obj);
     let keys: string[]|undefined;
     if (p && !p.keys && service && service.metadata) {
@@ -288,7 +288,7 @@ export const useCoreEdit = <T, ID, S, P>(
           validate(obj, () => {
             const msg = message(p1.resource.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
             p1.confirm(msg.message, msg.title, () => {
-              doSave(obj, diffObj, version, isBack);
+              doSave(obj, diffObj as any, version, isBack);
             }, msg.no, msg.yes);
           });
         }
@@ -403,7 +403,7 @@ export const useCoreEdit = <T, ID, S, P>(
   };
   const handleDuplicateKey = (p && p.handleDuplicateKey ? p.handleDuplicateKey : _handleDuplicateKey);
 
-  const _doSave = (obj: T, body?: T, version?: string, isBack?: boolean) => {
+  const _doSave = (obj: T, body?: Partial<T>, version?: string, isBack?: boolean) => {
     setRunning(true);
     showLoading(p1.loading);
     const isBackO = (isBack == null || isBack === undefined ? true : isBack);
@@ -483,8 +483,8 @@ export const useCoreEdit = <T, ID, S, P>(
     resetState,
     handleNotFound,
     getModel,
-    createNewModel: createModel,
-    newOnClick: create,
+    createModel,
+    create,
     save,
     onSave,
     // eslint-disable-next-line no-restricted-globals
