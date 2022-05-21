@@ -100,6 +100,13 @@ export function buildState<S, K extends keyof S>(e: any, state: Readonly<S>, ctr
         objSet[modelName] = model;
         return objSet;
       } else {
+        if (ctrl.tagName === 'SELECT') {
+          if (ctrl.value === '' || !ctrl.value) {
+            ctrl.removeAttribute('data-value');
+          } else {
+            ctrl.setAttribute('data-value', 'data-value');
+          }
+        }
         const data = valueOf(ctrl, tloc, e.type);
         if (data.mustChange) {
           if (field.indexOf('.') < 0 && field.indexOf('[') < 0) {
