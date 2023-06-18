@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import {useNavigate, useParams} from 'react-router';
-import {Attributes, buildId, createEditStatus, EditStatusConfig, getModelName as getModelName2, hideLoading, initForm, LoadingService, Locale, message, messageByHttpStatus, ResourceService, showLoading, UIService} from './core';
+import {Attributes, buildId, createEditStatus, EditStatusConfig, ErrorMessage, getModelName as getModelName2, hideLoading, initForm, LoadingService, Locale, message, messageByHttpStatus, ResourceService, showLoading, UIService} from './core';
 import {build, createModel as createModel2, EditParameter, GenericService, handleStatus, handleVersion, initPropertyNullInModel, ResultInfo} from './edit';
 import {focusFirstError, readOnly as setReadOnly} from './formutil';
 import {DispatchWithCallback, useMergeState} from './merge';
@@ -33,7 +33,7 @@ export interface BaseEditComponentParam<T, ID> {
   onSave?: (isBack?: boolean) => void;
   validate?: (obj: T, callback: (obj2?: T) => void) => void;
   succeed?: (obj: T, msg: string, version?: string, isBack?: boolean, result?: ResultInfo<T>) => void;
-  fail?: (result: ResultInfo<T>) => void;
+  fail?: (result: ResultInfo<T>|ErrorMessage[]) => void;
   postSave?: (obj: T, res: number|ResultInfo<T>, version?: string, backOnSave?: boolean) => void;
   handleDuplicateKey?: (result?: ResultInfo<T>) => void;
   load?: (i: ID|null, callback?: (m: T, showM: (m2: T) => void) => void) => void;
@@ -334,27 +334,50 @@ export const useCoreEdit = <T, ID, S, P>(
   };
   const succeed = (p && p.succeed ? p.succeed : _succeed);
 
-  const _fail = (result: ResultInfo<T>) => {
-    const errors = result.errors;
+  const _fail = (result: ResultInfo<T> | ErrorMessage[]) => {
     const f = refForm.current;
     const u = p1.ui;
-    if (errors && u) {
-      const unmappedErrors = u.showFormError(f, errors);
-      focusFirstError(f);
-      if (!result.message) {
-        if (errors && errors.length === 1) {
-          result.message = errors[0].message;
-        } else {
+    if (Array.isArray(result)) {
+      if (u && f) {
+        const unmappedErrors = u.showFormError(f, result);
+        focusFirstError(f);
+        if (unmappedErrors && unmappedErrors.length > 0) {
+          const t = p1.resource.value('error');
           if (p1.ui && p1.ui.buildErrorMessage) {
-            result.message = p1.ui.buildErrorMessage(unmappedErrors);
+            const msg = p1.ui.buildErrorMessage(unmappedErrors);
+            p1.showError(msg, t);
           } else {
-            result.message = errors[0].message;
+            p1.showError(unmappedErrors[0].field + ' ' + unmappedErrors[0].code + ' ' + unmappedErrors[0].message, t);
           }
         }
-      }
-      if (result.message) {
+      } else {
         const t = p1.resource.value('error');
-        p1.showError(result.message, t);
+        if (result.length > 0) {
+          p1.showError(result[0].field + ' ' + result[0].code + ' ' + result[0].message, t);
+        } else {
+          p1.showError(t, t);
+        }
+      }
+    } else {
+      const errors = result.errors;
+      if (errors && u) {
+        const unmappedErrors = u.showFormError(f, errors);
+        focusFirstError(f);
+        if (!result.message) {
+          if (errors && errors.length === 1) {
+            result.message = errors[0].message;
+          } else {
+            if (p1.ui && p1.ui.buildErrorMessage) {
+              result.message = p1.ui.buildErrorMessage(unmappedErrors);
+            } else {
+              result.message = errors[0].message;
+            }
+          }
+        }
+        if (result.message) {
+          const t = p1.resource.value('error');
+          p1.showError(result.message, t);
+        }
       }
     }
   };
@@ -367,7 +390,9 @@ export const useCoreEdit = <T, ID, S, P>(
     const successMsg = p1.resource.value('msg_save_success');
     const newMod = flag.newMode;
     const st = createEditStatus(p ? p.status : undefined);
-    if (!isNaN(x)) {
+    if (Array.isArray(x)) {
+      fail(x);
+    } else if (!isNaN(x)) {
       if (x === st.success) {
         succeed(obj, successMsg, version, backOnSave);
       } else {

@@ -57,7 +57,7 @@ export interface InitSearchComponentParam<T, M extends Filter, S> extends Search
   createFilter?: () => M;
   initialize?: (ld: (s: M, auto?: boolean) => void, setState2: DispatchWithCallback<Partial<S>>, com?: SearchComponentState<T, M>) => void;
 }
-export interface HookPropsSearchParameter<T, S extends Filter, ST, P> extends HookPropsBaseSearchParameter<T, S, ST, P> {
+export interface HookPropsSearchParameter<T, S extends Filter, ST extends SearchComponentState<T, S>, P> extends HookPropsBaseSearchParameter<T, S, ST, P> {
   createFilter?: () => S;
   initialize?: (ld: (s: S, auto?: boolean) => void, setState2: DispatchWithCallback<Partial<ST>>, com?: SearchComponentState<T, S>) => void;
 }
@@ -112,7 +112,7 @@ export interface HookBaseSearchParameter<T, S extends Filter, ST extends SearchC
   getLocale?: () => Locale;
   autoSearch?: boolean;
 }
-export interface HookPropsBaseSearchParameter<T, S extends Filter, ST, P> extends HookBaseSearchParameter<T, S, ST> {
+export interface HookPropsBaseSearchParameter<T, S extends Filter, ST extends SearchComponentState<T, S>, P> extends HookBaseSearchParameter<T, S, ST> {
   props?: P;
   // prepareCustomData?: (data: any) => void;
 }

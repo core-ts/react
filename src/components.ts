@@ -907,26 +907,49 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
       this.back(null);
     }
   }
-  fail(result: ResultInfo<T>) {
-    const errors = result.errors;
+  fail(result: ResultInfo<T> | ErrorMessage[]) {
     const f = this.form;
     const u = this.ui;
-    if (u && f) {
-      const unmappedErrors = u.showFormError(f, errors);
-      if (!result.message) {
-        if (errors && errors.length === 1) {
-          result.message = errors[0].message;
+    if (Array.isArray(result)) {
+      if (u && f) {
+        const unmappedErrors = u.showFormError(f, result);
+        focusFirstError(f);
+        if (unmappedErrors && unmappedErrors.length > 0) {
+          const t = this.resourceService.value('error');
+          if (u && u.buildErrorMessage) {
+            const msg = u.buildErrorMessage(unmappedErrors);
+            this.showError(msg, t);
+          } else {
+            this.showError(unmappedErrors[0].field + ' ' + unmappedErrors[0].code + ' ' + unmappedErrors[0].message, t);
+          }
+        }
+      } else {
+        const t = this.resourceService.value('error');
+        if (result.length > 0) {
+          this.showError(result[0].field + ' ' + result[0].code + ' ' + result[0].message, t);
         } else {
-          result.message = u.buildErrorMessage(unmappedErrors);
+          this.showError(t, t);
         }
       }
-      focusFirstError(f);
-    } else if (errors && errors.length === 1) {
-      result.message = errors[0].message;
-    }
-    if (result.message) {
-      const t = this.resourceService.value('error');
-      this.showError(result.message, t);
+    } else {
+      const errors = result.errors;
+      if (u && f) {
+        const unmappedErrors = u.showFormError(f, errors);
+        if (!result.message) {
+          if (errors && errors.length === 1) {
+            result.message = errors[0].message;
+          } else {
+            result.message = u.buildErrorMessage(unmappedErrors);
+          }
+        }
+        focusFirstError(f);
+      } else if (errors && errors.length === 1) {
+        result.message = errors[0].message;
+      }
+      if (result.message) {
+        const t = this.resourceService.value('error');
+        this.showError(result.message, t);
+      }
     }
   }
 
@@ -938,7 +961,9 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
     const successMsg = (newMod ? this.insertSuccessMsg : this.updateSuccessMsg);
     const x: any = res;
     const r = this.resourceService;
-    if (!isNaN(x)) {
+    if (Array.isArray(x)) {
+      this.fail(x);
+    } else if (!isNaN(x)) {
       if (x === st.success) {
         this.succeed(successMsg, backOnSave);
       } else {

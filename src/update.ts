@@ -43,7 +43,7 @@ export const useUpdate = <T>(initialState: T, getName?: ((f?: HTMLFormElement|nu
     }
     const l = localeOf(lc, getLocale);
     handleEvent(e, removeErr);
-    const objSet = buildState(e, state, ctrl, mn, l);
+    const objSet = buildState<T, any>(e, state, ctrl, mn, l);
     if (objSet) {
       if (callback) {
         setState(objSet, callback);
@@ -53,7 +53,7 @@ export const useUpdate = <T>(initialState: T, getName?: ((f?: HTMLFormElement|nu
     }
   };
   const updateFlatState = (e: any, callback?: () => void, lc?: Locale) => {
-    const objSet = buildFlatState(e, state, lc);
+    const objSet = buildFlatState<T, any>(e, state, lc);
     if (objSet) {
       if (callback) {
         setState(objSet, callback);

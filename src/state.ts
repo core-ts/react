@@ -99,6 +99,28 @@ export function buildState<S, K extends keyof S>(e: any, state: Readonly<S>, ctr
         const objSet: any = {};
         objSet[modelName] = model;
         return objSet;
+      } else if (type && (type.toLowerCase() === 'date' || type.toLowerCase() === 'datetime-local')) {
+        const objSet: any = {};
+        try {
+          const selectedDate = new Date(ctrl.value);
+          setValue(model, field, selectedDate);
+          objSet[modelName] = model;
+          return objSet;
+        } catch (error) {
+          console.error('Error occurred while formatting date:', error);
+        }
+        return objSet;
+      } else if (type && (type.toLowerCase() === 'time')) {
+        const objSet: any = {};
+        try {
+          const selectedDate = new Date(ctrl.value);
+          setValue(model, field, selectedDate.getTime());
+          objSet[modelName] = model;
+          return objSet;
+        } catch (error) {
+          console.error('Error occurred while formatting time:', error);
+        }
+        return objSet;
       } else {
         if (ctrl.tagName === 'SELECT') {
           if (ctrl.value === '' || !ctrl.value) {
