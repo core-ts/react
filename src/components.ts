@@ -420,12 +420,8 @@ export class BaseSearchComponent<T, F extends Filter, P, I extends SearchState<T
     if (!lc) {
       lc = enLocale;
     }
-    const cc = this.getCurrencyCode();
     const fields = this.getFields();
-    const l = this.getList();
-    const f = this.getSearchForm();
-    const dc = (this.ui ? this.ui.decodeFromForm : undefined);
-    const obj3 = getModel<T, F>(this.state, name, this, fields, this.excluding, this.keys, l, f, dc, lc, cc);
+    const obj3 = getModel<T, F>(this.state, name, this, fields, this.excluding);
     return obj3;
   }
   getFields(): string[]|undefined {

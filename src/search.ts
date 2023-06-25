@@ -188,7 +188,31 @@ export function optimizeFilter<S extends Filter>(obj: S, searchable: Searchable,
   } else {
     delete obj.sort;
   }
+  if(searchable) {
+    mapObjects(obj, searchable as S);
+  }
   return obj;
+}
+
+function mapObjects(objA: any, objB: any): void {
+  for (let key in objA) {
+    if (objB.hasOwnProperty(key) && objB[key] !== null && objB[key] !== undefined) {
+      if(Array.isArray(objA[key])) {
+        objA[key] = [];
+        if(Array.isArray(objB[key]) && objB[key].length === 0) {
+        } else {
+          const arrayObjKeyB = objB[key].length > 0 ?  (objB[key])?.split(',') : [];
+          if(arrayObjKeyB && arrayObjKeyB.length > 1) {
+            objA[key] = [...arrayObjKeyB];
+          } else {
+            objA[key].push(objB[key])
+          }
+        }
+      } else {
+        objA[key] = objB[key];
+      }
+    }
+  }
 }
 
 export function append<T>(list?: T[], results?: T[]): T[] {
@@ -551,22 +575,11 @@ export function toggleSortStyle(target: HTMLElement): string {
   }
   return field;
 }
-export function getModel<T, S extends Filter>(state: any, modelName: string, searchable: Searchable, fields?: string[], excluding?: string[]|number[], keys?: string[], l?: T[], f?: HTMLFormElement|null, dc?: (f2: HTMLFormElement, lc2?: Locale, cc?: string) => any, lc?: Locale, currencyCode?: string): S {
+export function getModel<T, S extends Filter>(state: any, modelName: string, searchable: Searchable, fields?: string[], excluding?: string[]|number[]): S {
   let obj2 = getModelFromState(state, modelName);
-  if (f && dc) {
-    obj2 = dc(f, lc, currencyCode);
-  }
   const obj: any = obj2 ? obj2 : {};
   const obj3 = optimizeFilter(obj, searchable, fields);
   obj3.excluding = excluding;
-  if (keys && keys.length === 1) {
-    if (l && l.length > 0) {
-      const refId = (l[l.length - 1] as any)[keys[0]];
-      if (refId) {
-        obj3.refId = '' + refId;
-      }
-    }
-  }
   return obj3;
 }
 function getModelFromState(state: any, modelName: string): any {

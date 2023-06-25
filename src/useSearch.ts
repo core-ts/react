@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {error, getDecodeFromForm, getName, getRemoveError, getValidateForm, handleToggle, hideLoading, initForm, Locale, PageChange, pageSizes, removeFormError, ResourceService, SearchParameter, SearchResult, SearchService, showLoading} from './core';
+import {error, getName, getRemoveError, getValidateForm, handleToggle, hideLoading, initForm, Locale, PageChange, pageSizes, removeFormError, ResourceService, SearchParameter, SearchResult, SearchService, showLoading} from './core';
 import {DispatchWithCallback, useMergeState} from './merge';
 import {clone} from './reflect';
 import {buildFromUrl} from './route';
@@ -196,7 +196,7 @@ export const useSearch = <T, S extends Filter, ST extends SearchComponentState<T
   const baseProps = useCoreSearch(refForm, initialState, service, p2, p);
 
   useEffect(() => {
-    const { load, setState, component } = baseProps;
+    const { load, setState, component, searchError } = baseProps;
     if (refForm) {
       const registerEvents = (p2.ui ? p2.ui.registerEvents : undefined);
       initForm(refForm.current, registerEvents);
@@ -205,8 +205,12 @@ export const useSearch = <T, S extends Filter, ST extends SearchComponentState<T
       p.initialize(load, setState, component);
     } else {
       const se: S|undefined = (p && p.createFilter ? p.createFilter() : undefined);
-      const s: any = mergeFilter2(buildFromUrl<S>(), se, component.pageSizes);
-      load(s, p2.auto);
+      try {
+        const s: any = mergeFilter2(buildFromUrl<S>(), se, component.pageSizes);
+        load(s, p2.auto);
+      } catch (error) {
+        searchError(error);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -272,9 +276,7 @@ export const useCoreSearch = <T, S extends Filter, ST>(
     if (!fs || fs.length <= 0) {
       fs = getFields();
     }
-    const lc = (p1.getLocale ? p1.getLocale() : enLocale);
-    const cc = getCurrencyCode();
-    const obj3 = getModel<T, S>(state, n, se, fs, se.excluding, keys, se.list, refForm.current, getDecodeFromForm(p1), lc, cc);
+    const obj3 = getModel<T, S>(state, n, se, fs, se.excluding);
     return obj3;
   };
   const getFilter = p && p.getFilter ? p.getFilter : _getFilter;
@@ -295,7 +297,7 @@ export const useCoreSearch = <T, S extends Filter, ST>(
     const runSearch = doSearch;
     if (auto) {
       setTimeout(() => {
-        runSearch(com, true);
+        runSearch((obj2 as Searchable<T>), true);
       }, 0);
     }
   };
@@ -420,6 +422,7 @@ export const useCoreSearch = <T, S extends Filter, ST>(
   const searchError = (err: any): void => {
     setComponent({ pageIndex: component.tmpPageIndex });
     error(err, p1.resource.value, p1.showError);
+    hideLoading(p1.loading)
   };
   const appendList = (p && p.appendList ? p.appendList : appendListOfState);
   const setList = (p && p.setList ? p.setList : setListOfState);
@@ -502,6 +505,7 @@ export const useCoreSearch = <T, S extends Filter, ST>(
     showResults,
     getFields,
     getModelName,
-    format: p ? p.format : undefined
+    format: p ? p.format : undefined,
+    searchError
   };
 };
