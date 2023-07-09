@@ -949,7 +949,7 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
     }
   }
 
-  postSave(res: number|string|ResultInfo<T>, backOnSave?: boolean) {
+  postSave(res: number|string|ResultInfo<T>|ErrorMessage[], backOnSave?: boolean) {
     this.running = false;
     hideLoading(this.loading);
     const st = this.status;
@@ -993,7 +993,7 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
   }
 }
 export class EditComponent<T, ID, P, S> extends BaseEditComponent<T, P, S>  {
-  constructor(props: P, protected service: GenericService<T, ID, number|ResultInfo<T>>,
+  constructor(props: P, protected service: GenericService<T, ID, number|ResultInfo<T>|ErrorMessage[]>,
       param: ResourceService|EditParameter,
       showMessage?: (msg: string, option?: string) => void,
       showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,

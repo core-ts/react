@@ -34,7 +34,7 @@ export interface BaseEditComponentParam<T, ID> {
   validate?: (obj: T, callback: (obj2?: T) => void) => void;
   succeed?: (obj: T, msg: string, version?: string, isBack?: boolean, result?: ResultInfo<T>) => void;
   fail?: (result: ResultInfo<T>|ErrorMessage[]) => void;
-  postSave?: (obj: T, res: number|ResultInfo<T>, version?: string, backOnSave?: boolean) => void;
+  postSave?: (obj: T, res: number|ResultInfo<T>|ErrorMessage[], version?: string, backOnSave?: boolean) => void;
   handleError?: (error: any) => void;
   handleDuplicateKey?: (result?: ResultInfo<T>) => void;
   load?: (i: ID|null, callback?: (m: T, showM: (m2: T) => void) => void) => void;
@@ -68,7 +68,8 @@ export interface HookPropsBaseEditParameter<T, ID, S, P> extends HookBaseEditPar
 export const useEdit = <T, ID, S>(
   refForm: any,
   initialState: S,
-  service: GenericService<T, ID, number|ResultInfo<T>>,
+  service: GenericService<T, ID, number|ResultInfo<T> | ErrorMessage[]>,
+
   p2: EditParameter,
   p?: EditComponentParam<T, ID, S>
   ) => {
@@ -158,7 +159,7 @@ export const useEditOne = <T, ID, S>(p: HookBaseEditParameter<T, ID, S>) => {
 export const useCoreEdit = <T, ID, S, P>(
   refForm: any,
   initialState: S,
-  service: GenericService<T, ID, number|ResultInfo<T>>,
+  service: GenericService<T, ID, number|ResultInfo<T>|ErrorMessage[]>,
   p1: EditParameter,
   p?: BaseEditComponentParam<T, ID>,
   props?: P
@@ -405,7 +406,7 @@ export const useCoreEdit = <T, ID, S, P>(
   };
   const handleError = (p && p.handleError ? p.handleError : _handleError);
 
-  const _postSave = (obj: T, r: number | ResultInfo<T>, version?: string, backOnSave?: boolean) => {
+  const _postSave = (obj: T, r: number | ResultInfo<T>|ErrorMessage[], version?: string, backOnSave?: boolean) => {
     setRunning(false);
     hideLoading(p1.loading);
     const x: any = r;
