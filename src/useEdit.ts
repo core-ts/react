@@ -35,6 +35,7 @@ export interface BaseEditComponentParam<T, ID> {
   succeed?: (obj: T, msg: string, version?: string, isBack?: boolean, result?: ResultInfo<T>) => void;
   fail?: (result: ResultInfo<T>|ErrorMessage[]) => void;
   postSave?: (obj: T, res: number|ResultInfo<T>, version?: string, backOnSave?: boolean) => void;
+  handleError?: (error: any) => void;
   handleDuplicateKey?: (result?: ResultInfo<T>) => void;
   load?: (i: ID|null, callback?: (m: T, showM: (m2: T) => void) => void) => void;
   doSave?: (obj: T, diff?: T, version?: string, isBack?: boolean) => void;
@@ -97,7 +98,12 @@ export const useEdit = <T, ID, S>(
     if (p && p.initialize) {
       p.initialize(id, baseProps.load, baseProps.setState, p.callback);
     } else {
-      baseProps.load(id, p ? p.callback : undefined);
+      try {
+        baseProps.load(id, p ? p.callback : undefined);
+      } catch (error) {
+        p2.showError(error as string);
+        hideLoading(p2.loading);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -383,10 +389,26 @@ export const useCoreEdit = <T, ID, S, P>(
   };
   const fail = (p && p.fail ? p.fail : _fail);
 
-  const _postSave = (obj: T, res: number | ResultInfo<T>, version?: string, backOnSave?: boolean) => {
+  const _handleError = function (err: any) {
+    if (err) {
+      setRunning(false);
+      hideLoading(p1.loading);
+      const errMsg = p1.resource.value('error_internal');
+      const data = (err && err.response) ? err.response : err;
+      if (data.status === 400) {
+        const errMsg = p1.resource.value('error_400');
+        p1.showError(errMsg, "Error");
+      } else{
+        p1.showError(errMsg, "Error");
+      }
+    }
+  };
+  const handleError = (p && p.handleError ? p.handleError : _handleError);
+
+  const _postSave = (obj: T, r: number | ResultInfo<T>, version?: string, backOnSave?: boolean) => {
     setRunning(false);
     hideLoading(p1.loading);
-    const x: any = res;
+    const x: any = r;
     const successMsg = p1.resource.value('msg_save_success');
     const newMod = flag.newMode;
     const st = createEditStatus(p ? p.status : undefined);
@@ -435,14 +457,15 @@ export const useCoreEdit = <T, ID, S, P>(
     const patchable = (p ? p.patchable : true);
     if (flag.newMode === false) {
       if (service.patch && patchable !== false && body && Object.keys(body).length > 0) {
-        service.patch(body).then(result => postSave(obj, result, version, isBackO));
+        service.patch(body).then(result => postSave(obj, result, version, isBackO)).catch(handleError);
       } else {
-        service.update(obj).then(result => postSave(obj, result, version, isBackO));
+        service.update(obj).then(result => postSave(obj, result, version, isBackO)).catch(handleError);
       }
     } else {
-      service.insert(obj).then(result => postSave(obj, result, version, isBackO));
+      service.insert(obj).then(result => postSave(obj, result, version, isBackO)).catch(handleError);
     }
   };
+
   const doSave = (p && p.doSave ? p.doSave : _doSave);
 
   const _load = (_id: ID|null, callback?: (m: T, showM: (m2: T) => void) => void) => {

@@ -103,7 +103,7 @@ export function buildState<S, K extends keyof S>(e: any, state: Readonly<S>, ctr
         const objSet: any = {};
         try {
           const selectedDate = new Date(ctrl.value);
-          setValue(model, field, selectedDate.toISOString());
+          setValue(model, field, ctrl.value && ctrl.value!== '' ? selectedDate.toISOString() : '');
           objSet[modelName] = model;
           return objSet;
         } catch (error) {

@@ -1,1 +1,1 @@
-# react
+# react-hook-core

@@ -199,8 +199,7 @@ function mapObjects(objA: any, objB: any): void {
     if (objB.hasOwnProperty(key) && objB[key] !== null && objB[key] !== undefined) {
       if(Array.isArray(objA[key])) {
         objA[key] = [];
-        if(Array.isArray(objB[key]) && objB[key].length === 0) {
-        } else {
+        if(!(Array.isArray(objB[key]) && objB[key].length === 0) &&typeof objB[key] === 'string') {
           const arrayObjKeyB = objB[key].length > 0 ?  (objB[key])?.split(',') : [];
           if(arrayObjKeyB && arrayObjKeyB.length > 1) {
             objA[key] = [...arrayObjKeyB];
