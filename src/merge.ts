@@ -7,18 +7,13 @@ export function useMergeState<T>(initialState?: T | (() => T)): [T, DispatchWith
   const [state, _setState] = useState(initialState ? initialState : {} as any);
 
   const callbackRef = useRef<Callback<T>>();
-  const isFirstCallbackCall = useRef<boolean>(true);
 
   const setState = useCallback((newState: Partial<T>, callback?: Callback<T>): void => {
     callbackRef.current = callback;
     _setState((prevState: any) => Object.assign({}, prevState, newState));
-  }, []);
+  }, [state]);
 
-  useEffect(() => {
-    if (isFirstCallbackCall.current) {
-      isFirstCallbackCall.current = false;
-      return;
-    }
+  useEffect( () => {
     if (callbackRef.current) {
       callbackRef.current(state);
     }

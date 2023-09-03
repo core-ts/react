@@ -206,7 +206,7 @@ export const useSearch = <T, S extends Filter, ST extends SearchComponentState<T
     } else {
       const se: S|undefined = (p && p.createFilter ? p.createFilter() : undefined);
       try {
-        const s: any = mergeFilter2(buildFromUrl<S>(), se, component.pageSizes);
+        const s: any = mergeFilter2(buildFromUrl<S>(se), se, component.pageSizes);
         load(s, p2.auto);
       } catch (error) {
         searchError(error);
@@ -240,6 +240,12 @@ export const useCoreSearch = <T, S extends Filter, ST>(
   // const setState2: <K extends keyof S, P>(st: ((prevState: Readonly<S>, props: Readonly<P>) => (Pick<S, K> | S | null)) | (Pick<S, K> | S | null), cb?: () => void) => void;
   const baseProps = useUpdate<ST>(initialState, getModelName, p1.getLocale, getRemoveError(p1));
   const { state, setState } = baseProps;
+  const [rerender, setRerender] = useState(false);
+
+  // trigger re-render page when change state in useSearch
+  useEffect(() => {
+    setRerender(!rerender);
+  }, [state]);
 
   const _getCurrencyCode = (): string => {
     return refForm && refForm.current ? refForm.current.getAttribute('currency-code') : null;
@@ -306,6 +312,10 @@ export const useCoreSearch = <T, S extends Filter, ST>(
   const doSearch = (se: Searchable<T>, isFirstLoad?: boolean) => {
     removeFormError(p1, refForm.current);
     const s = getFilter(se);
+
+    if (isFirstLoad){
+      setState(state); // force update state if we refresh again page
+    }
     const isStillRunning = running;
     validateSearch(s, () => {
       if (isStillRunning === true) {
@@ -360,7 +370,7 @@ export const useCoreSearch = <T, S extends Filter, ST>(
     }
   };
 
-  const search = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void => {
+  const search = (event?: React.MouseEvent<HTMLButtonElement, MouseEvent> | React.MouseEvent<HTMLElement, MouseEvent>): void => {
     if (event) {
       event.preventDefault();
     }

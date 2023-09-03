@@ -1,6 +1,6 @@
 {
   "name": "react-hook-core",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "description": "react",
   "main": "./lib/index.js",
   "types": "./src/index.ts",

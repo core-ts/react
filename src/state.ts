@@ -75,6 +75,7 @@ export function buildState<S, K extends keyof S>(e: any, state: Readonly<S>, ctr
       const dataField = ctrl.getAttribute('data-field');
       const field = (dataField ? dataField : ctrl.name);
       const model = Object.assign({}, ex);
+      const dType= 'array'
       if (type && type.toLowerCase() === 'checkbox') {
         let value = model[field];
         if (ctrl.id && ctrl.name !== ctrl.id) {
@@ -82,7 +83,14 @@ export function buildState<S, K extends keyof S>(e: any, state: Readonly<S>, ctr
             value = [];
           }
           value.includes(ctrl.value) ? value = value.filter((v: string) => v !== ctrl.value) : value.push(ctrl.value);
+          // if (dType == 'array'){
+          //   if (value === 'string'){
+          //     value = [value]
+          //   }
+          // }
           model[field] = value;
+          // console.log(model,  modelName, model, model[field], field, value )
+          // setValue(model, field, value);
         } else {
           const v = valueOfCheckbox(ctrl);
           model[field] = v;
@@ -103,7 +111,7 @@ export function buildState<S, K extends keyof S>(e: any, state: Readonly<S>, ctr
         const objSet: any = {};
         try {
           const selectedDate = new Date(ctrl.value);
-          setValue(model, field, ctrl.value && ctrl.value!== '' ? selectedDate.toISOString() : '');
+          setValue(model, field, ctrl.value && ctrl.value!== '' ? selectedDate.toISOString() : null);
           objSet[modelName] = model;
           return objSet;
         } catch (error) {

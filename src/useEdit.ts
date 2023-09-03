@@ -215,7 +215,7 @@ export const useCoreEdit = <T, ID, S, P>(
   };
 
   const _handleNotFound = (form?: any): void => {
-    const msg = message(p1.resource.value, 'error_not_found', 'error');
+    const msg = message(p1.resource.value, 'error_404', 'error');
     if (form) {
       setReadOnly(form);
     }

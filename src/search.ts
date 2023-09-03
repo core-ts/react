@@ -36,6 +36,7 @@ export interface Sortable {
 export interface Pagination {
   initPageSize?: number;
   pageSize?: number;
+  limit?: number;
   pageIndex?: number;
   total?: number;
   pages?: number;
@@ -171,13 +172,19 @@ export function changePage(com: Pagination, pageIndex: number, pageSize: number)
   com.append = false;
 }
 export function optimizeFilter<S extends Filter>(obj: S, searchable: Searchable, fields?: string[]): S {
+  const sLimit = searchable.limit;
   obj.fields = fields;
   if (searchable.pageIndex && searchable.pageIndex > 1) {
     obj.page = searchable.pageIndex;
   } else {
     delete obj.page;
   }
-  obj.limit = searchable.pageSize;
+  if (sLimit){
+    obj.limit = searchable.limit;
+  }else{
+    obj.limit = searchable.pageSize;
+  }
+
   if (searchable.appendMode && searchable.initPageSize !== searchable.pageSize) {
     obj.firstLimit = searchable.initPageSize;
   } else {
@@ -194,21 +201,19 @@ export function optimizeFilter<S extends Filter>(obj: S, searchable: Searchable,
   return obj;
 }
 
-function mapObjects(objA: any, objB: any): void {
-  for (let key in objA) {
-    if (objB.hasOwnProperty(key) && objB[key] !== null && objB[key] !== undefined) {
-      if(Array.isArray(objA[key])) {
-        objA[key] = [];
-        if(!(Array.isArray(objB[key]) && objB[key].length === 0) &&typeof objB[key] === 'string') {
-          const arrayObjKeyB = objB[key].length > 0 ?  (objB[key])?.split(',') : [];
-          if(arrayObjKeyB && arrayObjKeyB.length > 1) {
-            objA[key] = [...arrayObjKeyB];
+function mapObjects(dest: any, src: any): void {
+  for (let key in dest) {
+    if (src.hasOwnProperty(key) && src[key] !== null && src[key] !== undefined) {
+      if(Array.isArray(dest[key]) && typeof src[key] === 'string' && src[key].length > 0) {
+          const arrayObjKeySrc = src[key].length > 0 ?  (src[key])?.split(',') : [];
+          if(arrayObjKeySrc && arrayObjKeySrc.length > 1) {
+            dest[key] = [...arrayObjKeySrc];
           } else {
-            objA[key].push(objB[key])
+            dest[key] = [];
+            dest[key].push(src[key])
           }
-        }
       } else {
-        objA[key] = objB[key];
+        dest[key] = src[key];
       }
     }
   }
@@ -576,7 +581,9 @@ export function toggleSortStyle(target: HTMLElement): string {
 }
 export function getModel<T, S extends Filter>(state: any, modelName: string, searchable: Searchable, fields?: string[], excluding?: string[]|number[]): S {
   let obj2 = getModelFromState(state, modelName);
+
   const obj: any = obj2 ? obj2 : {};
+  console.log("getModel optimizeFilter", searchable)
   const obj3 = optimizeFilter(obj, searchable, fields);
   obj3.excluding = excluding;
   return obj3;
