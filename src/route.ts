@@ -51,6 +51,7 @@ function parseToModel(dest: any, src: any) {
   if (typeof dest !== 'object' || typeof src !== 'object') {
     return dest;
   }
+  dest = convertToObject(dest)
   for (let key in src) {
     if (!Object.hasOwn(dest, key)) continue;
     if (src.hasOwnProperty(key)) {

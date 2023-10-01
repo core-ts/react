@@ -219,7 +219,7 @@ export const useCoreEdit = <T, ID, S, P>(
     if (form) {
       setReadOnly(form);
     }
-    p1.showError(msg.message, msg.title);
+    p1.showError(msg.message, msg.title, undefined, () => window.history.back);
   };
   const handleNotFound = (p && p.handleNotFound ? p.handleNotFound : _handleNotFound);
 
@@ -371,14 +371,10 @@ export const useCoreEdit = <T, ID, S, P>(
         const unmappedErrors = u.showFormError(f, errors);
         focusFirstError(f);
         if (!result.message) {
-          if (errors && errors.length === 1) {
-            result.message = errors[0].message;
+          if (p1.ui && p1.ui.buildErrorMessage) {
+            result.message = p1.ui.buildErrorMessage(unmappedErrors);
           } else {
-            if (p1.ui && p1.ui.buildErrorMessage) {
-              result.message = p1.ui.buildErrorMessage(unmappedErrors);
-            } else {
-              result.message = errors[0].message;
-            }
+            result.message = errors[0].message;
           }
         }
         if (result.message) {
@@ -492,16 +488,25 @@ export const useCoreEdit = <T, ID, S, P>(
         const r = p1.resource;
         const title = r.value('error');
         let msg = r.value('error_internal');
-        if (data && data.status === 404) {
-          handleNotFound(refForm.current);
+        const st = createEditStatus(p ? p.status : undefined);
+        if (data && data.status === 422) {
+          fail(err.response?.data);
+          const obj = err.response?.data?.value;
+          if (obj) {
+            callback ? callback(obj as T, showModel) : showModel(obj as T);
+          }
         } else {
-          if (data.status && !isNaN(data.status)) {
-            msg = messageByHttpStatus(data.status, r.value);
-          }
-          if (data && (data.status === 401 || data.status === 403)) {
-            setReadOnly(refForm.current);
-          }
-          p1.showError(msg, title);
+          if (data && data.status === 404) {
+            handleNotFound(refForm.current);
+          } else {
+            if (data.status && !isNaN(data.status)) {
+              msg = messageByHttpStatus(data.status, r.value);
+            }
+            if (data && (data.status === 401 || data.status === 403)) {
+              setReadOnly(refForm.current);
+            }
+            p1.showError(msg, title);
+          } 
         }
         setRunning(false);
         hideLoading(p1.loading);

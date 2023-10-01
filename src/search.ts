@@ -583,7 +583,6 @@ export function getModel<T, S extends Filter>(state: any, modelName: string, sea
   let obj2 = getModelFromState(state, modelName);
 
   const obj: any = obj2 ? obj2 : {};
-  console.log("getModel optimizeFilter", searchable)
   const obj3 = optimizeFilter(obj, searchable, fields);
   obj3.excluding = excluding;
   return obj3;

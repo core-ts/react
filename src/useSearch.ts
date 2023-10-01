@@ -44,7 +44,7 @@ export const callSearch = <T, S extends Filter>(se: S, search3: (s: S, limit?: n
   delete se['firstLimit'];
   search3(s, limit, next, fields).then(sr => {
     showResults3(s, sr, lc);
-  }).catch(err => searchError3(err));
+  }).catch(err => err && searchError3(err));
 };
 const appendListOfState = <T, S extends Filter>(results: T[], list: T[]|undefined, setState2: DispatchWithCallback<Partial<SearchComponentState<T, S>>>) => {
   const arr = append(list, results);
@@ -437,7 +437,10 @@ export const useCoreSearch = <T, S extends Filter, ST>(
   const appendList = (p && p.appendList ? p.appendList : appendListOfState);
   const setList = (p && p.setList ? p.setList : setListOfState);
   const _showResults = (s: S, sr: SearchResult<T>, lc: Locale) => {
-    const results = sr.list;
+    if (sr == undefined) {
+      return;
+    }
+    const results = sr?.list || [];
     if (results && results.length > 0) {
       formatResults(results, component.pageIndex, component.pageSize, component.pageSize, p ? p.sequenceNo : undefined, p ? p.format : undefined, lc);
     }
