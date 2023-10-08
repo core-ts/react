@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useEffect, useRef, useState } from 'react';
 export * from './formutil';
 export * from './util';
 export * from './core';
@@ -15,6 +16,28 @@ export * from './components';
 export * from './search';
 export * from './reflect';
 export * from './com';
+
+type CallBackType<T> = (updatedValue: T) => void;
+type SetStateType<T> = T | ((prev: T) => T);
+type RetType = <T>(initialValue: T | (() => T)) => [T, (newValue: SetStateType<T>, callback?: CallBackType<T>) => void];
+
+export const useCallbackState: RetType = <T>(initialValue: T | (() => T)) => {
+  const [state, _setState] = useState<T>(initialValue);
+  const callbackQueue = useRef<CallBackType<T>[]>([]);
+
+  useEffect(() => {
+    callbackQueue.current.forEach((cb) => cb(state));
+    callbackQueue.current = [];
+  }, [state]);
+
+  const setState = (newValue: SetStateType<T>, callback?: CallBackType<T>) => {
+    _setState(newValue);
+    if (callback && typeof callback === "function") {
+      callbackQueue.current.push(callback);
+    }
+  };
+  return [state, setState];
+};
 
 export function checked(s: string[]|string|undefined, v: string): boolean|undefined {
   if (s) {

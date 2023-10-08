@@ -371,10 +371,12 @@ export const useCoreEdit = <T, ID, S, P>(
         const unmappedErrors = u.showFormError(f, errors);
         focusFirstError(f);
         if (!result.message) {
-          if (p1.ui && p1.ui.buildErrorMessage) {
-            result.message = p1.ui.buildErrorMessage(unmappedErrors);
-          } else {
-            result.message = errors[0].message;
+          if (errors && errors.length > 0) {
+            if (p1.ui && p1.ui.buildErrorMessage) {
+              result.message = p1.ui.buildErrorMessage(unmappedErrors);
+            } else {
+              result.message = errors[0].message;
+            }
           }
         }
         if (result.message) {
