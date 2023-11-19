@@ -885,17 +885,16 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
   doSave(obj: T, dif?: Partial<T>, isBack?: boolean) {
   }
 
-  succeed(msg: string, isBack?: boolean, result?: ResultInfo<T>) {
-    if (result) {
-      const model = result.value;
+  succeed(msg: string, origin: T, isBack?: boolean, model?: T) {
+    if (model) {
       this.newMode = false;
       if (model && this.setBack) {
         this.resetState(false, model, clone(model));
       } else {
-        handleVersion(this.getModel(), this.version);
+        handleVersion(origin, this.version);
       }
     } else {
-      handleVersion(this.getModel(), this.version);
+      handleVersion(origin, this.version);
     }
     const isBackO = (isBack == null || isBack === undefined ? this.backOnSuccess : isBack);
     this.showMessage(msg);
@@ -903,53 +902,32 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
       this.back(null);
     }
   }
-  fail(result: ResultInfo<T> | ErrorMessage[]) {
+  fail(result: ErrorMessage[]) {
     const f = this.form;
     const u = this.ui;
-    if (Array.isArray(result)) {
-      if (u && f) {
-        const unmappedErrors = u.showFormError(f, result);
-        focusFirstError(f);
-        if (unmappedErrors && unmappedErrors.length > 0) {
-          const t = this.resourceService.value('error');
-          if (u && u.buildErrorMessage) {
-            const msg = u.buildErrorMessage(unmappedErrors);
-            this.showError(msg, t);
-          } else {
-            this.showError(unmappedErrors[0].field + ' ' + unmappedErrors[0].code + ' ' + unmappedErrors[0].message, t);
-          }
-        }
-      } else {
+    if (u && f) {
+      const unmappedErrors = u.showFormError(f, result);
+      focusFirstError(f);
+      if (unmappedErrors && unmappedErrors.length > 0) {
         const t = this.resourceService.value('error');
-        if (result.length > 0) {
-          this.showError(result[0].field + ' ' + result[0].code + ' ' + result[0].message, t);
+        if (u && u.buildErrorMessage) {
+          const msg = u.buildErrorMessage(unmappedErrors);
+          this.showError(msg, t);
         } else {
-          this.showError(t, t);
+          this.showError(unmappedErrors[0].field + ' ' + unmappedErrors[0].code + ' ' + unmappedErrors[0].message, t);
         }
       }
     } else {
-      const errors = result.errors;
-      if (u && f) {
-        const unmappedErrors = u.showFormError(f, errors);
-        if (!result.message) {
-          if (errors && errors.length === 1) {
-            result.message = errors[0].message;
-          } else {
-            result.message = u.buildErrorMessage(unmappedErrors);
-          }
-        }
-        focusFirstError(f);
-      } else if (errors && errors.length === 1) {
-        result.message = errors[0].message;
-      }
-      if (result.message) {
-        const t = this.resourceService.value('error');
-        this.showError(result.message, t);
+      const t = this.resourceService.value('error');
+      if (result.length > 0) {
+        this.showError(result[0].field + ' ' + result[0].code + ' ' + result[0].message, t);
+      } else {
+        this.showError(t, t);
       }
     }
   }
 
-  postSave(res: number|string|ResultInfo<T>|ErrorMessage[], backOnSave?: boolean) {
+  postSave(res: number|string|T|ErrorMessage[], origin: T, isPatch: boolean, backOnSave?: boolean) {
     this.running = false;
     hideLoading(this.loading);
     const st = this.status;
@@ -961,7 +939,7 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
       this.fail(x);
     } else if (!isNaN(x)) {
       if (x === st.success) {
-        this.succeed(successMsg, backOnSave);
+        this.succeed(successMsg, origin, backOnSave);
       } else {
         if (newMod && x === st.duplicate_key) {
           this.handleDuplicateKey();
@@ -972,28 +950,27 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
         }
       }
     } else {
-      const result: ResultInfo<T> = x;
-      if (result.status === st.success) {
-        this.succeed(successMsg, backOnSave, result);
-        this.showMessage(successMsg);
-      } else if (result.errors && result.errors.length > 0) {
-        this.fail(result);
-      } else if (newMod && result.status === st.duplicate_key) {
-        this.handleDuplicateKey(result);
-      } else if (!newMod && x === st.not_found) {
-        this.handleNotFound();
+      const result: T = x;
+      if (isPatch) {
+        const keys = Object.keys(result);
+        const a: any = origin;
+        for (const k of keys) {
+          a[k] = (result as any)[k];
+        }
+        this.succeed(successMsg, a, backOnSave);
       } else {
-        handleStatus(result.status, st, r.value, this.showError);
+        this.succeed(successMsg, origin, backOnSave, result);
       }
+      this.showMessage(successMsg);
     }
   }
-  handleDuplicateKey(result?: ResultInfo<T>) {
+  handleDuplicateKey(result?: T) {
     const msg = message(this.resourceService.value, 'error_duplicate_key', 'error');
     this.showError(msg.message, msg.title);
   }
 }
 export class EditComponent<T, ID, P, S> extends BaseEditComponent<T, P, S>  {
-  constructor(props: P, protected service: GenericService<T, ID, number|ResultInfo<T>|ErrorMessage[]>,
+  constructor(props: P, protected service: GenericService<T, ID, number|T|ErrorMessage[]>,
       param: ResourceService|EditParameter,
       showMessage?: (msg: string, option?: string) => void,
       showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
@@ -1086,14 +1063,16 @@ export class EditComponent<T, ID, P, S> extends BaseEditComponent<T, P, S>  {
     const com = this;
     let m: T|Partial<T> = obj;
     let fn = this.newMode ? this.service.insert : this.service.update;
+    let isPatch = false;
     if (!this.newMode) {
       if (this.patchable === true && this.service.patch && body && Object.keys(body).length > 0) {
         m = body;
+        isPatch = true;
         fn = this.service.patch;
       }
     }
     fn(m as any).then(result => {
-      com.postSave(result, isBackO);
+      com.postSave(result, obj, isBackO);
       com.running = false;
       hideLoading(com.loading);
     }).then(err => {

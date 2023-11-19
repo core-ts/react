@@ -32,11 +32,11 @@ export interface BaseEditComponentParam<T, ID> {
   createModel?: () => T;
   onSave?: (isBack?: boolean) => void;
   validate?: (obj: T, callback: (obj2?: T) => void) => void;
-  succeed?: (obj: T, msg: string, version?: string, isBack?: boolean, result?: ResultInfo<T>) => void;
-  fail?: (result: ResultInfo<T>|ErrorMessage[]) => void;
-  postSave?: (obj: T, res: number|ResultInfo<T>|ErrorMessage[], version?: string, backOnSave?: boolean) => void;
+  succeed?: (origin: T, msg: string, version?: string, isBack?: boolean, model?: T) => void;
+  fail?: (result: ErrorMessage[]) => void;
+  postSave?: (res: number|T|ErrorMessage[], origin: T, version?: string, isPatch?: boolean, backOnSave?: boolean) => void;
   handleError?: (error: any) => void;
-  handleDuplicateKey?: (result?: ResultInfo<T>) => void;
+  handleDuplicateKey?: (result?: T) => void;
   load?: (i: ID|null, callback?: (m: T, showM: (m2: T) => void) => void) => void;
   doSave?: (obj: T, diff?: T, version?: string, isBack?: boolean) => void;
   // prepareCustomData?: (data: any) => void; // need to review
@@ -44,7 +44,7 @@ export interface BaseEditComponentParam<T, ID> {
 export interface HookBaseEditParameter<T, ID, S> extends BaseEditComponentParam<T, ID> {
   refForm: any;
   initialState: S;
-  service: GenericService<T, ID, number|ResultInfo<T>>;
+  service: GenericService<T, ID, number|T|ErrorMessage[]>;
   resource: ResourceService;
   showMessage: (msg: string) => void;
   showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
@@ -68,7 +68,7 @@ export interface HookPropsBaseEditParameter<T, ID, S, P> extends HookBaseEditPar
 export const useEdit = <T, ID, S>(
   refForm: any,
   initialState: S,
-  service: GenericService<T, ID, number|ResultInfo<T> | ErrorMessage[]>,
+  service: GenericService<T, ID, number|T|ErrorMessage[]>,
 
   p2: EditParameter,
   p?: EditComponentParam<T, ID, S>
@@ -114,7 +114,7 @@ export const useEditProps = <T, ID, S, P>(
   props: P,
   refForm: any,
   initialState: S,
-  service: GenericService<T, ID, number|ResultInfo<T>>,
+  service: GenericService<T, ID, number|T|ErrorMessage[]>,
   p2: EditParameter,
   p?: EditComponentParam<T, ID, S>
   ) => {
@@ -159,7 +159,7 @@ export const useEditOne = <T, ID, S>(p: HookBaseEditParameter<T, ID, S>) => {
 export const useCoreEdit = <T, ID, S, P>(
   refForm: any,
   initialState: S,
-  service: GenericService<T, ID, number|ResultInfo<T>|ErrorMessage[]>,
+  service: GenericService<T, ID, number|T|ErrorMessage[]>,
   p1: EditParameter,
   p?: BaseEditComponentParam<T, ID>,
   props?: P
@@ -322,17 +322,16 @@ export const useCoreEdit = <T, ID, S, P>(
   };
   const validate = (p && p.validate ? p.validate : _validate);
 
-  const _succeed = (obj: T, msg: string, version?: string, isBack?: boolean, result?: ResultInfo<T>) => {
-    if (result) {
-      const model = result.value;
+  const _succeed = (origin: T, msg: string, version?: string, isBack?: boolean, model?: T) => {
+    if (model) {
       setFlag({ newMode: false });
       if (model && flag.setBack === true) {
         resetState(false, model, clone(model));
       } else {
-        handleVersion(obj, version);
+        handleVersion(origin, version);
       }
     } else {
-      handleVersion(obj, version);
+      handleVersion(origin, version);
     }
     p1.showMessage(msg);
     if (isBack) {
@@ -341,48 +340,27 @@ export const useCoreEdit = <T, ID, S, P>(
   };
   const succeed = (p && p.succeed ? p.succeed : _succeed);
 
-  const _fail = (result: ResultInfo<T> | ErrorMessage[]) => {
+  const _fail = (result: ErrorMessage[]) => {
     const f = refForm.current;
     const u = p1.ui;
-    if (Array.isArray(result)) {
-      if (u && f) {
-        const unmappedErrors = u.showFormError(f, result);
-        focusFirstError(f);
-        if (unmappedErrors && unmappedErrors.length > 0) {
-          const t = p1.resource.value('error');
-          if (p1.ui && p1.ui.buildErrorMessage) {
-            const msg = p1.ui.buildErrorMessage(unmappedErrors);
-            p1.showError(msg, t);
-          } else {
-            p1.showError(unmappedErrors[0].field + ' ' + unmappedErrors[0].code + ' ' + unmappedErrors[0].message, t);
-          }
-        }
-      } else {
+    if (u && f) {
+      const unmappedErrors = u.showFormError(f, result);
+      focusFirstError(f);
+      if (unmappedErrors && unmappedErrors.length > 0) {
         const t = p1.resource.value('error');
-        if (result.length > 0) {
-          p1.showError(result[0].field + ' ' + result[0].code + ' ' + result[0].message, t);
+        if (p1.ui && p1.ui.buildErrorMessage) {
+          const msg = p1.ui.buildErrorMessage(unmappedErrors);
+          p1.showError(msg, t);
         } else {
-          p1.showError(t, t);
+          p1.showError(unmappedErrors[0].field + ' ' + unmappedErrors[0].code + ' ' + unmappedErrors[0].message, t);
         }
       }
     } else {
-      const errors = result.errors;
-      if (errors && u) {
-        const unmappedErrors = u.showFormError(f, errors);
-        focusFirstError(f);
-        if (!result.message) {
-          if (errors && errors.length > 0) {
-            if (p1.ui && p1.ui.buildErrorMessage) {
-              result.message = p1.ui.buildErrorMessage(unmappedErrors);
-            } else {
-              result.message = errors[0].message;
-            }
-          }
-        }
-        if (result.message) {
-          const t = p1.resource.value('error');
-          p1.showError(result.message, t);
-        }
+      const t = p1.resource.value('error');
+      if (result.length > 0) {
+        p1.showError(result[0].field + ' ' + result[0].code + ' ' + result[0].message, t);
+      } else {
+        p1.showError(t, t);
       }
     }
   };
@@ -404,7 +382,7 @@ export const useCoreEdit = <T, ID, S, P>(
   };
   const handleError = (p && p.handleError ? p.handleError : _handleError);
 
-  const _postSave = (obj: T, r: number | ResultInfo<T>|ErrorMessage[], version?: string, backOnSave?: boolean) => {
+  const _postSave = (r: number | T|ErrorMessage[], origin: T, version?: string, isPatch?: boolean, backOnSave?: boolean) => {
     setRunning(false);
     hideLoading(p1.loading);
     const x: any = r;
@@ -415,35 +393,38 @@ export const useCoreEdit = <T, ID, S, P>(
       fail(x);
     } else if (!isNaN(x)) {
       if (x === st.success) {
-        succeed(obj, successMsg, version, backOnSave);
+        succeed(origin, successMsg, version, backOnSave);
       } else {
         if (newMod && x === st.duplicate_key) {
           handleDuplicateKey();
         } else if (!newMod && x === st.not_found) {
           handleNotFound();
+        } else if (!newMod && x === st.version_error) {
+          const title = p1.resource.value('error');
+          const err = p1.resource.value('error_version');
+          p1.showError(err, title);
         } else {
           handleStatus(x as number, st, p1.resource.value, p1.showError);
         }
       }
     } else {
-      const result: ResultInfo<any> = x;
-      if (result.status === st.success) {
-        succeed(obj, successMsg, version, backOnSave, result);
-        p1.showMessage(successMsg);
-      } else if (result.errors && result.errors.length > 0) {
-        fail(result);
-      } else if (newMod && result.status === st.duplicate_key) {
-        handleDuplicateKey(result);
-      } else if (!newMod && x === st.not_found) {
-        handleNotFound();
+      const result = r as T;
+      if (isPatch) {
+        const keys = Object.keys(result);
+        const a: any = origin;
+        for (const k of keys) {
+          a[k] = (result as any)[k];
+        }
+        succeed(a, successMsg, undefined, backOnSave);
       } else {
-        handleStatus(result.status, st, p1.resource.value, p1.showError);
+        succeed(origin, successMsg, version, backOnSave, r as T);
       }
+      p1.showMessage(successMsg);
     }
   };
   const postSave = (p && p.postSave ? p.postSave : _postSave);
 
-  const _handleDuplicateKey = (result?: ResultInfo<any>) => {
+  const _handleDuplicateKey = (result?: T) => {
     const msg = message(p1.resource.value, 'error_duplicate_key', 'error');
     p1.showError(msg.message, msg.title);
   };
@@ -456,12 +437,14 @@ export const useCoreEdit = <T, ID, S, P>(
     const patchable = (p ? p.patchable : true);
     if (flag.newMode === false) {
       if (service.patch && patchable !== false && body && Object.keys(body).length > 0) {
-        service.patch(body).then(result => postSave(obj, result, version, isBackO)).catch(handleError);
+        service.patch(body).then(result => {
+          postSave(result, obj, version, true, isBackO);
+        }).catch(handleError);
       } else {
-        service.update(obj).then(result => postSave(obj, result, version, isBackO)).catch(handleError);
+        service.update(obj).then(result => postSave(result, obj, version, false, isBackO)).catch(handleError);
       }
     } else {
-      service.insert(obj).then(result => postSave(obj, result, version, isBackO)).catch(handleError);
+      service.insert(obj).then(result => postSave(result, obj, version, false, isBackO)).catch(handleError);
     }
   };
 

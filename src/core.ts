@@ -51,9 +51,9 @@ export function createEditStatus(status?: EditStatusConfig): EditStatusConfig {
     duplicate_key: 0,
     not_found: 0,
     success: 1,
-    version_error: 2,
-    error: 4,
-    data_corrupt: 8
+    version_error: -1,
+    error: 2,
+    data_corrupt: 4
   };
   return s;
 }
