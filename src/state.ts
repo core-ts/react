@@ -75,7 +75,6 @@ export function buildState<S, K extends keyof S>(e: any, state: Readonly<S>, ctr
       const dataField = ctrl.getAttribute('data-field');
       const field = (dataField ? dataField : ctrl.name);
       const model = Object.assign({}, ex);
-      const dType= 'array'
       if (type && type.toLowerCase() === 'checkbox') {
         let value = model[field];
         if (ctrl.id && ctrl.name !== ctrl.id) {

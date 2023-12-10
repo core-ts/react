@@ -579,7 +579,7 @@ export function toggleSortStyle(target: HTMLElement): string {
   }
   return field;
 }
-export function getModel<T, S extends Filter>(state: any, modelName: string, searchable: Searchable, fields?: string[], excluding?: string[]|number[]): S {
+export function getModel<S extends Filter>(state: any, modelName: string, searchable: Searchable, fields?: string[], excluding?: string[]|number[]): S {
   let obj2 = getModelFromState(state, modelName);
 
   const obj: any = obj2 ? obj2 : {};

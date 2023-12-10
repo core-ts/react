@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 import {useNavigate, useParams} from 'react-router';
 import {Attributes, buildId, createEditStatus, EditStatusConfig, ErrorMessage, getModelName as getModelName2, hideLoading, initForm, LoadingService, Locale, message, messageByHttpStatus, ResourceService, showLoading, UIService} from './core';
-import {build, createModel as createModel2, EditParameter, GenericService, handleStatus, handleVersion, initPropertyNullInModel, ResultInfo} from './edit';
+import {build, createModel as createModel2, EditParameter, GenericService, handleStatus, handleVersion, initPropertyNullInModel} from './edit';
 import {focusFirstError, readOnly as setReadOnly} from './formutil';
 import {DispatchWithCallback, useMergeState} from './merge';
 import {clone, makeDiff} from './reflect';
@@ -410,7 +410,7 @@ export const useCoreEdit = <T, ID, S, P>(
     } else {
       const result = r as T;
       if (isPatch) {
-        const keys = Object.keys(result);
+        const keys = Object.keys(result as any);
         const a: any = origin;
         for (const k of keys) {
           a[k] = (result as any)[k];
@@ -433,7 +433,7 @@ export const useCoreEdit = <T, ID, S, P>(
   const _doSave = (obj: T, body?: Partial<T>, version?: string, isBack?: boolean) => {
     setRunning(true);
     showLoading(p1.loading);
-    const isBackO = (isBack == null || isBack === undefined ? true : isBack);
+    const isBackO = (isBack != null && isBack !== undefined ? isBack : false);
     const patchable = (p ? p.patchable : true);
     if (flag.newMode === false) {
       if (service.patch && patchable !== false && body && Object.keys(body).length > 0) {
@@ -473,7 +473,6 @@ export const useCoreEdit = <T, ID, S, P>(
         const r = p1.resource;
         const title = r.value('error');
         let msg = r.value('error_internal');
-        const st = createEditStatus(p ? p.status : undefined);
         if (data && data.status === 422) {
           fail(err.response?.data);
           const obj = err.response?.data?.value;

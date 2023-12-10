@@ -2,7 +2,7 @@ import * as React from 'react';
 import {BaseDiffState, createDiffStatus, createEditStatus, DiffApprService, DiffParameter, DiffState, DiffStatusConfig, handleToggle, hideLoading, showLoading} from './core';
 import {Attributes, EditStatusConfig, error, ErrorMessage, Filter, getCurrencyCode, getModelName as getModelName2, initForm, LoadingService, Locale, message, messageByHttpStatus, PageChange, pageSizes, removePhoneFormat, ResourceService, SearchParameter, SearchResult, SearchService, SearchState, StringMap, UIService, ViewParameter, ViewService} from './core';
 import {formatDiffModel, getDataFields} from './diff';
-import {build, createModel as createModel2, EditParameter, GenericService, handleStatus, handleVersion, initPropertyNullInModel, ResultInfo} from './edit';
+import {build, createModel as createModel2, EditParameter, GenericService, handleStatus, handleVersion, initPropertyNullInModel} from './edit';
 import {focusFirstError, readOnly} from './formutil';
 import {getAutoSearch, getConfirmFunc, getDiffStatusFunc, getEditStatusFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService} from './input';
 import {clone, diff, makeDiff} from './reflect';
@@ -421,7 +421,7 @@ export class BaseSearchComponent<T, F extends Filter, P, I extends SearchState<T
       lc = enLocale;
     }
     const fields = this.getFields();
-    const obj3 = getModel<T, F>(this.state, name, this, fields, this.excluding);
+    const obj3 = getModel<F>(this.state, name, this, fields, this.excluding);
     return obj3;
   }
   getFields(): string[]|undefined {
@@ -952,7 +952,7 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
     } else {
       const result: T = x;
       if (isPatch) {
-        const keys = Object.keys(result);
+        const keys = Object.keys(result as any);
         const a: any = origin;
         for (const k of keys) {
           a[k] = (result as any)[k];
@@ -1063,11 +1063,9 @@ export class EditComponent<T, ID, P, S> extends BaseEditComponent<T, P, S>  {
     const com = this;
     let m: T|Partial<T> = obj;
     let fn = this.newMode ? this.service.insert : this.service.update;
-    let isPatch = false;
     if (!this.newMode) {
       if (this.patchable === true && this.service.patch && body && Object.keys(body).length > 0) {
         m = body;
-        isPatch = true;
         fn = this.service.patch;
       }
     }

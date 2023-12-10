@@ -7,10 +7,9 @@ import {addParametersIntoUrl, append, buildMessage, formatResults, getFieldsFrom
 import {enLocale} from './state';
 import {useUpdate} from './update';
 
-export interface Searchable<T> extends Pagination, Sortable {
+export interface Searchable extends Pagination, Sortable {
   nextPageToken?: string;
   excluding?: string[]|number[];
-  list?: T[];
 }
 interface Filter {
   page?: number;
@@ -84,7 +83,7 @@ export interface SearchComponentParam<T, M extends Filter> {
   getModelName?: () => string;
   getCurrencyCode?: () => string;
   setFilter?: (s: M) => void;
-  getFilter?: (se?: Searchable<T>) => M;
+  getFilter?: (se?: Searchable) => M;
   getFields?: () => string[]|undefined;
   validateSearch?: (se: M, callback: () => void) => void;
   // prepareCustomData?: (data: any) => void;
@@ -269,7 +268,7 @@ export const useCoreSearch = <T, S extends Filter, ST>(
   };
   const getFields = p && p.getFields ? p.getFields : _getFields;
 
-  const _getFilter = (se?: Searchable<T>): S => {
+  const _getFilter = (se?: Searchable): S => {
     if (!se) {
       se = component;
     }
@@ -282,7 +281,7 @@ export const useCoreSearch = <T, S extends Filter, ST>(
     if (!fs || fs.length <= 0) {
       fs = getFields();
     }
-    const obj3 = getModel<T, S>(state, n, se, fs, se.excluding);
+    const obj3 = getModel<S>(state, n, se, fs, se.excluding);
     return obj3;
   };
   const getFilter = p && p.getFilter ? p.getFilter : _getFilter;
@@ -303,13 +302,13 @@ export const useCoreSearch = <T, S extends Filter, ST>(
     const runSearch = doSearch;
     if (auto) {
       setTimeout(() => {
-        runSearch((obj2 as Searchable<T>), true);
+        runSearch((obj2 as Searchable), true);
       }, 0);
     }
   };
   const load = p && p.load ? p.load : _load;
 
-  const doSearch = (se: Searchable<T>, isFirstLoad?: boolean) => {
+  const doSearch = (se: Searchable, isFirstLoad?: boolean) => {
     removeFormError(p1, refForm.current);
     const s = getFilter(se);
 
@@ -437,7 +436,7 @@ export const useCoreSearch = <T, S extends Filter, ST>(
   const appendList = (p && p.appendList ? p.appendList : appendListOfState);
   const setList = (p && p.setList ? p.setList : setListOfState);
   const _showResults = (s: S, sr: SearchResult<T>, lc: Locale) => {
-    if (sr == undefined) {
+    if (sr === undefined) {
       return;
     }
     const results = sr?.list || [];
