@@ -32,7 +32,7 @@ export interface BaseEditComponentParam<T, ID> {
   createModel?: () => T;
   onSave?: (isBack?: boolean) => void;
   validate?: (obj: T, callback: (obj2?: T) => void) => void;
-  succeed?: (origin: T, msg: string, version?: string, isBack?: boolean, model?: T) => void;
+  succeed?: (msg: string, origin: T, version?: string, isBack?: boolean, model?: T) => void;
   fail?: (result: ErrorMessage[]) => void;
   postSave?: (res: number|T|ErrorMessage[], origin: T, version?: string, isPatch?: boolean, backOnSave?: boolean) => void;
   handleError?: (error: any) => void;
@@ -322,7 +322,7 @@ export const useCoreEdit = <T, ID, S, P>(
   };
   const validate = (p && p.validate ? p.validate : _validate);
 
-  const _succeed = (origin: T, msg: string, version?: string, isBack?: boolean, model?: T) => {
+  const _succeed = (msg: string, origin: T, version?: string, isBack?: boolean, model?: T) => {
     if (model) {
       setFlag({ newMode: false });
       if (model && flag.setBack === true) {
@@ -393,7 +393,7 @@ export const useCoreEdit = <T, ID, S, P>(
       fail(x);
     } else if (!isNaN(x)) {
       if (x === st.success) {
-        succeed(origin, successMsg, version, backOnSave);
+        succeed(successMsg, origin, version, backOnSave);
       } else {
         if (newMod && x === st.duplicate_key) {
           handleDuplicateKey();
@@ -415,9 +415,9 @@ export const useCoreEdit = <T, ID, S, P>(
         for (const k of keys) {
           a[k] = (result as any)[k];
         }
-        succeed(a, successMsg, undefined, backOnSave);
+        succeed(successMsg, a, undefined, backOnSave, a);
       } else {
-        succeed(origin, successMsg, version, backOnSave, r as T);
+        succeed(successMsg, origin, version, backOnSave, r as T);
       }
       p1.showMessage(successMsg);
     }
