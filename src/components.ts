@@ -526,8 +526,8 @@ export class BaseSearchComponent<T, F extends Filter, P, I extends SearchState<T
       if ((!s.page || s.page <= 1) && s.firstLimit && s.firstLimit > 0) {
         limit = s.firstLimit;
       }
-      com.nextPageToken = sr.nextPageToken;
-      handleAppend(com, sr.list, limit, sr.nextPageToken);
+      com.nextPageToken = sr.next;
+      handleAppend(com, sr.list, limit, sr.next);
       if (com.append && (s.page && s.page > 1)) {
         com.appendList(results);
       } else {

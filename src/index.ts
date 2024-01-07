@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { ChangeEvent, ChangeEventHandler, FocusEvent, useEffect, useState } from 'react';
 export * from './formutil';
 export * from './util';
 export * from './core';
@@ -16,7 +16,7 @@ export * from './components';
 export * from './search';
 export * from './reflect';
 export * from './com';
-
+/*
 type CallBackType<T> = (updatedValue: T) => void;
 type SetStateType<T> = T | ((prev: T) => T);
 type RetType = <T>(initialValue: T | (() => T)) => [T, (newValue: SetStateType<T>, callback?: CallBackType<T>) => void];
@@ -38,7 +38,7 @@ export const useCallbackState: RetType = <T>(initialValue: T | (() => T)) => {
   };
   return [state, setState];
 };
-
+*/
 export function checked(s: string[]|string|undefined, v: string): boolean|undefined {
   if (s) {
     if (Array.isArray(s)) {
@@ -76,6 +76,76 @@ export const Loading = (props: LoadingProps) => {
       </div>
     );*/
   }
+};
+interface Locale {
+  decimalSeparator: string;
+  groupSeparator: string;
+  currencyCode: string;
+  currencySymbol: string;
+  currencyPattern: number;
+}
+interface InputProps {
+  name?: string;
+  className?: string;
+  value?: string;
+  ['data-field']?: string;
+  defaultValue?: string;
+  onChangeNumber?: (value: number) => void;
+  onChange?: ChangeEventHandler<HTMLInputElement>;
+  currencyOnBlur?: (event: Event|any, locale: Locale, currencyCode?: string, includingCurrencySymbol?: boolean) => void;
+  currencyCode?: string;
+  symbol?: boolean;
+  readOnly?: boolean;
+  locale?: Locale;
+  type?: string;
+  disabled?: boolean;
+  required?: boolean;
+  typeOutput?: string;
+  min?: string|number;
+  max?: string|number;
+  allowZero?: boolean;
+}
+export const NumberInput = (props: InputProps) => {
+  const [state, setState] = useState<string|undefined>(undefined);
+  useEffect(() => {
+    setState(props.value);
+  }, [props.value]);
+  const onChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const v1 = e.target.value;
+    setState(v1);
+    if (props.onChange) {
+      props.onChange(e);
+    }
+    if (props.onChangeNumber) {
+      props.onChangeNumber(parseFloat(v1));
+    }
+  };
+  const ip = {
+    value: state,
+    className: props?.className,
+    name: props?.name,
+    onChange,
+    disabled: props?.disabled,
+    ['data-field']: props['data-field'],
+    min: props?.min,
+    max: props?.max,
+    type: props?.type,
+    onBlur: (e: FocusEvent<HTMLInputElement>) => {
+      if (props.allowZero && e.target.value === '0') {
+        setState('0');
+        return;
+      }
+      if (props.locale && props.currencyOnBlur) {
+        props.currencyOnBlur(e, props.locale, props.currencyCode, props.symbol);
+      }
+      setTimeout(() => {
+        const v2 = e.target.value;
+        setState(v2);
+      }, 50);
+    },
+  };
+  // return <input className={ip.className} type={ip.type} name={ip.name} onChange={ip.onChange} disabled={ip.disabled} data-field={ip['data-field']} min={ip.min} max={ip.max} value={state} />;
+  return React.createElement("input", { className: ip.className, type: ip.type, name: ip.name, onChange: ip.onChange, disabled: ip.disabled, "data-field": ip['data-field'], min: ip.min, max: ip.max, value: state });
 };
 export type OnClick = React.MouseEvent<HTMLElement, MouseEvent>;
 export function formatDate(date: Date | null | undefined, format: string): string {
