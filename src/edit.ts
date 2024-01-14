@@ -1,4 +1,4 @@
-import {Attribute, Attributes, EditStatusConfig, ErrorMessage, LoadingService, Locale, resource, ResourceService, UIService, ViewService} from './core';
+import {Attribute, Attributes, ErrorMessage, LoadingService, Locale, resource, ResourceService, UIService, ViewService} from './core';
 
 export interface ResultInfo<T> {
   status: number|string;
@@ -14,7 +14,7 @@ export interface EditParameter {
   ui?: UIService;
   getLocale?: (profile?: string) => Locale;
   loading?: LoadingService;
-  status?: EditStatusConfig;
+  // status?: EditStatusConfig;
 }
 export interface GenericService<T, ID, R> extends ViewService<T, ID> {
   patch?(obj: Partial<T>, ctx?: any): Promise<R>;
@@ -130,6 +130,7 @@ export function initPropertyNullInModel<T>(obj: T, m?: Attributes): T {
   }
   return obj;
 }
+/*
 export function handleStatus(x: number|string, st: EditStatusConfig, gv: (k: string, p?: any) => string, se: (m: string, title?: string, detail?: string, callback?: () => void) => void): void {
   const title = gv('error');
   if (x === st.version_error) {
@@ -140,6 +141,7 @@ export function handleStatus(x: number|string, st: EditStatusConfig, gv: (k: str
     se(gv('error_internal'), title);
   }
 }
+*/
 export function handleVersion<T>(obj: T, version?: string): void {
   if (obj && version && version.length > 0) {
     const v = (obj as any)[version];

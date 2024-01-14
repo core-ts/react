@@ -61,10 +61,10 @@ export interface HookPropsSearchParameter<T, S extends Filter, ST extends Search
   initialize?: (ld: (s: S, auto?: boolean) => void, setState2: DispatchWithCallback<Partial<ST>>, com?: SearchComponentState<T, S>) => void;
 }
 export interface SearchComponentParam<T, M extends Filter> {
-  addable?: boolean;
-  editable?: boolean;
-  approvable?: boolean;
-  deletable?: boolean;
+  // addable?: boolean;
+  // editable?: boolean;
+  // approvable?: boolean;
+  // deletable?: boolean;
 
   keys?: string[];
   sequenceNo?: string;
@@ -134,11 +134,11 @@ export interface SearchComponentState<T, S> extends Pagination, Sortable {
   hideFilter?: boolean;
 
   ignoreUrlParam?: boolean;
-  viewable?: boolean;
-  addable?: boolean;
-  editable?: boolean;
-  approvable?: boolean;
-  deletable?: boolean;
+  // viewable?: boolean;
+  // addable?: boolean;
+  // editable?: boolean;
+  // approvable?: boolean;
+  // deletable?: boolean;
 }
 
 export function mergeParam<T, S extends Filter>(p?: SearchComponentParam<T, S>): SearchComponentParam<T, S> {
@@ -158,6 +158,7 @@ export function mergeParam<T, S extends Filter>(p?: SearchComponentParam<T, S>):
     if (p.hideFilter === undefined) {
       p.hideFilter = true;
     }
+    /*
     if (p.addable === undefined) {
       p.addable = true;
     }
@@ -170,6 +171,7 @@ export function mergeParam<T, S extends Filter>(p?: SearchComponentParam<T, S>):
     if (p.deletable === undefined) {
       p.deletable = true;
     }
+    */
     return p;
   } else {
     return {
@@ -178,10 +180,10 @@ export function mergeParam<T, S extends Filter>(p?: SearchComponentParam<T, S>):
       pageSizes,
       pageMaxSize: 7,
       hideFilter: true,
-      addable: true,
-      editable: true,
-      approvable: true,
-      deletable: true
+      // addable: true,
+      // editable: true,
+      // approvable: true,
+      // deletable: true
     };
   }
 }

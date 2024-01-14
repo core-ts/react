@@ -35,6 +35,7 @@ export interface SearchParameter {
   loading?: LoadingService;
   auto?: boolean;
 }
+/*
 export interface EditStatusConfig {
   duplicate_key: number | string;
   not_found: number | string;
@@ -75,7 +76,7 @@ export function createDiffStatus(status?: DiffStatusConfig): DiffStatusConfig {
   };
   return s;
 }
-
+*/
 export interface Filter {
   q?: string;
   page?: number;
@@ -116,7 +117,7 @@ export interface DiffParameter {
   showMessage: (msg: string, option?: string) => void;
   showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
   loading?: LoadingService;
-  status?: DiffStatusConfig;
+  // status?: DiffStatusConfig;
 }
 export interface BaseDiffState {
   disabled: boolean;

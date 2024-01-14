@@ -1,10 +1,10 @@
 import * as React from 'react';
-import {BaseDiffState, createDiffStatus, createEditStatus, DiffApprService, DiffParameter, DiffState, DiffStatusConfig, handleToggle, hideLoading, showLoading} from './core';
-import {Attributes, EditStatusConfig, error, ErrorMessage, Filter, getCurrencyCode, getModelName as getModelName2, initForm, LoadingService, Locale, message, messageByHttpStatus, PageChange, pageSizes, removePhoneFormat, ResourceService, SearchParameter, SearchResult, SearchService, SearchState, StringMap, UIService, ViewParameter, ViewService} from './core';
+import {BaseDiffState, DiffApprService, DiffParameter, DiffState, handleToggle, hideLoading, showLoading} from './core';
+import {Attributes, error, ErrorMessage, Filter, getCurrencyCode, getModelName as getModelName2, initForm, LoadingService, Locale, message, messageByHttpStatus, PageChange, pageSizes, removePhoneFormat, ResourceService, SearchParameter, SearchResult, SearchService, SearchState, StringMap, UIService, ViewParameter, ViewService} from './core';
 import {formatDiffModel, getDataFields} from './diff';
-import {build, createModel as createModel2, EditParameter, GenericService, handleStatus, handleVersion, initPropertyNullInModel} from './edit';
+import {build, createModel as createModel2, EditParameter, GenericService, handleVersion, initPropertyNullInModel} from './edit';
 import {focusFirstError, readOnly} from './formutil';
-import {getAutoSearch, getConfirmFunc, getDiffStatusFunc, getEditStatusFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService} from './input';
+import {getAutoSearch, getConfirmFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService} from './input';
 import {clone, diff, makeDiff} from './reflect';
 import {buildFromUrl} from './route';
 import {addParametersIntoUrl, append, buildMessage, changePage, changePageSize, formatResults, getFieldsFromForm, getModel, handleAppend, handleSortEvent, initFilter, mergeFilter as mergeFilter2, more, Pagination, reset, showPaging, Sortable, validate} from './search';
@@ -366,11 +366,11 @@ export class BaseSearchComponent<T, F extends Filter, P, I extends SearchState<T
   // locationSearch: string;
   // _currentSortField: string;
 
-  viewable?: boolean = true;
-  addable?: boolean = true;
-  editable?: boolean = true;
-  approvable?: boolean;
-  deletable?: boolean;
+  // viewable?: boolean = true;
+  // addable?: boolean = true;
+  // editable?: boolean = true;
+  // approvable?: boolean;
+  // deletable?: boolean;
 
   getModelName(): string {
     return 'filter';
@@ -702,11 +702,11 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
       getLocale?: () => Locale,
       protected ui?: UIService,
       protected loading?: LoadingService,
-      status?: EditStatusConfig,
+      // status?: EditStatusConfig,
       patchable?: boolean, backOnSaveSuccess?: boolean) {
     super(props, getLocale, (ui ? ui.removeError : undefined));
     this.resource = resourceService.resource();
-    this.status = createEditStatus(status);
+    // this.status = createEditStatus(status);
     if (patchable === false) {
       this.patchable = patchable;
     }
@@ -739,7 +739,7 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
     this.postSave = this.postSave.bind(this);
     this.handleDuplicateKey = this.handleDuplicateKey.bind(this);
   }
-  status: EditStatusConfig;
+  // status: EditStatusConfig;
   protected name?: string;
   protected backOnSuccess = true;
   protected resource: StringMap;
@@ -751,9 +751,9 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
   protected patchable = true;
   protected orginalModel?: T;
 
-  addable?: boolean = true;
+  // addable?: boolean = true;
   readOnly?: boolean;
-  deletable?: boolean;
+  // deletable?: boolean;
 
   insertSuccessMsg: string;
   updateSuccessMsg: string;
@@ -834,40 +834,30 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
   }
   onSave(isBack?: boolean) {
     const r = this.resourceService;
-    if (this.newMode && !this.addable) {
-      const m = message(r.value, 'error_permission_add', 'error_permission');
-      this.showError(m.message, m.title);
+    if (this.running) {
       return;
-    } else if (!this.newMode && this.readOnly) {
-      const msg = message(r.value, 'error_permission_edit', 'error_permission');
-      this.showError(msg.message, msg.title);
-      return;
+    }
+    const com = this;
+    const obj = com.getModel();
+    if (this.newMode) {
+      com.validate(obj, () => {
+        const msg = message(r.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
+        this.confirm(msg.message, msg.title, () => {
+          com.doSave(obj, obj, isBack);
+        }, msg.no, msg.yes);
+      });
     } else {
-      if (this.running) {
-        return;
-      }
-      const com = this;
-      const obj = com.getModel();
-      if (this.newMode) {
+      const diffObj = makeDiff(initPropertyNullInModel(this.orginalModel, this.metadata), obj, this.keys, this.version);
+      const keys = Object.keys(diffObj as any);
+      if (keys.length === 0) {
+        this.showMessage(r.value('msg_no_change'));
+      } else {
         com.validate(obj, () => {
           const msg = message(r.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
           this.confirm(msg.message, msg.title, () => {
-            com.doSave(obj, obj, isBack);
+            com.doSave(obj, diffObj, isBack);
           }, msg.no, msg.yes);
         });
-      } else {
-        const diffObj = makeDiff(initPropertyNullInModel(this.orginalModel, this.metadata), obj, this.keys, this.version);
-        const keys = Object.keys(diffObj as any);
-        if (keys.length === 0) {
-          this.showMessage(r.value('msg_no_change'));
-        } else {
-          com.validate(obj, () => {
-            const msg = message(r.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
-            this.confirm(msg.message, msg.title, () => {
-              com.doSave(obj, diffObj, isBack);
-            }, msg.no, msg.yes);
-          });
-        }
       }
     }
   }
@@ -930,7 +920,7 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
   postSave(res: number|string|T|ErrorMessage[], origin: T, isPatch: boolean, backOnSave?: boolean) {
     this.running = false;
     hideLoading(this.loading);
-    const st = this.status;
+    // const st = this.status;
     const newMod = this.newMode;
     const successMsg = (newMod ? this.insertSuccessMsg : this.updateSuccessMsg);
     const x: any = res;
@@ -938,15 +928,15 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
     if (Array.isArray(x)) {
       this.fail(x);
     } else if (!isNaN(x)) {
-      if (x === st.success) {
+      if (x > 0) {
         this.succeed(successMsg, origin, backOnSave);
       } else {
-        if (newMod && x === st.duplicate_key) {
+        if (newMod && x <= 0) {
           this.handleDuplicateKey();
-        } else if (!newMod && x === st.not_found) {
+        } else if (!newMod && x === 0) {
           this.handleNotFound();
         } else {
-          handleStatus(x as number, st, r.value, this.showError);
+          this.showError(r.value('error_version'), r.value('error'));
         }
       }
     } else {
@@ -977,8 +967,8 @@ export class EditComponent<T, ID, P, S> extends BaseEditComponent<T, P, S>  {
       confirm?: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
       getLocale?: (profile?: string) => Locale,
       uis?: UIService,
-      loading?: LoadingService, status?: EditStatusConfig, patchable?: boolean, backOnSaveSuccess?: boolean) {
-    super(props, getResource(param), getMsgFunc(param, showMessage), getErrorFunc(param, showError), getConfirmFunc(param, confirm), getLocaleFunc(param, getLocale), getUIService(param, uis), getLoadingFunc(param, loading), getEditStatusFunc(param, status), patchable, backOnSaveSuccess);
+      loading?: LoadingService, patchable?: boolean, backOnSaveSuccess?: boolean) {
+    super(props, getResource(param), getMsgFunc(param, showMessage), getErrorFunc(param, showError), getConfirmFunc(param, confirm), getLocaleFunc(param, getLocale), getUIService(param, uis), getLoadingFunc(param, loading), patchable, backOnSaveSuccess);
     if (service.metadata) {
       const metadata = service.metadata();
       if (metadata) {
@@ -1086,7 +1076,7 @@ export class BaseDiffApprComponent<T, ID, P, S extends BaseDiffState> extends Re
       protected showMessage: (msg: string, option?: string) => void,
       protected showError: (m: string, title?: string, detail?: string, callback?: () => void) => void,
       protected loading?: LoadingService,
-      status?: DiffStatusConfig,
+      // status?: DiffStatusConfig,
     ) {
     super(props);
     // this._id = props['props'].match.params.id || props['props'].match.params.cId || props.match.params.cId;
@@ -1099,12 +1089,12 @@ export class BaseDiffApprComponent<T, ID, P, S extends BaseDiffState> extends Re
     this.postReject = this.postReject.bind(this);
     this.format = this.format.bind(this);
     this.handleNotFound = this.handleNotFound.bind(this);
-    this.status = createDiffStatus(status);
+    // this.status = createDiffStatus(status);
     this.state = {
       disabled: false
     };
   }
-  status: DiffStatusConfig;
+  // status: DiffStatusConfig;
   id?: ID;
   form?: HTMLFormElement;
   running?: boolean;
@@ -1118,32 +1108,28 @@ export class BaseDiffApprComponent<T, ID, P, S extends BaseDiffState> extends Re
   postApprove(s: number|string, err?: any) {
     this.setState({ disabled: true });
     const r = this.resourceService;
-    const st = this.status;
-    if (s === st.success) {
+    // const st = this.status;
+    if (s > 0) {
       this.showMessage(r.value('msg_approve_success'));
-    } else if (s === st.version_error) {
-      const msg = message(r.value, 'msg_approve_version_error', 'error');
-      this.showError(msg.message, msg.title);
-    } else if (s === st.not_found) {
+    } else if (s === 0) {
       this.handleNotFound();
     } else {
-      error(err, r.value, this.showError);
+      const msg = message(r.value, 'msg_approve_version_error', 'error');
+      this.showError(msg.message, msg.title);
     }
   }
 
   postReject(status: number|string, err?: any) {
     this.setState({ disabled: true });
     const r = this.resourceService;
-    const st = this.status;
-    if (status === st.success) {
+    // const st = this.status;
+    if (status > 0) {
       this.showMessage(r.value('msg_reject_success'));
-    } else if (status === st.version_error) {
-      const msg = message(r.value, 'msg_approve_version_error', 'error');
-      this.showError(msg.message, msg.title);
-    } else if (status === st.not_found) {
+    } else if (status === 0) {
       this.handleNotFound();
     } else {
-      error(err, r.value, this.showError);
+      const msg = message(r.value, 'msg_approve_version_error', 'error');
+      this.showError(msg.message, msg.title);
     }
   }
 
@@ -1197,9 +1183,8 @@ export class DiffApprComponent<T, ID, P, S extends DiffState<T>> extends BaseDif
       param: ResourceService|DiffParameter,
       showMessage?: (msg: string, option?: string) => void,
       showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
-      loading?: LoadingService,
-      status?: DiffStatusConfig) {
-    super(props, service.keys(), getResource(param), getMsgFunc(param, showMessage), getErrorFunc(param, showError), getLoadingFunc(param, loading), getDiffStatusFunc(param, status));
+      loading?: LoadingService) {
+    super(props, service.keys(), getResource(param), getMsgFunc(param, showMessage), getErrorFunc(param, showError), getLoadingFunc(param, loading));
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
     this.formatFields = this.formatFields.bind(this);

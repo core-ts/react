@@ -105,7 +105,7 @@ interface InputProps {
   max?: string|number;
   allowZero?: boolean;
 }
-export const NumberInput = (props: InputProps) => {
+export const CurrencyInput = (props: InputProps) => {
   const [state, setState] = useState<string|undefined>(undefined);
   useEffect(() => {
     setState(props.value);
@@ -120,34 +120,30 @@ export const NumberInput = (props: InputProps) => {
       props.onChangeNumber(parseFloat(v1));
     }
   };
-  const ip = {
-    value: state,
-    className: props?.className,
-    name: props?.name,
-    onChange,
-    disabled: props?.disabled,
-    ['data-field']: props['data-field'],
-    min: props?.min,
-    max: props?.max,
-    type: props?.type,
-    onBlur: (e: FocusEvent<HTMLInputElement>) => {
-      if (props.allowZero && e.target.value === '0') {
-        setState('0');
-        return;
-      }
-      if (props.locale && props.currencyOnBlur) {
-        props.currencyOnBlur(e, props.locale, props.currencyCode, props.symbol);
-      }
-      setTimeout(() => {
-        const v2 = e.target.value;
-        setState(v2);
-      }, 50);
-    },
-  };
-  // return <input className={ip.className} type={ip.type} name={ip.name} onChange={ip.onChange} disabled={ip.disabled} data-field={ip['data-field']} min={ip.min} max={ip.max} value={state} />;
-  return React.createElement("input", { className: ip.className, type: ip.type, name: ip.name, onChange: ip.onChange, disabled: ip.disabled, "data-field": ip['data-field'], min: ip.min, max: ip.max, value: state });
+  const onBlur = (e: FocusEvent<HTMLInputElement>) => {
+    if (props.allowZero && e.target.value === '0') {
+      setState('0');
+      return;
+    }
+    if (props.locale && props.currencyOnBlur) {
+      props.currencyOnBlur(e, props.locale, props.currencyCode, props.symbol);
+    }
+    setTimeout(() => {
+      const v2 = e.target.value;
+      setState(v2);
+    }, 50);
+  }
+  // return <input className={props.className} onBlur={onBlur} type={props.type} name={props.name} onChange={props.onChange ? props.onChange : onChange} disabled={props.disabled} data-field={props['data-field']} min={props.min} max={props.max} value={state} />;
+  return React.createElement("input", { className: props.className, onBlur: onBlur, type: props.type, name: props.name, onChange: props.onChange ? props.onChange : onChange , disabled: props.disabled, "data-field": props['data-field'], min: props.min, max: props.max, value: state });
 };
 export type OnClick = React.MouseEvent<HTMLElement, MouseEvent>;
+export function getParam(url: string, i?: number): string {
+  const ps = url.split('/');
+  if (!i || i < 0) {
+    i = 0;
+  }
+  return ps[ps.length - 1 - i];
+}
 export function formatDate(date: Date | null | undefined, format: string): string {
   if (!date) {
     return '';
