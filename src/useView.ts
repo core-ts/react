@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 import {useNavigate, useParams} from 'react-router';
 import {buildId, getModelName as getModelName2, hideLoading, initForm, LoadingService, Locale, message, messageByHttpStatus, ResourceService, showLoading, ViewParameter, ViewService} from './core';
-import {readOnly} from './formutil';
+import {setReadOnly} from './formutil';
 import {DispatchWithCallback, useMergeState} from './merge';
 
 export interface BaseViewComponentParam<T, ID> {
@@ -97,7 +97,7 @@ export const useCoreView = <T, ID, S>(
   const _handleNotFound = (form?: any): void => {
     const msg = message(p1.resource.value, 'error_not_found', 'error');
     if (form) {
-      readOnly(form);
+      setReadOnly(form);
     }
     p1.showError(msg.message, msg.title);
   };
@@ -132,7 +132,7 @@ export const useCoreView = <T, ID, S>(
           if (data && data.status) {
             msg = messageByHttpStatus(data.status, r.value);
           }
-          readOnly(refForm.current);
+          setReadOnly(refForm.current);
           p1.showError(msg, title);
         }
         setRunning(false);

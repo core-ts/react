@@ -3,7 +3,7 @@ import {BaseDiffState, DiffApprService, DiffParameter, DiffState, handleToggle, 
 import {Attributes, error, ErrorMessage, Filter, getCurrencyCode, getModelName as getModelName2, initForm, LoadingService, Locale, message, messageByHttpStatus, PageChange, pageSizes, removePhoneFormat, ResourceService, SearchParameter, SearchResult, SearchService, SearchState, StringMap, UIService, ViewParameter, ViewService} from './core';
 import {formatDiffModel, getDataFields} from './diff';
 import {build, createModel as createModel2, EditParameter, GenericService, handleVersion, initPropertyNullInModel} from './edit';
-import {focusFirstError, readOnly} from './formutil';
+import {focusFirstError, setReadOnly} from './formutil';
 import {getAutoSearch, getConfirmFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService} from './input';
 import {clone, diff, makeDiff} from './reflect';
 import {buildFromUrl} from './route';
@@ -105,7 +105,7 @@ export class ViewComponent<T, ID, P, S> extends React.Component<P, S> {
   handleNotFound(form?: HTMLFormElement): void {
     const msg = message(this.resourceService.value, 'error_not_found', 'error');
     if (form) {
-      readOnly(form);
+      setReadOnly(form);
     }
     this.showError(msg.message, msg.title);
   }
@@ -770,7 +770,7 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
   handleNotFound(form?: HTMLFormElement|null): void {
     const msg = message(this.resourceService.value, 'error_not_found', 'error');
     if (form) {
-      readOnly(form);
+      setReadOnly(form);
     }
     this.showError(msg.message, msg.title);
   }
@@ -791,7 +791,7 @@ export abstract class BaseEditComponent<T, P, S> extends BaseComponent<P, S> {
     objSet[modelName] = model;
     this.setState(objSet, () => {
       if (this.readOnly) {
-        readOnly(f);
+        setReadOnly(f);
       }
     });
   }
@@ -1027,7 +1027,7 @@ export class EditComponent<T, ID, P, S> extends BaseEditComponent<T, P, S>  {
             msg = messageByHttpStatus(data.status, gv);
           }
           if (data && (data.status === 401 || data.status === 403)) {
-            readOnly(com.form);
+            setReadOnly(com.form);
           }
           com.showError(msg, title);
         }

@@ -2,7 +2,7 @@ import {useEffect, useState} from 'react';
 import {useNavigate, useParams} from 'react-router';
 import {Attributes, buildId, ErrorMessage, getModelName as getModelName2, hideLoading, initForm, LoadingService, Locale, message, messageByHttpStatus, ResourceService, showLoading, UIService} from './core';
 import {build, createModel as createModel2, EditParameter, GenericService, handleVersion, initPropertyNullInModel} from './edit';
-import {focusFirstError, readOnly as setReadOnly} from './formutil';
+import {focusFirstError, setReadOnly} from './formutil';
 import {DispatchWithCallback, useMergeState} from './merge';
 import {clone, makeDiff} from './reflect';
 import {localeOf} from './state';
