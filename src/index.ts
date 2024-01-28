@@ -12,7 +12,6 @@ export * from './update';
 export * from './useSearch';
 export * from './useMessage';
 export * from './useEdit';
-export * from './components';
 export * from './search';
 export * from './reflect';
 export * from './com';

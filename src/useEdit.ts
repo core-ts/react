@@ -172,12 +172,6 @@ export const useCoreEdit = <T, ID, S, P>(
   } = p; */
   const navigate = useNavigate();
   // const addable = (p && p.patchable !== false ? true : undefined);
-  const back = (event?: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-    if (event) {
-      event.preventDefault();
-    }
-    navigate(-1);
-  };
 
   const [running, setRunning] = useState<boolean>();
 
@@ -233,6 +227,30 @@ export const useCoreEdit = <T, ID, S, P>(
   };
   const getModel = (p && p.getModel ? p.getModel : _getModel);
 
+  const back = (event?: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    if (event) {
+      event.preventDefault();
+    }
+    const obj = getModel();
+    const metadata = (p && p.metadata ? p.metadata : (service.metadata ? service.metadata() : undefined));
+    let keys: string[]|undefined;
+    let version: string|undefined;
+    if (p && metadata && (!p.keys || !p.version)) {
+      const meta = build(metadata);
+      keys = (p.keys ? p.keys : (meta ? meta.keys : undefined));
+      version = (p.version ? p.version : (meta ? meta.version : undefined));
+    }
+    const diffObj = makeDiff(initPropertyNullInModel(flag.originalModel, metadata), obj, keys, version);
+    const objKeys = Object.keys(diffObj);
+    if (objKeys.length === 0) {
+      navigate(-1);
+    } else {
+      const msg = message(p1.resource.value, 'msg_confirm_back', 'confirm', 'yes', 'no');
+      p1.confirm(msg.message, msg.title, () => {
+        navigate(-1);
+      }, msg.no, msg.yes);
+    }
+  };
   const _createModel = (): T => {
     const metadata = (p && p.metadata ? p.metadata : (service.metadata ? service.metadata() : undefined));
     if (metadata) {
