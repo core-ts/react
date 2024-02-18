@@ -116,7 +116,7 @@ export function createModel<T>(attributes?: Attributes): T {
   }
   return obj;
 }
-
+/*
 export function initPropertyNullInModel<T>(obj: T, m?: Attributes): T {
   if (!m) {
     const x: any = {};
@@ -130,7 +130,6 @@ export function initPropertyNullInModel<T>(obj: T, m?: Attributes): T {
   }
   return obj;
 }
-/*
 export function handleStatus(x: number|string, st: EditStatusConfig, gv: (k: string, p?: any) => string, se: (m: string, title?: string, detail?: string, callback?: () => void) => void): void {
   const title = gv('error');
   if (x === st.version_error) {

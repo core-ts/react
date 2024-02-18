@@ -51,7 +51,6 @@ function parseToModel(dest: any, src: any) {
   if (typeof dest !== 'object' || typeof src !== 'object') {
     return dest;
   }
-  dest = convertToObject(dest)
   for (let key in src) {
     if (!Object.hasOwn(dest, key)) continue;
     if (src.hasOwnProperty(key)) {
@@ -69,8 +68,12 @@ function parseToModel(dest: any, src: any) {
       } else if (typeof src[key] === 'number') {
         if ( typeof dest[key] === 'string' && dest[key].indexOf(".") !== -1){
           dest[key] = parseFloat(dest[key]);
-        }else{
+        } else{
           dest[key] = parseInt(dest[key], 10);
+        }
+      } else if (typeof src[key] === 'string') {
+        if (dest[key]) {
+          dest[key] = dest[key].toString();
         }
       }
     }

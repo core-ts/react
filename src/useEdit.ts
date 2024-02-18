@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 import {useNavigate, useParams} from 'react-router';
 import {Attributes, buildId, ErrorMessage, getModelName as getModelName2, hideLoading, initForm, LoadingService, Locale, message, messageByHttpStatus, ResourceService, showLoading, UIService} from './core';
-import {build, createModel as createModel2, EditParameter, GenericService, handleVersion, initPropertyNullInModel} from './edit';
+import {build, createModel as createModel2, EditParameter, GenericService, handleVersion} from './edit';
 import {focusFirstError, setReadOnly} from './formutil';
 import {DispatchWithCallback, useMergeState} from './merge';
 import {clone, makeDiff} from './reflect';
@@ -231,24 +231,20 @@ export const useCoreEdit = <T, ID, S, P>(
     if (event) {
       event.preventDefault();
     }
-    const obj = getModel();
-    const metadata = (p && p.metadata ? p.metadata : (service.metadata ? service.metadata() : undefined));
-    let keys: string[]|undefined;
-    let version: string|undefined;
-    if (p && metadata && (!p.keys || !p.version)) {
-      const meta = build(metadata);
-      keys = (p.keys ? p.keys : (meta ? meta.keys : undefined));
-      version = (p.version ? p.version : (meta ? meta.version : undefined));
-    }
-    const diffObj = makeDiff(initPropertyNullInModel(flag.originalModel, metadata), obj, keys, version);
-    const objKeys = Object.keys(diffObj);
-    if (objKeys.length === 0) {
+    if (flag.newMode === true) {
       navigate(-1);
     } else {
-      const msg = message(p1.resource.value, 'msg_confirm_back', 'confirm', 'yes', 'no');
-      p1.confirm(msg.message, msg.title, () => {
+      const obj = getModel();
+      const diffObj = makeDiff(flag.originalModel, obj);
+      const objKeys = Object.keys(diffObj);
+      if (objKeys.length === 0) {
         navigate(-1);
-      }, msg.no, msg.yes);
+      } else {
+        const msg = message(p1.resource.value, 'msg_confirm_back', 'confirm', 'yes', 'no');
+        p1.confirm(msg.message, msg.title, () => {
+          navigate(-1);
+        }, msg.no, msg.yes);
+      }
     }
   };
   const _createModel = (): T => {
@@ -276,16 +272,16 @@ export const useCoreEdit = <T, ID, S, P>(
   };
 
   const _onSave = (isBack?: boolean) => {
-    if (flag.newMode === true) {
-      const m = message(p1.resource.value, 'error_permission_add', 'error_permission');
-      p1.showError(m.message, m.title);
-      return;
-    } else if (p && flag.newMode === false && p.readOnly) {
-      const msg = message(p1.resource.value, 'error_permission_edit', 'error_permission');
-      p1.showError(msg.message, msg.title);
-      return;
+    if (p && p.readOnly) {
+      if (flag.newMode === true) {
+        const m = message(p1.resource.value, 'error_permission_add', 'error_permission');
+        p1.showError(m.message, m.title);
+      } else {
+        const msg = message(p1.resource.value, 'error_permission_edit', 'error_permission');
+        p1.showError(msg.message, msg.title);
+      }
     } else {
-      if (running === true) {
+if (running === true) {
         return;
       }
       const obj = getModel();
@@ -305,7 +301,7 @@ export const useCoreEdit = <T, ID, S, P>(
           }, msg.no, msg.yes);
         });
       } else {
-        const diffObj = makeDiff(initPropertyNullInModel(flag.originalModel, metadata), obj, keys, version);
+        const diffObj = makeDiff(flag.originalModel, obj, keys, version);
         const objKeys = Object.keys(diffObj);
         if (objKeys.length === 0) {
           p1.showMessage(p1.resource.value('msg_no_change'));
@@ -453,14 +449,14 @@ export const useCoreEdit = <T, ID, S, P>(
     const patchable = (p ? p.patchable : true);
     if (flag.newMode === false) {
       if (service.patch && patchable !== false && body && Object.keys(body).length > 0) {
-        service.patch(body).then(result => {
-          postSave(result, obj, version, true, isBackO);
+        service.patch(body).then((res: number|T|ErrorMessage[]) => {
+          postSave(res, obj, version, true, isBackO);
         }).catch(handleError);
       } else {
-        service.update(obj).then(result => postSave(result, obj, version, false, isBackO)).catch(handleError);
+        service.update(obj).then((res: number|T|ErrorMessage[]) => postSave(res, obj, version, false, isBackO)).catch(handleError);
       }
     } else {
-      service.insert(obj).then(result => postSave(result, obj, version, false, isBackO)).catch(handleError);
+      service.insert(obj).then((res: number|T|ErrorMessage[]) => postSave(res, obj, version, false, isBackO)).catch(handleError);
     }
   };
 
@@ -471,7 +467,7 @@ export const useCoreEdit = <T, ID, S, P>(
     if (id != null && id !== '') {
       setRunning(true);
       showLoading(p1.loading);
-      service.load(id).then(obj => {
+      service.load(id).then((obj: T|null) => {
         if (!obj) {
           handleNotFound(refForm.current);
         } else {
@@ -484,7 +480,7 @@ export const useCoreEdit = <T, ID, S, P>(
         }
         setRunning(false);
         hideLoading(p1.loading);
-      }).catch(err => {
+      }).catch((err: any) => {
         const data = (err &&  err.response) ? err.response : err;
         const r = p1.resource;
         const title = r.value('error');
