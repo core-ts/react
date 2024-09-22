@@ -172,7 +172,10 @@ export function dateToString(date: Date | string): string {
   const day = String(d2.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
-export function datetimeToString(date: Date | string = ""): string {
+export function datetimeToString(date?: Date | string): string|undefined {
+  if (!date || date === '') {
+    return undefined;
+  }
   const d2 = typeof date !== "string" ? date : new Date(date);
   const year = d2.getFullYear();
   const month = String(d2.getMonth() + 1).padStart(2, "0");
