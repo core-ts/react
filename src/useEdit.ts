@@ -22,7 +22,7 @@ export interface BaseEditComponentParam<T, ID> {
   readOnly?: boolean;
   // deletable?: boolean;
 
-  insertSuccessMsg?: string;
+  createSuccessMsg?: string;
   updateSuccessMsg?: string;
 
   handleNotFound?: (form?: HTMLFormElement) => void;
@@ -456,7 +456,7 @@ if (running === true) {
         service.update(obj).then((res: number|T|ErrorMessage[]) => postSave(res, obj, version, false, isBackO)).catch(handleError);
       }
     } else {
-      service.insert(obj).then((res: number|T|ErrorMessage[]) => postSave(res, obj, version, false, isBackO)).catch(handleError);
+      service.create(obj).then((res: number|T|ErrorMessage[]) => postSave(res, obj, version, false, isBackO)).catch(handleError);
     }
   };
 
@@ -549,3 +549,13 @@ if (running === true) {
     doSave
   };
 };
+export function isSuccessful<T>(x: number|T|ErrorMessage[]): boolean {
+  if (Array.isArray(x)) {
+    return false;
+  } else if (typeof x === 'object') {
+    return true;
+  } else if (typeof x === 'number' && x > 0) {
+    return true;
+  }
+  return false;
+}
