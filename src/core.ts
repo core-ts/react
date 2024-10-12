@@ -239,7 +239,7 @@ export interface ErrorMessage {
 }
 export interface UIService {
   getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string | number | boolean | null | undefined;
-  decodeFromForm(form: HTMLFormElement, locale?: Locale, currencyCode?: string | null): any;
+  // decodeFromForm(form: HTMLFormElement, locale?: Locale, currencyCode?: string | null): any;
 
   validateForm(form?: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean): boolean;
   removeFormError(form: HTMLFormElement): void;
@@ -494,12 +494,14 @@ export function getValidateForm(u?: UIParameter, vf?: (form: HTMLFormElement, lo
   }
   return (u && u.ui ? u.ui.validateForm : undefined);
 }
+/*
 export function getDecodeFromForm(u?: UIParameter, d?: (form: HTMLFormElement, locale?: Locale, currencyCode?: string) => any): ((form: HTMLFormElement, locale?: Locale, currencyCode?: string) => any) | undefined {
   if (d) {
     return d;
   }
   return (u && u.ui ? u.ui.decodeFromForm : undefined);
 }
+*/
 export function handleToggle(target?: HTMLInputElement, on?: boolean): void {
   if (target) {
     if (on) {
