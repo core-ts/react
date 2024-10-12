@@ -47,9 +47,9 @@ export interface HookBaseEditParameter<T, ID, S> extends BaseEditComponentParam<
   service: GenericService<T, ID, number|T|ErrorMessage[]>;
   resource: ResourceService;
   showMessage: (msg: string) => void;
-  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
+  showError: (m: string, callback?: () => void, header?: string) => void;
   getLocale?: () => Locale;
-  confirm: (m2: string, header?: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void;
+  confirm: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void;
   ui?: UIService;
   loading?: LoadingService;
 }
@@ -213,7 +213,7 @@ export const useCoreEdit = <T, ID, S, P>(
     if (form) {
       setReadOnly(form);
     }
-    p1.showError(msg.message, msg.title, undefined, () => window.history.back);
+    p1.showError(msg.message, () => window.history.back, msg.title);
   };
   const handleNotFound = (p && p.handleNotFound ? p.handleNotFound : _handleNotFound);
 
@@ -241,9 +241,9 @@ export const useCoreEdit = <T, ID, S, P>(
         navigate(-1);
       } else {
         const msg = message(p1.resource.value, 'msg_confirm_back', 'confirm', 'yes', 'no');
-        p1.confirm(msg.message, msg.title, () => {
+        p1.confirm(msg.message, () => {
           navigate(-1);
-        }, msg.no, msg.yes);
+        }, msg.title, msg.no, msg.yes);
       }
     }
   };
@@ -275,10 +275,10 @@ export const useCoreEdit = <T, ID, S, P>(
     if (p && p.readOnly) {
       if (flag.newMode === true) {
         const m = message(p1.resource.value, 'error_permission_add', 'error_permission');
-        p1.showError(m.message, m.title);
+        p1.showError(m.message, undefined, m.title);
       } else {
         const msg = message(p1.resource.value, 'error_permission_edit', 'error_permission');
-        p1.showError(msg.message, msg.title);
+        p1.showError(msg.message, undefined, msg.title);
       }
     } else {
 if (running === true) {
@@ -296,9 +296,9 @@ if (running === true) {
       if (flag.newMode) {
         validate(obj, () => {
           const msg = message(p1.resource.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
-          p1.confirm(msg.message, msg.title, () => {
+          p1.confirm(msg.message, () => {
             doSave(obj, undefined, version, isBack);
-          }, msg.no, msg.yes);
+          },  msg.title, msg.no, msg.yes);
         });
       } else {
         const diffObj = makeDiff(flag.originalModel, obj, keys, version);
@@ -308,9 +308,9 @@ if (running === true) {
         } else {
           validate(obj, () => {
             const msg = message(p1.resource.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
-            p1.confirm(msg.message, msg.title, () => {
+            p1.confirm(msg.message, () => {
               doSave(obj, diffObj as any, version, isBack);
-            }, msg.no, msg.yes);
+            }, msg.title, msg.no, msg.yes);
           });
         }
       }
@@ -364,17 +364,17 @@ if (running === true) {
         const t = p1.resource.value('error');
         if (p1.ui && p1.ui.buildErrorMessage) {
           const msg = p1.ui.buildErrorMessage(unmappedErrors);
-          p1.showError(msg, t);
+          p1.showError(msg, undefined, t);
         } else {
-          p1.showError(unmappedErrors[0].field + ' ' + unmappedErrors[0].code + ' ' + unmappedErrors[0].message, t);
+          p1.showError(unmappedErrors[0].field + ' ' + unmappedErrors[0].code + ' ' + unmappedErrors[0].message, undefined, t);
         }
       }
     } else {
       const t = p1.resource.value('error');
       if (result.length > 0) {
-        p1.showError(result[0].field + ' ' + result[0].code + ' ' + result[0].message, t);
+        p1.showError(result[0].field + ' ' + result[0].code + ' ' + result[0].message, undefined, t);
       } else {
-        p1.showError(t, t);
+        p1.showError(t, undefined, t);
       }
     }
   };
@@ -384,13 +384,14 @@ if (running === true) {
     if (err) {
       setRunning(false);
       hideLoading(p1.loading);
+      const errHeader = p1.resource.value('error');
       const errMsg = p1.resource.value('error_internal');
       const data = (err && err.response) ? err.response : err;
       if (data.status === 400) {
         const errMsg = p1.resource.value('error_400');
-        p1.showError(errMsg, "Error");
+        p1.showError(errMsg, undefined, errHeader);
       } else{
-        p1.showError(errMsg, "Error");
+        p1.showError(errMsg, undefined, errHeader);
       }
     }
   };
@@ -416,7 +417,7 @@ if (running === true) {
         } else {
           const title = p1.resource.value('error');
           const err = p1.resource.value('error_version');
-          p1.showError(err, title);
+          p1.showError(err, undefined, title);
         }
       }
     } else {
@@ -438,7 +439,7 @@ if (running === true) {
 
   const _handleDuplicateKey = (result?: T) => {
     const msg = message(p1.resource.value, 'error_duplicate_key', 'error');
-    p1.showError(msg.message, msg.title);
+    p1.showError(msg.message, undefined, msg.title);
   };
   const handleDuplicateKey = (p && p.handleDuplicateKey ? p.handleDuplicateKey : _handleDuplicateKey);
 
@@ -501,7 +502,7 @@ if (running === true) {
             if (data && (data.status === 401 || data.status === 403)) {
               setReadOnly(refForm.current);
             }
-            p1.showError(msg, title);
+            p1.showError(msg, undefined, title);
           } 
         }
         setRunning(false);

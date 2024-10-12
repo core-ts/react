@@ -29,7 +29,7 @@ export interface SearchPermission {
 export interface SearchParameter {
   resource: ResourceService;
   showMessage: (msg: string, option?: string) => void;
-  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
+  showError: (m: string, callback?: () => void, h?: string) => void;
   ui?: UIService;
   getLocale?: (profile?: string) => Locale;
   loading?: LoadingService;
@@ -395,11 +395,11 @@ export function initForm(form?: HTMLFormElement, initMat?: (f: HTMLFormElement) 
   }
   return form;
 }
-export function error(err: any, gv: (key: string) => string, ae: (msg: string, header?: string, detail?: string, callback?: () => void) => void) {
+export function error(err: any, gv: (key: string) => string, ae: (msg: string, callback?: () => void, header?: string) => void) {
   const title = gv('error');
   let msg = gv('error_internal');
   if (!err) {
-    ae(msg, title);
+    ae(msg, undefined, title);
     return;
   }
   const data = err && err.response ? err.response : err;
@@ -408,9 +408,9 @@ export function error(err: any, gv: (key: string) => string, ae: (msg: string, h
     if (status && !isNaN(status)) {
       msg = messageByHttpStatus(status, gv);
     }
-    ae(msg, title);
+    ae(msg, undefined, title);
   } else {
-    ae(msg, title);
+    ae(msg, undefined, title);
   }
 }
 export function getName(d: string, n?: string): string {

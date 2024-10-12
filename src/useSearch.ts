@@ -107,7 +107,7 @@ export interface HookBaseSearchParameter<T, S extends Filter, ST extends SearchC
   service: ((s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>;
   resource: ResourceService;
   showMessage: (msg: string) => void;
-  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
+  showError: (m: string, callback?: () => void, header?: string) => void;
   getLocale?: () => Locale;
   autoSearch?: boolean;
 }
