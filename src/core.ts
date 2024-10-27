@@ -395,9 +395,9 @@ export function initForm(form?: HTMLFormElement, initMat?: (f: HTMLFormElement) 
   }
   return form;
 }
-export function error(err: any, gv: (key: string) => string, ae: (msg: string, callback?: () => void, header?: string) => void) {
-  const title = gv('error');
-  let msg = gv('error_internal');
+export function error(err: any, gv: StringMap | ((key: string) => string), ae: (msg: string, callback?: () => void, header?: string) => void) {
+  const title = getString('error', gv);
+  let msg = getString('error_internal', gv);
   if (!err) {
     ae(msg, undefined, title);
     return;
