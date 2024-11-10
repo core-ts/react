@@ -502,14 +502,3 @@ export function getDecodeFromForm(u?: UIParameter, d?: (form: HTMLFormElement, l
   return (u && u.ui ? u.ui.decodeFromForm : undefined);
 }
 */
-export function handleToggle(target?: HTMLInputElement, on?: boolean): void {
-  if (target) {
-    if (on) {
-      if (!target.classList.contains('on')) {
-        target.classList.add('on');
-      }
-    } else {
-      target.classList.remove('on');
-    }
-  }
-}

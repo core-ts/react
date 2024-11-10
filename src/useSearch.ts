@@ -1,9 +1,9 @@
 import {useEffect, useState} from 'react';
-import {error, getName, getRemoveError, getValidateForm, handleToggle, hideLoading, initForm, Locale, PageChange, pageSizes, removeFormError, ResourceService, SearchParameter, SearchResult, SearchService, showLoading} from './core';
+import {error, getName, getRemoveError, getValidateForm, hideLoading, initForm, Locale, PageChange, pageSizes, removeFormError, ResourceService, SearchParameter, SearchResult, SearchService, showLoading} from './core';
 import {DispatchWithCallback, useMergeState} from './merge';
 import {clone} from './reflect';
 import {buildFromUrl} from './route';
-import {addParametersIntoUrl, append, buildMessage, formatResults, getFieldsFromForm, getModel, handleAppend, handleSort, initFilter, mergeFilter as mergeFilter2, Pagination, removeSortStatus, showPaging, Sortable, validate} from './search';
+import {addParametersIntoUrl, append, buildMessage, formatResults, getFieldsFromForm, getModel, handleAppend, handleSort, handleToggle, initFilter, mergeFilter as mergeFilter2, Pagination, removeSortStatus, showPaging, Sortable, validate} from './search';
 import {enLocale} from './state';
 import {useUpdate} from './update';
 
@@ -13,7 +13,7 @@ export interface Searchable extends Pagination, Sortable {
 }
 interface Filter {
   page?: number;
-  limit?: number;
+  limit: number;
   firstLimit?: number;
   fields?: string[];
   sort?: string;
@@ -39,7 +39,7 @@ export const callSearch = <T, S extends Filter>(se: S, search3: (s: S, limit?: n
   const fields = se.fields;
   delete se['page'];
   delete se['fields'];
-  delete se['limit'];
+  // delete se['limit'];
   delete se['firstLimit'];
   search3(s, limit, next, fields).then(sr => {
     showResults3(s, sr, lc);
@@ -74,7 +74,7 @@ export interface SearchComponentParam<T, M extends Filter> {
   appendMode?: boolean;
   pageSizes?: number[];
   pageIndex?: number;
-  pageSize?: number;
+  pageSize: number;
   initPageSize?: number;
   pageMaxSize?: number;
   ignoreUrlParam?: boolean;
@@ -257,9 +257,8 @@ export const useCoreSearch = <T, S extends Filter, ST>(
   const [component, setComponent] = useMergeState<SearchComponentState<T, S>>(p);
 
   const toggleFilter = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void => {
-    const x = !component.hideFilter;
-    handleToggle(event.target as HTMLInputElement, !x);
-    setComponent({ hideFilter: x });
+    const hideFilter = handleToggle(event.target as HTMLInputElement, component.hideFilter);
+    setComponent({ hideFilter });
   };
 
   const _getFields = (): string[]|undefined => {
@@ -304,7 +303,7 @@ export const useCoreSearch = <T, S extends Filter, ST>(
     const runSearch = doSearch;
     if (auto) {
       setTimeout(() => {
-        runSearch((obj2 as Searchable), true);
+        runSearch((obj2 as any), true);
       }, 0);
     }
   };
@@ -464,7 +463,7 @@ export const useCoreSearch = <T, S extends Filter, ST>(
       setList(results, setState as any);
       setComponent({ tmpPageIndex: s.page });
       if (s.limit) {
-        const m1 = buildMessage(p1.resource, s.page, s.limit, sr.list, sr.total);
+        const m1 = buildMessage(p1.resource.resource(), sr.list, s.limit, s.page, sr.total);
         p1.showMessage(m1);
       }
     }

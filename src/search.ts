@@ -1,10 +1,15 @@
+import { StringMap } from "./core";
+import { clone } from "./reflect";
+
 // tslint:disable-next-line:class-name
 export class resources {
   static limit = 24;
+  static pages = [12, 24, 60, 100, 120, 180, 300, 600];
+  static pageMaxSize = 7;
 }
 interface Filter {
   page?: number;
-  limit?: number;
+  limit: number;
   firstLimit?: number;
   fields?: string[];
   sort?: string;
@@ -35,8 +40,8 @@ export interface Sortable {
 
 export interface Pagination {
   initPageSize?: number;
-  pageSize?: number;
-  limit?: number;
+  pageSize: number;
+  // limit: number;
   pageIndex?: number;
   total?: number;
   pages?: number;
@@ -49,32 +54,47 @@ export interface Pagination {
 interface Searchable extends Pagination, Sortable {
 }
 
-export function mergeFilter<S extends Filter>(obj: S, b?: S, pageSizes?: number[], arrs?: string[]|any) {
-  let a: any = b;
-  if (!b) {
-    a = {};
+export function getOffset(limit: number, page?: number, firstLimit?: number): number {
+  const p = page && page > 0 ? page : 1
+  if (firstLimit && firstLimit > 0) {
+    const offset = limit * (p - 2) + firstLimit
+    return offset < 0 ? 0 : offset
+  } else {
+    const offset = limit * (p - 1)
+    return offset < 0 ? 0 : offset
   }
-  const slimit: any = obj['limit'];
+}
+export function mergeFilter<S extends Filter>(obj: S, b?: S, pageSizes?: number[], arrs?: string[] | any) {
+  let a: any = b
+  if (!b) {
+    a = {}
+  }
+  const keys = Object.keys(obj)
+  for (const key of keys) {
+    const p = a[key]
+    const v = (obj as any)[key]
+    if (v && v !== "") {
+      a[key] = isArray(key, p, arrs) ? v.split(",") : v
+    }
+  }
+  const spage: any = obj["page"]
+  if (!isNaN(spage)) {
+    const page = parseInt(spage, 10)
+    a.page = page > 1 ? page : undefined
+  }
+  const slimit: any = obj["limit"]
   if (!isNaN(slimit)) {
-    const limit = parseInt(slimit, 10);
+    const limit = parseInt(slimit, 10)
     if (pageSizes && pageSizes.length > 0) {
       if (pageSizes.indexOf(limit) >= 0) {
-        a.limit = limit;
+        a.limit = limit
+        return a
       }
     } else {
-      a.limit = limit;
+      a.limit = limit > 0 ? limit : 12
     }
   }
-  delete obj['limit'];
-  const keys = Object.keys(obj);
-  for (const key of keys) {
-    const p = a[key];
-    const v = (obj as any)[key];
-    if (v && v !== '') {
-      a[key] = (isArray(key, p, arrs) ? v.split(',') : v);
-    }
-  }
-  return a;
+  return a
 }
 export function isArray(key: string, p: any, arrs: string[]|any): boolean {
   if (p) {
@@ -172,18 +192,14 @@ export function changePage(com: Pagination, pageIndex: number, pageSize: number)
   com.append = false;
 }
 export function optimizeFilter<S extends Filter>(obj: S, searchable: Searchable, fields?: string[]): S {
-  const sLimit = searchable.limit;
+  // const sLimit = searchable.limit;
   obj.fields = fields;
   if (searchable.pageIndex && searchable.pageIndex > 1) {
     obj.page = searchable.pageIndex;
   } else {
     delete obj.page;
   }
-  if (sLimit){
-    obj.limit = searchable.limit;
-  }else{
-    obj.limit = searchable.pageSize;
-  }
+  obj.limit = searchable.pageSize;
 
   if (searchable.appendMode && searchable.initPageSize !== searchable.pageSize) {
     obj.firstLimit = searchable.initPageSize;
@@ -196,7 +212,7 @@ export function optimizeFilter<S extends Filter>(obj: S, searchable: Searchable,
     delete obj.sort;
   }
   if(searchable) {
-    mapObjects(obj, searchable as S);
+    mapObjects(obj, searchable as any);
   }
   return obj;
 }
@@ -268,40 +284,43 @@ export function showPaging<T>(com: Pagination, list: T[], pageSize?: number, tot
   com.showPaging = (!total || com.pages <= 1 || (list && list.length >= total) ? false : true);
 }
 
-export function getFields(form?: HTMLFormElement): string[]|undefined {
-  if (!form) {
-    return undefined;
+export function getFields(form?: HTMLFormElement, arr?: string[]): string[] | undefined {
+  if (arr && arr.length > 0) {
+    return arr
   }
-  let nodes = form.nextSibling as HTMLElement;
+  if (!form) {
+    return undefined
+  }
+  let nodes = form.nextSibling as HTMLElement
   if (!nodes.querySelector) {
     if (!form.nextSibling) {
-      return [];
+      return []
     } else {
-      nodes = form.nextSibling.nextSibling as HTMLElement;
+      nodes = form.nextSibling.nextSibling as HTMLElement
     }
   }
   if (!nodes.querySelector) {
-    return [];
+    return undefined
   }
-  const table = nodes.querySelector('table');
-  const fields: string[] = [];
+  const table = nodes.querySelector("table")
+  const fields: string[] = []
   if (table) {
-    const thead = table.querySelector('thead');
+    const thead = table.querySelector("thead")
     if (thead) {
-      const ths = thead.querySelectorAll('th');
+      const ths = thead.querySelectorAll("th")
       if (ths) {
-        const l = ths.length;
+        const l = ths.length
         for (let i = 0; i < l; i++) {
-          const  th = ths[i];
-          const field = th.getAttribute('data-field');
+          const th = ths[i]
+          const field = th.getAttribute("data-field")
           if (field) {
-            fields.push(field);
+            fields.push(field)
           }
         }
       }
     }
   }
-  return fields;
+  return fields.length > 0 ? fields : undefined
 }
 interface Component<T> {
   pageIndex?: number;
@@ -376,22 +395,41 @@ export function getPageTotal(pageSize?: number, total?: number): number {
   }
 }
 
-export function buildMessage<T>(r: ResourceService, pageIndex: number|undefined, pageSize: number, results: T[], total?: number): string {
+export function formatText(...args: any[]): string {
+  let formatted = args[0]
+  if (!formatted || formatted === "") {
+    return ""
+  }
+  if (args.length > 1 && Array.isArray(args[1])) {
+    const params = args[1]
+    for (let i = 0; i < params.length; i++) {
+      const regexp = new RegExp("\\{" + i + "\\}", "gi")
+      formatted = formatted.replace(regexp, params[i])
+    }
+  } else {
+    for (let i = 1; i < args.length; i++) {
+      const regexp = new RegExp("\\{" + (i - 1) + "\\}", "gi")
+      formatted = formatted.replace(regexp, args[i])
+    }
+  }
+  return formatted
+}
+export function buildMessage<T>(resource: StringMap, results: T[], pageSize: number, pageIndex: number | undefined, total?: number): string {
   if (!results || results.length === 0) {
-    return r.value('msg_no_data_found');
+    return resource.msg_no_data_found
   } else {
     if (!pageIndex) {
-      pageIndex = 1;
+      pageIndex = 1
     }
-    const fromIndex = (pageIndex - 1) * pageSize + 1;
-    const toIndex = fromIndex + results.length - 1;
-    const pageTotal = getPageTotal(pageSize, total);
+    const fromIndex = (pageIndex - 1) * pageSize + 1
+    const toIndex = fromIndex + results.length - 1
+    const pageTotal = getPageTotal(pageSize, total)
     if (pageTotal > 1) {
-      const msg2 = r.format(r.value('msg_search_result_page_sequence'), fromIndex, toIndex, total, pageIndex, pageTotal);
-      return msg2;
+      const msg2 = formatText(resource.msg_search_result_page_sequence, fromIndex, toIndex, total, pageIndex, pageTotal)
+      return msg2
     } else {
-      const msg3 = r.format(r.value('msg_search_result_sequence'), fromIndex, toIndex);
-      return msg3;
+      const msg3 = formatText(resource.msg_search_result_sequence, fromIndex, toIndex)
+      return msg3
     }
   }
 }
@@ -402,13 +440,21 @@ function removeFormatUrl(url: string): string {
 }
 
 
-export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: boolean, fields?: string, limit?: string): void {
+function getPrefix(url: string): string {
+  return url.indexOf("?") >= 0 ? "&" : "?"
+}
+export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: boolean, page?: number, fields?: string, limit?: string): void {
   if (!isFirstLoad) {
     if (!fields || fields.length === 0) {
       fields = 'fields';
     }
     if (!limit || limit.length === 0) {
       limit = 'limit';
+    }
+    if (page && page > 1) {
+      if (!ft.page || ft.page <= 1) {
+        ft.page = page;
+      }
     }
     const pageIndex = ft.page;
     if (pageIndex && !isNaN(pageIndex) && pageIndex <= 1) {
@@ -424,30 +470,18 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
           if (typeof objValue === 'string' || typeof objValue === 'number') {
             if (key === limit) {
               if (objValue !== resources.limit) {
-                if (url.indexOf('?') === -1) {
-                  url += `?${key}=${objValue}`;
-                } else {
-                  url += `&${key}=${objValue}`;
-                }
+                url += getPrefix(url) + `${key}=${objValue}`;
               }
             } else {
-              if (url.indexOf('?') === -1) {
-                url += `?${key}=${objValue}`;
-              } else {
-                url += `&${key}=${objValue}`;
-              }
+              url += getPrefix(url) + `${key}=${objValue}`;
             }
           } else if (typeof objValue === 'object') {
             if (objValue instanceof Date) {
-              if (url.indexOf('?') === -1) {
-                url += `?${key}=${objValue.toISOString()}`;
-              } else {
-                url += `&${key}=${objValue.toISOString()}`;
-              }
+              url += getPrefix(url) + `${key}=${objValue.toISOString()}`;
             } else {
               if (Array.isArray(objValue)) {
                 if (objValue.length > 0) {
-                  const strs = [];
+                  const strs: string[] = [];
                   for (const subValue of objValue) {
                     if (typeof subValue === 'string') {
                       strs.push(subValue);
@@ -455,28 +489,16 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
                       strs.push(subValue.toString());
                     }
                   }
-                  if (url.indexOf('?') === -1) {
-                    url += `?${key}=${strs.join(',')}`;
-                  } else {
-                    url += `&${key}=${strs.join(',')}`;
-                  }
+                  url += getPrefix(url) + `${key}=${strs.join(',')}`;
                 }
               } else {
                 const keysLvl2 = Object.keys(objValue);
                 for (const key2 of keysLvl2) {
                   const objValueLvl2 = objValue[key2];
-                  if (url.indexOf('?') === -1) {
-                    if (objValueLvl2 instanceof Date) {
-                      url += `?${key}.${key2}=${objValueLvl2.toISOString()}`;
-                    } else {
-                      url += `?${key}.${key2}=${objValueLvl2}`;
-                    }
+                  if (objValueLvl2 instanceof Date) {
+                    url += getPrefix(url) + `${key}.${key2}=${objValueLvl2.toISOString()}`;
                   } else {
-                    if (objValueLvl2 instanceof Date) {
-                      url += `&${key}.${key2}=${objValueLvl2.toISOString()}`;
-                    } else {
-                      url += `&${key}.${key2}=${objValueLvl2}`;
-                    }
+                    url += getPrefix(url) + `${key}.${key2}=${objValueLvl2}`;
                   }
                 }
               }
@@ -488,7 +510,7 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
     let p = 'http://';
     const loc = window.location.href;
     if (loc.length >= 8) {
-      const ss = loc.substr(0, 8);
+      const ss = loc.substring(0, 8);
       if (ss === 'https://') {
         p = 'https://';
       }
@@ -501,7 +523,44 @@ export interface Sort {
   field?: string;
   type?: string;
 }
-
+export function buildSort<F extends Filter>(filter: F): Sort {
+  const sort: Sort = {}
+  const st = filter.sort
+  if (st && st.length > 0) {
+    const ch = st.charAt(0)
+    if (ch === "+" || ch === "-") {
+      sort.field = st.substring(1)
+      sort.type = ch
+    } else {
+      sort.field = st
+      sort.type = ""
+    }
+  }
+  return sort
+}
+export function buildSortFilter<S extends Filter>(obj: S, sortable: Sortable): S {
+  const filter: any = clone(obj)
+  if (sortable.sortField && sortable.sortField.length > 0) {
+    filter.sort = sortable.sortType === "-" ? "-" + sortable.sortField : sortable.sortField
+  } else {
+    delete filter.sort
+  }
+  delete filter.fields
+  return filter
+}
+export function handleToggle(target?: HTMLInputElement, on?: boolean): boolean {
+  const off = !on
+  if (target) {
+    if (on) {
+      if (!target.classList.contains('on')) {
+        target.classList.add('on');
+      }
+    } else {
+      target.classList.remove('on');
+    }
+  }
+  return off
+}
 export function handleSortEvent(event: Event, com: Sortable): void {
   if (event && event.target) {
     const target = event.target as HTMLElement;
@@ -512,6 +571,9 @@ export function handleSortEvent(event: Event, com: Sortable): void {
   }
 }
 
+export function getSortElement(target: HTMLElement): HTMLElement {
+  return target.nodeName === "I" ? (target.parentElement as HTMLElement) : target
+}
 export function handleSort(target: HTMLElement, previousTarget?: HTMLElement, sortField?: string, sortType?: string): Sort {
   const type = target.getAttribute('sort-type');
   const field = toggleSortStyle(target);
