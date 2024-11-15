@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {error, getName, getRemoveError, getValidateForm, hideLoading, initForm, Locale, PageChange, pageSizes, removeFormError, ResourceService, SearchParameter, SearchResult, SearchService, showLoading} from './core';
+import {error, Filter, getName, getRemoveError, getValidateForm, hideLoading, initForm, Locale, PageChange, pageSizes, removeFormError, ResourceService, SearchParameter, SearchResult, SearchService, showLoading} from './core';
 import {DispatchWithCallback, useMergeState} from './merge';
 import {clone} from './reflect';
 import {buildFromUrl} from './route';
@@ -10,13 +10,6 @@ import {useUpdate} from './update';
 export interface Searchable extends Pagination, Sortable {
   nextPageToken?: string;
   excluding?: string[]|number[];
-}
-interface Filter {
-  page?: number;
-  limit: number;
-  firstLimit?: number;
-  fields?: string[];
-  sort?: string;
 }
 
 export const callSearch = <T, S extends Filter>(se: S, search3: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>, showResults3: (s: S, sr: SearchResult<T>, lc: Locale) => void, searchError3: (err: any) => void, lc: Locale, nextPageToken?: string) => {

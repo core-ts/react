@@ -1,4 +1,5 @@
-import {Attribute, Attributes, ErrorMessage, LoadingService, Locale, resource, ResourceService, UIService, ViewService} from './core';
+import { NavigateFunction } from 'react-router-dom';
+import {Attribute, Attributes, ErrorMessage, LoadingService, Locale, resources, ResourceService, StringMap, UIService, ViewService} from './core';
 
 export interface ResultInfo<T> {
   status: number|string;
@@ -30,11 +31,11 @@ export function build(attributes: Attributes, name?: string): MetaModel|undefine
   if (!attributes) {
     return undefined;
   }
-  if (resource.cache && name && name.length > 0) {
-    let meta: MetaModel = resource._cache[name];
+  if (resources.cache && name && name.length > 0) {
+    let meta: MetaModel = resources._cache[name];
     if (!meta) {
       meta = buildMetaModel(attributes);
-      resource._cache[name] = meta;
+      resources._cache[name] = meta;
     }
     return meta;
   } else {
@@ -149,5 +150,39 @@ export function handleVersion<T>(obj: T, version?: string): void {
     } else {
       (obj as any)[version] = 1;
     }
+  }
+}
+export function isSuccessful<T>(x: number|T|ErrorMessage[]): boolean {
+  if (Array.isArray(x)) {
+    return false;
+  } else if (typeof x === 'object') {
+    return true;
+  } else if (typeof x === 'number' && x > 0) {
+    return true;
+  }
+  return false;
+}
+type Result<T> = number | T | ErrorMessage[]
+export function afterSaved<T>(
+  res: Result<T>,
+  form: HTMLFormElement | undefined,
+  resource: StringMap,
+  showFormError: (form?: HTMLFormElement, errors?: ErrorMessage[]) => ErrorMessage[],
+  alertSuccess: (msg: string, callback?: () => void) => void,
+  alertError: (msg: string) => void,
+  navigate?: NavigateFunction,
+) {
+  if (Array.isArray(res)) {
+    showFormError(form, res)
+  } else if (isSuccessful(res)) {
+    alertSuccess(resource.msg_save_success, () => {
+      if (navigate) {
+        navigate(-1)
+      }
+    })
+  } else if (res === 0) {
+    alertError(resource.error_not_found)
+  } else {
+    alertError(resource.error_conflict)
   }
 }

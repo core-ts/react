@@ -1,19 +1,6 @@
-import { StringMap } from "./core";
+import { Filter, resources, StringMap } from "./core";
 import { clone } from "./reflect";
 
-// tslint:disable-next-line:class-name
-export class resources {
-  static limit = 24;
-  static pages = [12, 24, 60, 100, 120, 180, 300, 600];
-  static pageMaxSize = 7;
-}
-interface Filter {
-  page?: number;
-  limit: number;
-  firstLimit?: number;
-  fields?: string[];
-  sort?: string;
-}
 interface Locale {
   id?: string;
   countryCode: string;
@@ -548,7 +535,7 @@ export function buildSortFilter<S extends Filter>(obj: S, sortable: Sortable): S
   delete filter.fields
   return filter
 }
-export function handleToggle(target?: HTMLInputElement, on?: boolean): boolean {
+export function handleToggle(target?: HTMLElement, on?: boolean): boolean {
   const off = !on
   if (target) {
     if (on) {

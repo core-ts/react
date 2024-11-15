@@ -2,6 +2,15 @@ import { Params } from 'react-router';
 import { focusFirstElement } from './formutil';
 
 export const pageSizes = [12, 24, 60, 100, 120, 180, 300, 600];
+// tslint:disable-next-line:class-name
+export class resources {
+  static phone = / |-|\.|\(|\)/g;
+  static _cache: any = {};
+  static cache = true;
+  static limit = 24;
+  static pages = pageSizes;
+  static pageMaxSize = 7;
+}
 export const size = pageSizes;
 export interface ModelMap {
   [key: string]: any;
@@ -80,7 +89,7 @@ export function createDiffStatus(status?: DiffStatusConfig): DiffStatusConfig {
 export interface Filter {
   q?: string;
   page?: number;
-  limit?: number;
+  limit: number;
   firstLimit?: number;
   fields?: string[];
   sort?: string;
@@ -148,12 +157,6 @@ export interface DiffState<T> {
   disabled: boolean;
 }
 
-// tslint:disable-next-line:class-name
-export class resource {
-  static phone = / |-|\.|\(|\)/g;
-  static _cache: any = {};
-  static cache = true;
-}
 export function getCurrencyCode(form?: HTMLFormElement | null): string | undefined {
   if (form) {
     const x = form.getAttribute('currency-code');
@@ -165,7 +168,7 @@ export function getCurrencyCode(form?: HTMLFormElement | null): string | undefin
 }
 export function removePhoneFormat(phone: string): string {
   if (phone) {
-    return phone.replace(resource.phone, '');
+    return phone.replace(resources.phone, '');
   } else {
     return phone;
   }

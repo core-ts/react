@@ -550,13 +550,3 @@ if (running === true) {
     doSave
   };
 };
-export function isSuccessful<T>(x: number|T|ErrorMessage[]): boolean {
-  if (Array.isArray(x)) {
-    return false;
-  } else if (typeof x === 'object') {
-    return true;
-  } else if (typeof x === 'number' && x > 0) {
-    return true;
-  }
-  return false;
-}
