@@ -1,4 +1,4 @@
-import { StringMap } from "core";
+import { StringMap } from "./core";
 import { NavigateFunction } from "react-router-dom"
 
 export function clone(obj: any): any {
