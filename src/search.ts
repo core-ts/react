@@ -1,23 +1,5 @@
-import { Filter, resources, StringMap } from "./core";
+import { Filter, Locale, resources, StringMap } from "./core";
 import { clone } from "./reflect";
-
-interface Locale {
-  id?: string;
-  countryCode: string;
-  dateFormat: string;
-  firstDayOfWeek: number;
-  decimalSeparator: string;
-  groupSeparator: string;
-  decimalDigits: number;
-  currencyCode: string;
-  currencySymbol: string;
-  currencyPattern: number;
-  currencySample?: string;
-}
-interface ResourceService {
-  value(key: string, param?: any): string;
-  format(f: string, ...args: any[]): string;
-}
 
 export interface Sortable {
   sortField?: string;
@@ -510,20 +492,24 @@ export interface Sort {
   field?: string;
   type?: string;
 }
-export function buildSort<F extends Filter>(filter: F): Sort {
-  const sort: Sort = {}
-  const st = filter.sort
-  if (st && st.length > 0) {
-    const ch = st.charAt(0)
+export function buildSort(sort?: string | null): Sort {
+  const sortObj: Sort = {}
+  if (sort && sort.length > 0) {
+    const ch = sort.charAt(0)
     if (ch === "+" || ch === "-") {
-      sort.field = st.substring(1)
-      sort.type = ch
+      sortObj.field = sort.substring(1)
+      sortObj.type = ch
     } else {
-      sort.field = st
-      sort.type = ""
+      sortObj.field = sort
+      sortObj.type = ""
     }
   }
-  return sort
+  return sortObj
+}
+export function setSort(sortable: Sortable, sort: string | undefined | null) {
+  const st = buildSort(sort);
+  sortable.sortField = st.field;
+  sortable.sortType = st.type;
 }
 export function buildSortFilter<S extends Filter>(obj: S, sortable: Sortable): S {
   const filter: any = clone(obj)

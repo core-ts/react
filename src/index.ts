@@ -185,3 +185,6 @@ export function datetimeToString(date?: Date | string): string|undefined {
   const seconds = String(d2.getSeconds()).padStart(2, "0");
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 };
+export function getNumber(event: ChangeEvent<HTMLSelectElement|HTMLInputElement>): number {
+  return parseInt(event.currentTarget.value, 10)
+}
