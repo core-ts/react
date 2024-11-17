@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {error, Filter, getName, getRemoveError, getValidateForm, hideLoading, initForm, Locale, PageChange, pageSizes, removeFormError, ResourceService, SearchParameter, SearchResult, SearchService, showLoading} from './core';
+import {error, Filter, getName, getRemoveError, getValidateForm, hideLoading, initForm, Locale, PageChange, pageSizes, removeFormError, resources, ResourceService, SearchParameter, SearchResult, SearchService, showLoading} from './core';
 import {DispatchWithCallback, useMergeState} from './merge';
 import {clone} from './reflect';
 import {buildFromUrl} from './route';
@@ -12,23 +12,17 @@ export interface Searchable extends Pagination, Sortable {
   excluding?: string[]|number[];
 }
 
-export const callSearch = <T, S extends Filter>(se: S, search3: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>, showResults3: (s: S, sr: SearchResult<T>, lc: Locale) => void, searchError3: (err: any) => void, lc: Locale, nextPageToken?: string) => {
+export const callSearch = <T, S extends Filter>(se: S, search3: (s: S, limit?: number, page?: number|string, fields?: string[]) => Promise<SearchResult<T>>, showResults3: (s: S, sr: SearchResult<T>, lc: Locale) => void, searchError3: (err: any) => void, lc: Locale, nextPageToken?: string) => {
   const s = clone(se);
   let page = se.page;
   if (!page || page < 1) {
     page = 1;
   }
-  let offset: number;
   if (!se.limit || se.limit <= 0) {
-    se.limit = 24;
-  }
-  if (se.firstLimit && se.firstLimit > 0) {
-    offset = se.limit * (page - 2) + se.firstLimit;
-  } else {
-    offset = se.limit * (page - 1);
+    se.limit = resources.limit;
   }
   const limit = (page <= 1 && se.firstLimit && se.firstLimit > 0 ? se.firstLimit : se.limit);
-  const next = (nextPageToken && nextPageToken.length > 0 ? nextPageToken : offset);
+  const next = (nextPageToken && nextPageToken.length > 0 ? nextPageToken : page);
   const fields = se.fields;
   delete se['page'];
   delete se['fields'];
