@@ -61,8 +61,7 @@ export interface SearchComponentParam<T, M extends Filter> {
   appendMode?: boolean;
   pageSizes?: number[];
   pageIndex?: number;
-  pageSize: number;
-  initPageSize?: number;
+  limit: number;
   pageMaxSize?: number;
   ignoreUrlParam?: boolean;
 
@@ -133,8 +132,8 @@ export function mergeParam<T, S extends Filter>(p?: SearchComponentParam<T, S>):
     if (!p.sequenceNo) {
       p.sequenceNo = 'sequenceNo';
     }
-    if (!p.pageSize) {
-      p.pageSize = 24;
+    if (!p.limit) {
+      p.limit = 24;
     }
     if (!p.pageSizes) {
       p.pageSizes = pageSizes;
@@ -163,7 +162,7 @@ export function mergeParam<T, S extends Filter>(p?: SearchComponentParam<T, S>):
   } else {
     return {
       sequenceNo: 'sequenceNo',
-      pageSize: 24,
+      limit: 24,
       pageSizes,
       pageMaxSize: 7,
       hideFilter: true,
@@ -329,12 +328,12 @@ export const useCoreSearch = <T, S extends Filter, ST>(
 
   const pageSizeChanged = (event: any) => {
     const size = parseInt(event.currentTarget.value, 10);
-    component.pageSize = size;
-    component.pageIndex = 1;
+    component.limit = size;
+    component.page = 1;
     component.tmpPageIndex = 1;
     setComponent({
-      pageSize: size,
-      pageIndex: 1,
+      limit: size,
+      page: 1,
       tmpPageIndex: 1
     });
     doSearch(component);
@@ -398,26 +397,26 @@ export const useCoreSearch = <T, S extends Filter, ST>(
 
   const resetAndSearch = () => {
     if (running === true) {
-      setComponent({ pageIndex: 1, triggerSearch: true });
+      setComponent({ page: 1, triggerSearch: true });
       return;
     }
-    setComponent({ pageIndex: 1, tmpPageIndex: 1 });
+    setComponent({ page: 1, tmpPageIndex: 1 });
     removeSortStatus(component.sortTarget);
     setComponent({
       sortTarget: undefined,
       sortField: undefined,
       append: false,
-      pageIndex: 1
+      page: 1
     });
     component.sortTarget = undefined;
     component.sortField = undefined;
     component.append = false;
-    component.pageIndex = 1;
+    component.page = 1;
     doSearch(component);
   };
 
   const searchError = (err: any): void => {
-    setComponent({ pageIndex: component.tmpPageIndex });
+    setComponent({ page: component.tmpPageIndex });
     error(err, p1.resource.value, p1.showError);
     hideLoading(p1.loading)
   };
@@ -429,11 +428,11 @@ export const useCoreSearch = <T, S extends Filter, ST>(
     }
     const results = sr?.list || [];
     if (results && results.length > 0) {
-      formatResults(results, component.pageIndex, component.pageSize, component.pageSize, p ? p.sequenceNo : undefined, p ? p.format : undefined, lc);
+      formatResults(results, component.page, component.limit, component.limit, p ? p.sequenceNo : undefined, p ? p.format : undefined, lc);
     }
     const am = component.appendMode;
     const pi = (s.page && s.page >= 1 ? s.page : 1);
-    setComponent({ total: sr.total, pageIndex: pi, nextPageToken: sr.next });
+    setComponent({ total: sr.total, page: pi, nextPageToken: sr.next });
     if (am) {
       let limit = s.limit;
       if ((!s.page || s.page <= 1) && s.firstLimit && s.firstLimit > 0) {
@@ -465,20 +464,20 @@ export const useCoreSearch = <T, S extends Filter, ST>(
 
   const showMore = (event: any) => {
     event.preventDefault();
-    const n = component.pageIndex ? component.pageIndex + 1 : 2;
-    const m = component.pageIndex;
-    setComponent({ tmpPageIndex: m, pageIndex: n, append: true });
+    const n = component.page ? component.page + 1 : 2;
+    const m = component.page;
+    setComponent({ tmpPageIndex: m, page: n, append: true });
     component.tmpPageIndex = m;
-    component.pageIndex = n;
+    component.page = n;
     component.append = true;
     doSearch(component);
   };
 
   const pageChanged = (data: PageChange) => {
     const { page, size } = data;
-    setComponent({ pageIndex: page, pageSize: size, append: false });
-    component.pageIndex = page;
-    component.pageSize = size;
+    setComponent({ page: page, limit: size, append: false });
+    component.page = page;
+    component.limit = size;
     component.append = false;
     doSearch(component);
   };

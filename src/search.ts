@@ -8,10 +8,10 @@ export interface Sortable {
 }
 
 export interface Pagination {
-  initPageSize?: number;
-  pageSize: number;
+  initLimit?: number;
+  limit: number;
   // limit: number;
-  pageIndex?: number;
+  page?: number;
   total?: number;
   pages?: number;
   showPaging?: boolean;
@@ -92,29 +92,29 @@ export function initFilter<S extends Filter>(m: S, com: Searchable): S {
     const page = parseInt(m.page as any, 10);
     m.page = page;
     if (page >= 1) {
-      com.pageIndex = page;
+      com.page = page;
     }
   }
   if (!isNaN(m.limit as any)) {
     const pageSize = parseInt(m.limit as any, 10);
     m.limit = pageSize;
     if (pageSize > 0) {
-      com.pageSize = pageSize;
+      com.limit = pageSize;
     }
   }
-  if (!m.limit && com.pageSize) {
-    m.limit = com.pageSize;
+  if (!m.limit && com.limit) {
+    m.limit = com.limit;
   }
   if (!isNaN(m.firstLimit as any)) {
     const initPageSize = parseInt(m.firstLimit as any, 10);
     if (initPageSize > 0) {
       m.firstLimit = initPageSize;
-      com.initPageSize = initPageSize;
+      com.initLimit = initPageSize;
     } else {
-      com.initPageSize = com.pageSize;
+      com.initLimit = com.limit;
     }
   } else {
-    com.initPageSize = com.pageSize;
+    com.initLimit = com.limit;
   }
   const st = m.sort;
   if (st && st.length > 0) {
@@ -136,10 +136,10 @@ export function initFilter<S extends Filter>(m: S, com: Searchable): S {
 }
 export function more(com: Pagination): void {
   com.append = true;
-  if (!com.pageIndex) {
-    com.pageIndex = 1;
+  if (!com.page) {
+    com.page = 1;
   } else {
-    com.pageIndex = com.pageIndex + 1;
+    com.page = com.page + 1;
   }
 }
 
@@ -148,30 +148,30 @@ export function reset(com: Searchable): void {
   com.sortTarget = undefined;
   com.sortField = undefined;
   com.append = false;
-  com.pageIndex = 1;
+  com.page = 1;
 }
 export function changePageSize(com: Pagination, size: number): void {
-  com.initPageSize = size;
-  com.pageSize = size;
-  com.pageIndex = 1;
+  com.initLimit = size;
+  com.limit = size;
+  com.page = 1;
 }
 export function changePage(com: Pagination, pageIndex: number, pageSize: number): void {
-  com.pageIndex = pageIndex;
-  com.pageSize = pageSize;
+  com.page = pageIndex;
+  com.limit = pageSize;
   com.append = false;
 }
 export function optimizeFilter<S extends Filter>(obj: S, searchable: Searchable, fields?: string[]): S {
   // const sLimit = searchable.limit;
   obj.fields = fields;
-  if (searchable.pageIndex && searchable.pageIndex > 1) {
-    obj.page = searchable.pageIndex;
+  if (searchable.page && searchable.page > 1) {
+    obj.page = searchable.page;
   } else {
     delete obj.page;
   }
-  obj.limit = searchable.pageSize;
+  obj.limit = searchable.limit;
 
-  if (searchable.appendMode && searchable.initPageSize !== searchable.pageSize) {
-    obj.firstLimit = searchable.initPageSize;
+  if (searchable.appendMode && searchable.initLimit !== searchable.limit) {
+    obj.firstLimit = searchable.initLimit;
   } else {
     delete obj.firstLimit;
   }
@@ -292,16 +292,15 @@ export function getFields(form?: HTMLFormElement, arr?: string[]): string[] | un
   return fields.length > 0 ? fields : undefined
 }
 interface Component<T> {
-  pageIndex?: number;
-  pageSize?: number;
-  initPageSize?: number;
+  page?: number;
+  limit?: number;
   sequenceNo?: string;
   format?: (oj: T, lc?: Locale) => T;
 }
 export function formatResultsByComponent<T>(results: T[], c: Component<T>, lc: Locale) {
-  formatResults(results, c.pageIndex, c.pageSize, c.pageSize, c.sequenceNo, c.format, lc);
+  formatResults(results, c.page, c.limit, c.limit, c.sequenceNo, c.format, lc);
 }
-export function formatResults<T>(results: T[], pageIndex?: number, pageSize?: number, initPageSize?: number, sequenceNo?: string, ft?: (oj: T, lc?: Locale) => T, lc?: Locale): void {
+export function formatResults<T>(results: T[], page?: number, limit?: number, initPageSize?: number, sequenceNo?: string, ft?: (oj: T, lc?: Locale) => T, lc?: Locale): void {
   if (results && results.length > 0) {
     let hasSequencePro = false;
     if (ft) {
@@ -325,20 +324,20 @@ export function formatResults<T>(results: T[], pageIndex?: number, pageSize?: nu
       }
     }
     if (sequenceNo && sequenceNo.length > 0 && !hasSequencePro) {
-      if (!pageIndex) {
-        pageIndex = 1;
+      if (!page) {
+        page = 1;
       }
-      if (pageSize) {
+      if (limit) {
         if (!initPageSize) {
-          initPageSize = pageSize;
+          initPageSize = limit;
         }
-        if (pageIndex <= 1) {
+        if (page <= 1) {
           for (let i = 0; i < results.length; i++) {
-            (results[i] as any)[sequenceNo] = i - pageSize + pageSize * pageIndex + 1;
+            (results[i] as any)[sequenceNo] = i - limit + limit * page + 1;
           }
         } else {
           for (let i = 0; i < results.length; i++) {
-            (results[i] as any)[sequenceNo] = i - pageSize + pageSize * pageIndex + 1 - (pageSize - initPageSize);
+            (results[i] as any)[sequenceNo] = i - limit + limit * page + 1 - (limit - initPageSize);
           }
         }
       } else {
@@ -383,18 +382,18 @@ export function formatText(...args: any[]): string {
   }
   return formatted
 }
-export function buildMessage<T>(resource: StringMap, results: T[], pageSize: number, pageIndex: number | undefined, total?: number): string {
+export function buildMessage<T>(resource: StringMap, results: T[], limit: number, page: number | undefined, total?: number): string {
   if (!results || results.length === 0) {
     return resource.msg_no_data_found
   } else {
-    if (!pageIndex) {
-      pageIndex = 1
+    if (!page) {
+      page = 1
     }
-    const fromIndex = (pageIndex - 1) * pageSize + 1
+    const fromIndex = (page - 1) * limit + 1
     const toIndex = fromIndex + results.length - 1
-    const pageTotal = getPageTotal(pageSize, total)
+    const pageTotal = getPageTotal(limit, total)
     if (pageTotal > 1) {
-      const msg2 = formatText(resource.msg_search_result_page_sequence, fromIndex, toIndex, total, pageIndex, pageTotal)
+      const msg2 = formatText(resource.msg_search_result_page_sequence, fromIndex, toIndex, total, page, pageTotal)
       return msg2
     } else {
       const msg3 = formatText(resource.msg_search_result_sequence, fromIndex, toIndex)
