@@ -414,59 +414,69 @@ function getPrefix(url: string): string {
 export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: boolean, page?: number, fields?: string, limit?: string): void {
   if (!isFirstLoad) {
     if (!fields || fields.length === 0) {
-      fields = 'fields';
+      fields = "fields"
     }
     if (!limit || limit.length === 0) {
-      limit = 'limit';
+      limit = "limit"
     }
     if (page && page > 1) {
       if (!ft.page || ft.page <= 1) {
-        ft.page = page;
+        ft.page = page
       }
     }
-    const pageIndex = ft.page;
+    const pageIndex = ft.page
     if (pageIndex && !isNaN(pageIndex) && pageIndex <= 1) {
-      delete ft.page;
+      delete ft.page
     }
-    const keys = Object.keys(ft);
-    const currentUrl = window.location.host + window.location.pathname;
-    let url = removeFormatUrl(currentUrl);
+    const keys = Object.keys(ft)
+    const currentUrl = window.location.host + window.location.pathname
+    let url = removeFormatUrl(currentUrl)
     for (const key of keys) {
-      const objValue = (ft as any)[key];
+      const objValue = (ft as any)[key]
       if (objValue) {
         if (key !== fields) {
-          if (typeof objValue === 'string' || typeof objValue === 'number') {
+          if (typeof objValue === "string" || typeof objValue === "number") {
             if (key === limit) {
               if (objValue !== resources.limit) {
-                url += getPrefix(url) + `${key}=${objValue}`;
+                url += getPrefix(url) + `${key}=${objValue}`
               }
             } else {
-              url += getPrefix(url) + `${key}=${objValue}`;
+              if (typeof objValue === "string") {
+                url += getPrefix(url) + `${key}=${encodeURI(objValue)}`
+              } else {
+                url += getPrefix(url) + `${key}=${objValue}`
+              }
             }
-          } else if (typeof objValue === 'object') {
+          } else if (typeof objValue === "object") {
             if (objValue instanceof Date) {
-              url += getPrefix(url) + `${key}=${objValue.toISOString()}`;
+              url += getPrefix(url) + `${key}=${objValue.toISOString()}`
             } else {
               if (Array.isArray(objValue)) {
                 if (objValue.length > 0) {
-                  const strs: string[] = [];
+                  const strs: string[] = []
                   for (const subValue of objValue) {
-                    if (typeof subValue === 'string') {
-                      strs.push(subValue);
-                    } else if (typeof subValue === 'number') {
-                      strs.push(subValue.toString());
+                    if (typeof subValue === "string") {
+                      strs.push(encodeURI(subValue))
+                    } else if (typeof subValue === "number") {
+                      strs.push(subValue.toString())
                     }
                   }
-                  url += getPrefix(url) + `${key}=${strs.join(',')}`;
+                  url += getPrefix(url) + `${key}=${strs.join(",")}`
                 }
               } else {
-                const keysLvl2 = Object.keys(objValue);
+                const keysLvl2 = Object.keys(objValue)
                 for (const key2 of keysLvl2) {
-                  const objValueLvl2 = objValue[key2];
-                  if (objValueLvl2 instanceof Date) {
-                    url += getPrefix(url) + `${key}.${key2}=${objValueLvl2.toISOString()}`;
-                  } else {
-                    url += getPrefix(url) + `${key}.${key2}=${objValueLvl2}`;
+                  const objValueLvl2 = objValue[key2]
+                  if (objValueLvl2) {
+                    if (objValueLvl2 instanceof Date) {
+                      url += getPrefix(url) + `${key}.${key2}=${objValueLvl2.toISOString()}`
+                    } else {
+                      if (typeof objValueLvl2 === "string") {
+                        url += getPrefix(url) + `${key}.${key2}=${encodeURI(objValueLvl2)}`                        
+                      } else {
+                        url += getPrefix(url) + `${key}.${key2}=${objValueLvl2}`
+                      }
+                    }
                   }
                 }
               }
@@ -475,15 +485,15 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
         }
       }
     }
-    let p = 'http://';
-    const loc = window.location.href;
+    let p = "http://"
+    const loc = window.location.href
     if (loc.length >= 8) {
-      const ss = loc.substring(0, 8);
-      if (ss === 'https://') {
-        p = 'https://';
+      const ss = loc.substring(0, 8)
+      if (ss === "https://") {
+        p = "https://"
       }
     }
-    window.history.replaceState({path: currentUrl}, '', p + url);
+    window.history.replaceState({ path: currentUrl }, "", p + url)
   }
 }
 

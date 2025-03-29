@@ -235,7 +235,7 @@ export const useCoreSearch = <T, S extends Filter, ST>(
   }, [state]);
 
   const _getCurrencyCode = (): string => {
-    return refForm && refForm.current ? refForm.current.getAttribute('currency-code') : null;
+    return refForm && refForm.current ? refForm.current.getAttribute('currency-code') : 'USD';
   };
   const getCurrencyCode = p && p.getCurrencyCode ? p.getCurrencyCode : _getCurrencyCode;
 
