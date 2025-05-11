@@ -414,17 +414,15 @@ function getPrefix(url: string): string {
 export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: boolean, page?: number, fields?: string, limit?: string): void {
   if (!isFirstLoad) {
     if (!fields || fields.length === 0) {
-      fields = "fields"
+      fields = resources.fields
     }
     if (!limit || limit.length === 0) {
-      limit = "limit"
+      limit = resources.limit
     }
-    if (page && page > 1) {
-      if (!ft.page || ft.page <= 1) {
-        ft.page = page
-      }
+    if (page) {
+      (ft as any)[resources.page] = page;
     }
-    const pageIndex = ft.page
+    const pageIndex = (ft as any)[resources.page]
     if (pageIndex && !isNaN(pageIndex) && pageIndex <= 1) {
       delete ft.page
     }
@@ -437,12 +435,12 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
         if (key !== fields) {
           if (typeof objValue === "string" || typeof objValue === "number") {
             if (key === limit) {
-              if (objValue !== resources.limit) {
+              if (objValue !== resources.defaultLimit) {
                 url += getPrefix(url) + `${key}=${objValue}`
               }
             } else {
               if (typeof objValue === "string") {
-                url += getPrefix(url) + `${key}=${encodeURI(objValue)}`
+                url += getPrefix(url) + `${key}=${encodeURIComponent(objValue)}`
               } else {
                 url += getPrefix(url) + `${key}=${objValue}`
               }
@@ -456,7 +454,7 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
                   const strs: string[] = []
                   for (const subValue of objValue) {
                     if (typeof subValue === "string") {
-                      strs.push(encodeURI(subValue))
+                      strs.push(encodeURIComponent(subValue))
                     } else if (typeof subValue === "number") {
                       strs.push(subValue.toString())
                     }
@@ -472,7 +470,7 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
                       url += getPrefix(url) + `${key}.${key2}=${objValueLvl2.toISOString()}`
                     } else {
                       if (typeof objValueLvl2 === "string") {
-                        url += getPrefix(url) + `${key}.${key2}=${encodeURI(objValueLvl2)}`                        
+                        url += getPrefix(url) + `${key}.${key2}=${encodeURIComponent(objValueLvl2)}`                        
                       } else {
                         url += getPrefix(url) + `${key}.${key2}=${objValueLvl2}`
                       }

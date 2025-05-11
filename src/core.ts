@@ -7,8 +7,11 @@ export class resources {
   static phone = / |-|\.|\(|\)/g;
   static _cache: any = {};
   static cache = true;
-  static limit = 24;
-  static pages = pageSizes;
+  static fields = "fields";
+  static page = "page";
+  static limit = "limit";
+  static defaultLimit = 24;
+  static limits = pageSizes;
   static pageMaxSize = 7;
 }
 export const size = pageSizes;

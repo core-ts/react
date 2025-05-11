@@ -19,7 +19,7 @@ export const callSearch = <T, S extends Filter>(se: S, search3: (s: S, limit?: n
     page = 1;
   }
   if (!se.limit || se.limit <= 0) {
-    se.limit = resources.limit;
+    se.limit = resources.defaultLimit;
   }
   const limit = (page <= 1 && se.firstLimit && se.firstLimit > 0 ? se.firstLimit : se.limit);
   const next = (nextPageToken && nextPageToken.length > 0 ? nextPageToken : page);
