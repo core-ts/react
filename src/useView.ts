@@ -1,21 +1,21 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router"
-import {
-  buildId,
-  getModelName as getModelName2,
-  hideLoading,
-  initForm,
-  LoadingService,
-  Locale,
-  message,
-  messageByHttpStatus,
-  ResourceService,
-  showLoading,
-  ViewParameter,
-  ViewService,
-} from "./core"
+import { Attributes, buildId, getModelName as getModelName2, hideLoading, initForm, LoadingService, Locale, ResourceService, showLoading } from "./core"
+import { message, messageByHttpStatus } from "./error"
 import { setReadOnly } from "./formutil"
 import { DispatchWithCallback, useMergeState } from "./merge"
+
+export interface ViewParameter {
+  resource: ResourceService
+  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void
+  getLocale?: (profile?: string) => Locale
+  loading?: LoadingService
+}
+export interface ViewService<T, ID> {
+  metadata?(): Attributes | undefined
+  keys?(): string[]
+  load(id: ID, ctx?: any): Promise<T | null>
+}
 
 export interface BaseViewComponentParam<T, ID> {
   name?: string

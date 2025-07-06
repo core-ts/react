@@ -1,5 +1,35 @@
-import { DiffModel } from "./core"
+import { LoadingService, ResourceService } from "./core"
 import { clone } from "./reflect"
+
+export interface DiffParameter {
+  resource: ResourceService
+  showMessage: (msg: string, option?: string) => void
+  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void
+  loading?: LoadingService
+  // status?: DiffStatusConfig;
+}
+export interface BaseDiffState {
+  disabled: boolean
+}
+export interface DiffModel<T, ID> {
+  id?: ID
+  origin?: T
+  value: T
+}
+export interface ApprService<ID> {
+  approve(id: ID, ctx?: any): Promise<number | string>
+  reject(id: ID, ctx?: any): Promise<number | string>
+}
+export interface DiffService<T, ID> {
+  keys(): string[]
+  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>>
+}
+export interface DiffApprService<T, ID> extends DiffService<T, ID>, ApprService<ID> {}
+export interface DiffState<T> {
+  origin: T
+  value: T
+  disabled: boolean
+}
 
 export function formatDiffModel<T, ID>(obj: DiffModel<T, ID>, formatFields?: (obj3: T) => T): DiffModel<T, ID> {
   if (!obj) {

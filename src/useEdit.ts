@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router"
 import {
+  Attribute,
   Attributes,
   buildId,
   ErrorMessage,
@@ -9,18 +10,94 @@ import {
   initForm,
   LoadingService,
   Locale,
-  message,
-  messageByHttpStatus,
+  resources,
   ResourceService,
   showLoading,
   UIService,
 } from "./core"
-import { build, createModel as createModel2, EditParameter, GenericService, handleVersion } from "./edit"
+import { createModel as createModel2 } from "./edit"
+import { message, messageByHttpStatus } from "./error"
 import { focusFirstError, setReadOnly } from "./formutil"
 import { DispatchWithCallback, useMergeState } from "./merge"
 import { clone, makeDiff } from "./reflect"
 import { localeOf } from "./state"
 import { useUpdate } from "./update"
+
+export interface EditParameter {
+  resource: ResourceService
+  showMessage: (msg: string, option?: string) => void
+  showError: (m: string, callback?: () => void, header?: string) => void
+  confirm: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void
+  ui?: UIService
+  getLocale?: (profile?: string) => Locale
+  loading?: LoadingService
+  // status?: EditStatusConfig;
+}
+export interface GenericService<T, ID, R> {
+  metadata?(): Attributes | undefined
+  keys?(): string[]
+  load(id: ID, ctx?: any): Promise<T | null>
+  patch?(obj: Partial<T>, ctx?: any): Promise<R>
+  create(obj: T, ctx?: any): Promise<R>
+  update(obj: T, ctx?: any): Promise<R>
+  delete?(id: ID, ctx?: any): Promise<number>
+}
+export interface MetaModel {
+  keys?: string[]
+  version?: string
+}
+export function build(attributes: Attributes, name?: string): MetaModel | undefined {
+  if (!attributes) {
+    return undefined
+  }
+  if (resources.cache && name && name.length > 0) {
+    let meta: MetaModel = resources._cache[name]
+    if (!meta) {
+      meta = buildMetaModel(attributes)
+      resources._cache[name] = meta
+    }
+    return meta
+  } else {
+    return buildMetaModel(attributes)
+  }
+}
+
+function buildMetaModel(attributes: Attributes): MetaModel {
+  if (!attributes) {
+    return {}
+  }
+  /*
+  if (model && !model.source) {
+    model.source = model.name;
+  }
+  */
+  const md: MetaModel = {}
+  const pks: string[] = new Array<string>()
+  const keys: string[] = Object.keys(attributes)
+  for (const key of keys) {
+    const attr: Attribute = attributes[key]
+    if (attr) {
+      if (attr.version) {
+        md.version = key
+      }
+      if (attr.key === true) {
+        pks.push(key)
+      }
+    }
+  }
+  md.keys = pks
+  return md
+}
+export function handleVersion<T>(obj: T, version?: string): void {
+  if (obj && version && version.length > 0) {
+    const v = (obj as any)[version]
+    if (v && typeof v === "number") {
+      ;(obj as any)[version] = v + 1
+    } else {
+      ;(obj as any)[version] = 1
+    }
+  }
+}
 
 export interface BaseEditComponentParam<T, ID> {
   // status?: EditStatusConfig;

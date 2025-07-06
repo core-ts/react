@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
 import {
-  error,
   Filter,
   getName,
   getRemoveError,
@@ -18,6 +17,7 @@ import {
   SearchService,
   showLoading,
 } from "./core"
+import { error } from "./error"
 import { DispatchWithCallback, useMergeState } from "./merge"
 import { clone } from "./reflect"
 import { buildFromUrl } from "./route"
