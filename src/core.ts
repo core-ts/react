@@ -1,4 +1,3 @@
-import { Params } from "react-router"
 import { focusFirstElement } from "./formutil"
 
 export interface LoadingService {
@@ -6,6 +5,7 @@ export interface LoadingService {
   hideLoading(): void
 }
 export const pageSizes = [12, 24, 60, 100, 120, 180, 300, 600]
+export const sizes = pageSizes
 // tslint:disable-next-line:class-name
 export class resources {
   static phone = / |-|\.|\(|\)/g
@@ -18,17 +18,7 @@ export class resources {
   static limits = pageSizes
   static pageMaxSize = 7
 }
-export const size = pageSizes
 
-export function getCurrencyCode(form?: HTMLFormElement | null): string | undefined {
-  if (form) {
-    const x = form.getAttribute("currency-code")
-    if (x) {
-      return x
-    }
-  }
-  return undefined
-}
 export function removePhoneFormat(phone: string): string {
   if (phone) {
     return phone.replace(resources.phone, "")
@@ -42,7 +32,6 @@ export interface StringMap {
 export interface ResourceService {
   resource(): StringMap
   value(key: string, param?: any): string
-  format(f: string, ...args: any[]): string
 }
 
 export interface Locale {
@@ -98,13 +87,7 @@ export type DataType =
   | "dates"
   | "datetimes"
   | "times"
-/*
-export interface Metadata {
-  name?: string;
-  attributes: Attributes;
-  source?: string;
-}
-*/
+
 export interface Attribute {
   name?: string
   type?: DataType
@@ -116,45 +99,6 @@ export interface Attributes {
   [key: string]: Attribute
 }
 
-export function buildKeys(attributes: Attributes): string[] {
-  if (!attributes) {
-    return []
-  }
-  const ks = Object.keys(attributes)
-  const ps = []
-  for (const k of ks) {
-    const attr: Attribute = attributes[k]
-    if (attr.key === true) {
-      ps.push(k)
-    }
-  }
-  return ps
-}
-type Readonly<T> = {
-  readonly [P in keyof T]: T[P]
-}
-export function buildId<ID>(p: Readonly<Params<string>>, keys?: string[]): ID | null {
-  if (!keys || keys.length === 0 || keys.length === 1) {
-    if (keys && keys.length === 1) {
-      if (p[keys[0]]) {
-        return p[keys[0]] as any
-      }
-    }
-    return p["id"] as any
-  }
-  const id: any = {}
-  for (const key of keys) {
-    let v = p[key]
-    if (!v) {
-      v = p[key]
-      if (!v) {
-        return null
-      }
-    }
-    id[key] = v
-  }
-  return id
-}
 export const datetimeToString = (inputDate: Date) => {
   const date = new Date(inputDate)
   const year = date.getFullYear()
@@ -172,61 +116,6 @@ export const dateToString = (inputDate: Date) => {
   const day = String(inputDate.getDate()).padStart(2, "0")
   return `${year}-${month}-${day}`
 }
-/*
-export function formatFax(value: string) {
-  return formatter.formatFax(value);
-}
-
-export function formatPhone(value: string) {
-  return formatter.formatPhone(value);
-}
-export function formatNumber(num: string|number, scale?: number, locale?: Locale): string {
-  if (!scale) {
-    scale = 2;
-  }
-  if (!locale) {
-    locale = storage.getLocale();
-  }
-  let c: number;
-  if (!num) {
-    return '';
-  } else if (typeof num === 'number') {
-    c = num;
-  } else {
-    const x: any = num;
-    if (isNaN(x)) {
-      return '';
-    } else {
-      c = parseFloat(x);
-    }
-  }
-  return storage.locale().formatNumber(c, scale, locale);
-}
-
-export function formatCurrency(currency: string|number, locale?: Locale, currencyCode?: string) {
-  if (!currencyCode) {
-    currencyCode = 'USD';
-  }
-  if (!locale) {
-    locale = storage.getLocale();
-  }
-  let c: number;
-  if (!currency) {
-    return '';
-  } else if (typeof currency === 'number') {
-    c = currency;
-  } else {
-    let x: any = currency;
-    x = x.replace(locale.decimalSeparator, '.');
-    if (isNaN(x)) {
-      return '';
-    } else {
-      c = parseFloat(x);
-    }
-  }
-  return storage.locale().formatCurrency(c, currencyCode, locale);
-}
-*/
 
 export function initForm(form?: HTMLFormElement, initMat?: (f: HTMLFormElement) => void): HTMLFormElement | undefined {
   if (form) {
@@ -251,7 +140,7 @@ export function getModelName(form?: HTMLFormElement | null, name?: string): stri
     const b = form.name
     if (b) {
       if (b.endsWith("Form")) {
-        return b.substr(0, b.length - 4)
+        return b.substring(0, b.length - 4)
       }
       return b
     }

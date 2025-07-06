@@ -48,31 +48,7 @@ export function createModel<T>(attributes?: Attributes): T {
   }
   return obj
 }
-/*
-export function initPropertyNullInModel<T>(obj: T, m?: Attributes): T {
-  if (!m) {
-    const x: any = {};
-    return x;
-  }
-  const model = createModel(m);
-  for (const key of Object.keys(model as any)) {
-    if (obj && !(obj as any).hasOwnProperty(key)) {
-      (obj as any)[key] = (model as any)[key];
-    }
-  }
-  return obj;
-}
-export function handleStatus(x: number|string, st: EditStatusConfig, gv: (k: string, p?: any) => string, se: (m: string, title?: string, detail?: string, callback?: () => void) => void): void {
-  const title = gv('error');
-  if (x === st.version_error) {
-    se(gv('error_version'), title);
-  } else if (x === st.data_corrupt) {
-    se(gv('error_data_corrupt'), title);
-  } else {
-    se(gv('error_internal'), title);
-  }
-}
-*/
+
 export function isSuccessful<T>(x: number | T | ErrorMessage[]): boolean {
   if (Array.isArray(x)) {
     return false
@@ -83,6 +59,7 @@ export function isSuccessful<T>(x: number | T | ErrorMessage[]): boolean {
   }
   return false
 }
+
 type Result<T> = number | T | ErrorMessage[]
 export function afterSaved<T>(
   res: Result<T>,

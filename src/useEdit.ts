@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react"
-import { useNavigate, useParams } from "react-router"
+import { Params, useNavigate, useParams } from "react-router"
 import {
   Attribute,
   Attributes,
-  buildId,
   ErrorMessage,
   getModelName as getModelName2,
   hideLoading,
@@ -22,6 +21,46 @@ import { DispatchWithCallback, useMergeState } from "./merge"
 import { clone, makeDiff } from "./reflect"
 import { localeOf } from "./state"
 import { useUpdate } from "./update"
+
+export function buildKeys(attributes: Attributes): string[] {
+  if (!attributes) {
+    return []
+  }
+  const ks = Object.keys(attributes)
+  const ps = []
+  for (const k of ks) {
+    const attr: Attribute = attributes[k]
+    if (attr.key === true) {
+      ps.push(k)
+    }
+  }
+  return ps
+}
+type Readonly<T> = {
+  readonly [P in keyof T]: T[P]
+}
+export function buildId<ID>(p: Readonly<Params<string>>, keys?: string[]): ID | null {
+  if (!keys || keys.length === 0 || keys.length === 1) {
+    if (keys && keys.length === 1) {
+      if (p[keys[0]]) {
+        return p[keys[0]] as any
+      }
+    }
+    return p["id"] as any
+  }
+  const id: any = {}
+  for (const key of keys) {
+    let v = p[key]
+    if (!v) {
+      v = p[key]
+      if (!v) {
+        return null
+      }
+    }
+    id[key] = v
+  }
+  return id
+}
 
 export interface EditParameter {
   resource: ResourceService

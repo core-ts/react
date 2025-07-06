@@ -33,7 +33,6 @@ export interface Sortable {
 export interface Pagination {
   initLimit?: number
   limit: number
-  // limit: number;
   page?: number
   total?: number
   pages?: number
@@ -43,7 +42,7 @@ export interface Pagination {
   appendable?: boolean
 }
 
-interface Searchable extends Pagination, Sortable {}
+export interface Searchable extends Pagination, Sortable {}
 
 export function getOffset(limit: number, page?: number, firstLimit?: number): number {
   const p = page && page > 0 ? page : 1
