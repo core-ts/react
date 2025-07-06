@@ -1,27 +1,26 @@
-import { Filter, Locale, resources, StringMap } from "./core";
-import { clone } from "./reflect";
+import { Filter, Locale, resources, StringMap } from "./core"
+import { clone } from "./reflect"
 
 export interface Sortable {
-  sortField?: string;
-  sortType?: string;
-  sortTarget?: HTMLElement;
+  sortField?: string
+  sortType?: string
+  sortTarget?: HTMLElement
 }
 
 export interface Pagination {
-  initLimit?: number;
-  limit: number;
+  initLimit?: number
+  limit: number
   // limit: number;
-  page?: number;
-  total?: number;
-  pages?: number;
-  showPaging?: boolean;
-  append?: boolean;
-  appendMode?: boolean;
-  appendable?: boolean;
+  page?: number
+  total?: number
+  pages?: number
+  showPaging?: boolean
+  append?: boolean
+  appendMode?: boolean
+  appendable?: boolean
 }
 
-interface Searchable extends Pagination, Sortable {
-}
+interface Searchable extends Pagination, Sortable {}
 
 export function getOffset(limit: number, page?: number, firstLimit?: number): number {
   const p = page && page > 0 ? page : 1
@@ -65,66 +64,66 @@ export function mergeFilter<S extends Filter>(obj: S, b?: S, pageSizes?: number[
   }
   return a
 }
-export function isArray(key: string, p: any, arrs: string[]|any): boolean {
+export function isArray(key: string, p: any, arrs: string[] | any): boolean {
   if (p) {
     if (Array.isArray(p)) {
-      return true;
+      return true
     }
   }
   if (arrs) {
     if (Array.isArray(arrs)) {
       if (arrs.indexOf(key) >= 0) {
-        return true;
+        return true
       }
     } else {
-      const v = arrs[key];
+      const v = arrs[key]
       if (v && Array.isArray(v)) {
-        return true;
+        return true
       }
     }
   }
-  return false;
+  return false
 }
 
 // m is search model or an object which is parsed from url
 export function initFilter<S extends Filter>(m: S, com: Searchable): S {
   if (!isNaN(m.page as any)) {
-    const page = parseInt(m.page as any, 10);
-    m.page = page;
+    const page = parseInt(m.page as any, 10)
+    m.page = page
     if (page >= 1) {
-      com.page = page;
+      com.page = page
     }
   }
   if (!isNaN(m.limit as any)) {
-    const pageSize = parseInt(m.limit as any, 10);
-    m.limit = pageSize;
+    const pageSize = parseInt(m.limit as any, 10)
+    m.limit = pageSize
     if (pageSize > 0) {
-      com.limit = pageSize;
+      com.limit = pageSize
     }
   }
   if (!m.limit && com.limit) {
-    m.limit = com.limit;
+    m.limit = com.limit
   }
   if (!isNaN(m.firstLimit as any)) {
-    const initPageSize = parseInt(m.firstLimit as any, 10);
+    const initPageSize = parseInt(m.firstLimit as any, 10)
     if (initPageSize > 0) {
-      m.firstLimit = initPageSize;
-      com.initLimit = initPageSize;
+      m.firstLimit = initPageSize
+      com.initLimit = initPageSize
     } else {
-      com.initLimit = com.limit;
+      com.initLimit = com.limit
     }
   } else {
-    com.initLimit = com.limit;
+    com.initLimit = com.limit
   }
-  const st = m.sort;
+  const st = m.sort
   if (st && st.length > 0) {
-    const ch = st.charAt(0);
-    if (ch === '+' || ch === '-') {
-      com.sortField = st.substring(1);
-      com.sortType = ch;
+    const ch = st.charAt(0)
+    if (ch === "+" || ch === "-") {
+      com.sortField = st.substring(1)
+      com.sortType = ch
     } else {
-      com.sortField = st;
-      com.sortType = '';
+      com.sortField = st
+      com.sortType = ""
     }
   }
   /*
@@ -132,73 +131,73 @@ export function initFilter<S extends Filter>(m: S, com: Searchable): S {
   delete m.limit;
   delete m.firstLimit;
   */
-  return m;
+  return m
 }
 export function more(com: Pagination): void {
-  com.append = true;
+  com.append = true
   if (!com.page) {
-    com.page = 1;
+    com.page = 1
   } else {
-    com.page = com.page + 1;
+    com.page = com.page + 1
   }
 }
 
 export function reset(com: Searchable): void {
-  removeSortStatus(com.sortTarget);
-  com.sortTarget = undefined;
-  com.sortField = undefined;
-  com.append = false;
-  com.page = 1;
+  removeSortStatus(com.sortTarget)
+  com.sortTarget = undefined
+  com.sortField = undefined
+  com.append = false
+  com.page = 1
 }
 export function changePageSize(com: Pagination, size: number): void {
-  com.initLimit = size;
-  com.limit = size;
-  com.page = 1;
+  com.initLimit = size
+  com.limit = size
+  com.page = 1
 }
 export function changePage(com: Pagination, pageIndex: number, pageSize: number): void {
-  com.page = pageIndex;
-  com.limit = pageSize;
-  com.append = false;
+  com.page = pageIndex
+  com.limit = pageSize
+  com.append = false
 }
 export function optimizeFilter<S extends Filter>(obj: S, searchable: Searchable, fields?: string[]): S {
   // const sLimit = searchable.limit;
-  obj.fields = fields;
+  obj.fields = fields
   if (searchable.page && searchable.page > 1) {
-    obj.page = searchable.page;
+    obj.page = searchable.page
   } else {
-    delete obj.page;
+    delete obj.page
   }
-  obj.limit = searchable.limit;
+  obj.limit = searchable.limit
 
   if (searchable.appendMode && searchable.initLimit !== searchable.limit) {
-    obj.firstLimit = searchable.initLimit;
+    obj.firstLimit = searchable.initLimit
   } else {
-    delete obj.firstLimit;
+    delete obj.firstLimit
   }
   if (searchable.sortField && searchable.sortField.length > 0) {
-    obj.sort = (searchable.sortType === '-' ? '-' + searchable.sortField : searchable.sortField);
+    obj.sort = searchable.sortType === "-" ? "-" + searchable.sortField : searchable.sortField
   } else {
-    delete obj.sort;
+    delete obj.sort
   }
-  if(searchable) {
-    mapObjects(obj, searchable as any);
+  if (searchable) {
+    mapObjects(obj, searchable as any)
   }
-  return obj;
+  return obj
 }
 
 function mapObjects(dest: any, src: any): void {
   for (let key in dest) {
     if (src.hasOwnProperty(key) && src[key] !== null && src[key] !== undefined) {
-      if(Array.isArray(dest[key]) && typeof src[key] === 'string' && src[key].length > 0) {
-          const arrayObjKeySrc = src[key].length > 0 ?  (src[key])?.split(',') : [];
-          if(arrayObjKeySrc && arrayObjKeySrc.length > 1) {
-            dest[key] = [...arrayObjKeySrc];
-          } else {
-            dest[key] = [];
-            dest[key].push(src[key])
-          }
+      if (Array.isArray(dest[key]) && typeof src[key] === "string" && src[key].length > 0) {
+        const arrayObjKeySrc = src[key].length > 0 ? src[key]?.split(",") : []
+        if (arrayObjKeySrc && arrayObjKeySrc.length > 1) {
+          dest[key] = [...arrayObjKeySrc]
+        } else {
+          dest[key] = []
+          dest[key].push(src[key])
+        }
       } else {
-        dest[key] = src[key];
+        dest[key] = src[key]
       }
     }
   }
@@ -207,13 +206,13 @@ function mapObjects(dest: any, src: any): void {
 export function append<T>(list?: T[], results?: T[]): T[] {
   if (list && results) {
     for (const obj of results) {
-      list.push(obj);
+      list.push(obj)
     }
   }
   if (!list) {
-    return [];
+    return []
   }
-  return list;
+  return list
 }
 /*
 export function showResults<T>(com: Pagination, s: Filter, list: T[], total?: number, nextPageToken?: string): void {
@@ -234,23 +233,23 @@ export function showResults<T>(com: Pagination, s: Filter, list: T[], total?: nu
 */
 export function handleAppend<T>(com: Pagination, list: T[], limit?: number, nextPageToken?: string): void {
   if (!limit || limit === 0) {
-    com.appendable = false;
+    com.appendable = false
   } else {
     if (!nextPageToken || nextPageToken.length === 0 || list.length < limit) {
-      com.appendable = false;
+      com.appendable = false
     } else {
-      com.appendable = true;
+      com.appendable = true
     }
   }
   if (!list || list.length === 0) {
-    com.appendable = false;
+    com.appendable = false
   }
 }
 export function showPaging<T>(com: Pagination, list: T[], pageSize?: number, total?: number): void {
-  com.total = total;
-  const pageTotal = getPageTotal(pageSize, total);
-  com.pages = pageTotal;
-  com.showPaging = (!total || com.pages <= 1 || (list && list.length >= total) ? false : true);
+  com.total = total
+  const pageTotal = getPageTotal(pageSize, total)
+  com.pages = pageTotal
+  com.showPaging = !total || com.pages <= 1 || (list && list.length >= total) ? false : true
 }
 
 export function getFields(form?: HTMLFormElement, arr?: string[]): string[] | undefined {
@@ -292,57 +291,65 @@ export function getFields(form?: HTMLFormElement, arr?: string[]): string[] | un
   return fields.length > 0 ? fields : undefined
 }
 interface Component<T> {
-  page?: number;
-  limit?: number;
-  sequenceNo?: string;
-  format?: (oj: T, lc?: Locale) => T;
+  page?: number
+  limit?: number
+  sequenceNo?: string
+  format?: (oj: T, lc?: Locale) => T
 }
 export function formatResultsByComponent<T>(results: T[], c: Component<T>, lc: Locale) {
-  formatResults(results, c.page, c.limit, c.limit, c.sequenceNo, c.format, lc);
+  formatResults(results, c.page, c.limit, c.limit, c.sequenceNo, c.format, lc)
 }
-export function formatResults<T>(results: T[], page?: number, limit?: number, initPageSize?: number, sequenceNo?: string, ft?: (oj: T, lc?: Locale) => T, lc?: Locale): void {
+export function formatResults<T>(
+  results: T[],
+  page?: number,
+  limit?: number,
+  initPageSize?: number,
+  sequenceNo?: string,
+  ft?: (oj: T, lc?: Locale) => T,
+  lc?: Locale,
+): void {
   if (results && results.length > 0) {
-    let hasSequencePro = false;
+    let hasSequencePro = false
     if (ft) {
       if (sequenceNo && sequenceNo.length > 0) {
         for (const obj of results) {
           if ((obj as any)[sequenceNo]) {
-            hasSequencePro = true;
+            hasSequencePro = true
           }
-          ft(obj, lc);
+          ft(obj, lc)
         }
       } else {
         for (const obj of results) {
-          ft(obj, lc);
+          ft(obj, lc)
         }
       }
     } else if (sequenceNo && sequenceNo.length > 0) {
       for (const obj of results) {
         if ((obj as any)[sequenceNo]) {
-          hasSequencePro = true;
+          hasSequencePro = true
         }
       }
     }
     if (sequenceNo && sequenceNo.length > 0 && !hasSequencePro) {
       if (!page) {
-        page = 1;
+        page = 1
       }
       if (limit) {
         if (!initPageSize) {
-          initPageSize = limit;
+          initPageSize = limit
         }
         if (page <= 1) {
           for (let i = 0; i < results.length; i++) {
-            (results[i] as any)[sequenceNo] = i - limit + limit * page + 1;
+            ;(results[i] as any)[sequenceNo] = i - limit + limit * page + 1
           }
         } else {
           for (let i = 0; i < results.length; i++) {
-            (results[i] as any)[sequenceNo] = i - limit + limit * page + 1 - (limit - initPageSize);
+            ;(results[i] as any)[sequenceNo] = i - limit + limit * page + 1 - (limit - initPageSize)
           }
         }
       } else {
         for (let i = 0; i < results.length; i++) {
-          (results[i] as any)[sequenceNo] = i + 1;
+          ;(results[i] as any)[sequenceNo] = i + 1
         }
       }
     }
@@ -351,15 +358,15 @@ export function formatResults<T>(results: T[], page?: number, limit?: number, in
 
 export function getPageTotal(pageSize?: number, total?: number): number {
   if (!pageSize || pageSize <= 0) {
-    return 1;
+    return 1
   } else {
     if (!total) {
-      total = 0;
+      total = 0
     }
-    if ((total % pageSize) === 0) {
-      return Math.floor((total / pageSize));
+    if (total % pageSize === 0) {
+      return Math.floor(total / pageSize)
     }
-    return Math.floor((total / pageSize) + 1);
+    return Math.floor(total / pageSize + 1)
   }
 }
 
@@ -403,10 +410,9 @@ export function buildMessage<T>(resource: StringMap, results: T[], limit: number
 }
 
 function removeFormatUrl(url: string): string {
-  const startParams = url.indexOf('?');
-  return startParams !== -1 ? url.substring(0, startParams) : url;
+  const startParams = url.indexOf("?")
+  return startParams !== -1 ? url.substring(0, startParams) : url
 }
-
 
 function getPrefix(url: string): string {
   return url.indexOf("?") >= 0 ? "&" : "?"
@@ -420,7 +426,7 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
       limit = resources.limit
     }
     if (page) {
-      (ft as any)[resources.page] = page;
+      ;(ft as any)[resources.page] = page
     }
     const pageIndex = (ft as any)[resources.page]
     if (pageIndex && !isNaN(pageIndex) && pageIndex <= 1) {
@@ -470,7 +476,7 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
                       url += getPrefix(url) + `${key}.${key2}=${objValueLvl2.toISOString()}`
                     } else {
                       if (typeof objValueLvl2 === "string") {
-                        url += getPrefix(url) + `${key}.${key2}=${encodeURIComponent(objValueLvl2)}`                        
+                        url += getPrefix(url) + `${key}.${key2}=${encodeURIComponent(objValueLvl2)}`
                       } else {
                         url += getPrefix(url) + `${key}.${key2}=${objValueLvl2}`
                       }
@@ -496,8 +502,8 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
 }
 
 export interface Sort {
-  field?: string;
-  type?: string;
+  field?: string
+  type?: string
 }
 export function buildSort(sort?: string | null): Sort {
   const sortObj: Sort = {}
@@ -514,9 +520,9 @@ export function buildSort(sort?: string | null): Sort {
   return sortObj
 }
 export function setSort(sortable: Sortable, sort: string | undefined | null) {
-  const st = buildSort(sort);
-  sortable.sortField = st.field;
-  sortable.sortType = st.type;
+  const st = buildSort(sort)
+  sortable.sortField = st.field
+  sortable.sortType = st.type
 }
 export function buildSortFilter<S extends Filter>(obj: S, sortable: Sortable): S {
   const filter: any = clone(obj)
@@ -532,22 +538,22 @@ export function handleToggle(target?: HTMLElement, on?: boolean): boolean {
   const off = !on
   if (target) {
     if (on) {
-      if (!target.classList.contains('on')) {
-        target.classList.add('on');
+      if (!target.classList.contains("on")) {
+        target.classList.add("on")
       }
     } else {
-      target.classList.remove('on');
+      target.classList.remove("on")
     }
   }
   return off
 }
 export function handleSortEvent(event: Event, com: Sortable): void {
   if (event && event.target) {
-    const target = event.target as HTMLElement;
-    const s = handleSort(target, com.sortTarget, com.sortField, com.sortType);
-    com.sortField = s.field;
-    com.sortType = s.type;
-    com.sortTarget = target;
+    const target = event.target as HTMLElement
+    const s = handleSort(target, com.sortTarget, com.sortField, com.sortType)
+    com.sortField = s.field
+    com.sortType = s.type
+    com.sortTarget = target
   }
 }
 
@@ -555,106 +561,112 @@ export function getSortElement(target: HTMLElement): HTMLElement {
   return target.nodeName === "I" ? (target.parentElement as HTMLElement) : target
 }
 export function handleSort(target: HTMLElement, previousTarget?: HTMLElement, sortField?: string, sortType?: string): Sort {
-  const type = target.getAttribute('sort-type');
-  const field = toggleSortStyle(target);
-  const s = sort(sortField, sortType, field, type == null ? undefined : type);
+  const type = target.getAttribute("sort-type")
+  const field = toggleSortStyle(target)
+  const s = sort(sortField, sortType, field, type == null ? undefined : type)
   if (sortField !== field) {
-    removeSortStatus(previousTarget);
+    removeSortStatus(previousTarget)
   }
-  return s;
+  return s
 }
 
 export function sort(preField?: string, preSortType?: string, field?: string, sortType?: string): Sort {
-  if (!preField || preField === '') {
+  if (!preField || preField === "") {
     const s: Sort = {
       field,
-      type: '+'
-    };
-    return s;
+      type: "+",
+    }
+    return s
   } else if (preField !== field) {
     const s: Sort = {
       field,
-      type: (!sortType ? '+' : sortType)
-    };
-    return s;
+      type: !sortType ? "+" : sortType,
+    }
+    return s
   } else if (preField === field) {
-    const type = (preSortType === '+' ? '-' : '+');
-    const s: Sort = {field, type};
-    return s;
+    const type = preSortType === "+" ? "-" : "+"
+    const s: Sort = { field, type }
+    return s
   } else {
-    return {field, type: sortType};
+    return { field, type: sortType }
   }
 }
 
 export function removeSortStatus(target?: HTMLElement): void {
   if (target && target.children.length > 0) {
-    target.removeChild(target.children[0]);
+    target.removeChild(target.children[0])
   }
 }
 
 export function toggleSortStyle(target: HTMLElement): string {
-  let field = target.getAttribute('data-field');
+  let field = target.getAttribute("data-field")
   if (!field) {
-    const p = target.parentNode as HTMLElement;
+    const p = target.parentNode as HTMLElement
     if (p) {
-      field = p.getAttribute('data-field');
+      field = p.getAttribute("data-field")
     }
   }
   if (!field || field.length === 0) {
-    return '';
+    return ""
   }
-  if (target.nodeName === 'I') {
-    target = target.parentNode as HTMLElement;
+  if (target.nodeName === "I") {
+    target = target.parentNode as HTMLElement
   }
-  let i = null;
+  let i = null
   if (target.children.length === 0) {
-    target.innerHTML = target.innerHTML + '<i class="sort-up"></i>';
+    target.innerHTML = target.innerHTML + '<i class="sort-up"></i>'
   } else {
-    i = target.children[0];
-    if (i.classList.contains('sort-up')) {
-      i.classList.remove('sort-up');
-      i.classList.add('sort-down');
-    } else if (i.classList.contains('sort-down')) {
-      i.classList.remove('sort-down');
-      i.classList.add('sort-up');
+    i = target.children[0]
+    if (i.classList.contains("sort-up")) {
+      i.classList.remove("sort-up")
+      i.classList.add("sort-down")
+    } else if (i.classList.contains("sort-down")) {
+      i.classList.remove("sort-down")
+      i.classList.add("sort-up")
     }
   }
-  return field;
+  return field
 }
-export function getModel<S extends Filter>(state: any, modelName: string, searchable: Searchable, fields?: string[], excluding?: string[]|number[]): S {
-  let obj2 = getModelFromState(state, modelName);
+export function getModel<S extends Filter>(state: any, modelName: string, searchable: Searchable, fields?: string[], excluding?: string[] | number[]): S {
+  let obj2 = getModelFromState(state, modelName)
 
-  const obj: any = obj2 ? obj2 : {};
-  const obj3 = optimizeFilter(obj, searchable, fields);
-  obj3.excluding = excluding;
-  return obj3;
+  const obj: any = obj2 ? obj2 : {}
+  const obj3 = optimizeFilter(obj, searchable, fields)
+  obj3.excluding = excluding
+  return obj3
 }
 function getModelFromState(state: any, modelName: string): any {
   if (!modelName || modelName.length === 0) {
-    return state;
+    return state
   }
   if (!state) {
-    return state;
+    return state
   }
-  return state[modelName];
+  return state[modelName]
 }
-export function getFieldsFromForm(fields?: string[], initFields?: boolean, form?: HTMLFormElement|null): string[]|undefined {
+export function getFieldsFromForm(fields?: string[], initFields?: boolean, form?: HTMLFormElement | null): string[] | undefined {
   if (fields && fields.length > 0) {
-    return fields;
+    return fields
   }
   if (!initFields) {
     if (form) {
-      return getFields(form);
+      return getFields(form)
     }
   }
-  return fields;
+  return fields
 }
-export function validate<S extends Filter>(se: S, callback: () => void, form?: HTMLFormElement|null, lc?: Locale, vf?: (f: HTMLFormElement, lc2?: Locale, focus?: boolean, scr?: boolean) => boolean): void {
-  let valid = true;
+export function validate<S extends Filter>(
+  se: S,
+  callback: () => void,
+  form?: HTMLFormElement | null,
+  lc?: Locale,
+  vf?: (f: HTMLFormElement, lc2?: Locale, focus?: boolean, scr?: boolean) => boolean,
+): void {
+  let valid = true
   if (form && vf) {
-    valid = vf(form, lc);
+    valid = vf(form, lc)
   }
   if (valid === true) {
-    callback();
+    callback()
   }
 }

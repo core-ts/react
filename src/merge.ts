@@ -1,23 +1,26 @@
-import {useCallback, useEffect, useRef, useState} from 'react';
+import { useCallback, useEffect, useRef, useState } from "react"
 
-export type Callback<T> = (value?: T) => void;
-export type DispatchWithCallback<T> = (value: T, callback?: Callback<T>) => void;
+export type Callback<T> = (value?: T) => void
+export type DispatchWithCallback<T> = (value: T, callback?: Callback<T>) => void
 
 export function useMergeState<T>(initialState?: T | (() => T)): [T, DispatchWithCallback<Partial<T>>] {
-  const [state, _setState] = useState(initialState ? initialState : {} as any);
+  const [state, _setState] = useState(initialState ? initialState : ({} as any))
 
-  const callbackRef = useRef<Callback<T>>();
+  const callbackRef = useRef<Callback<T>>()
 
-  const setState = useCallback((newState: Partial<T>, callback?: Callback<T>): void => {
-    callbackRef.current = callback;
-    _setState((prevState: any) => Object.assign({}, prevState, newState));
-  }, [state]);
+  const setState = useCallback(
+    (newState: Partial<T>, callback?: Callback<T>): void => {
+      callbackRef.current = callback
+      _setState((prevState: any) => Object.assign({}, prevState, newState))
+    },
+    [state],
+  )
 
-  useEffect( () => {
+  useEffect(() => {
     if (callbackRef.current) {
-      callbackRef.current(state);
+      callbackRef.current(state)
     }
-  }, [state]);
+  }, [state])
 
-  return [state, setState];
+  return [state, setState]
 }

@@ -1,51 +1,51 @@
-import { Params } from 'react-router';
-import { focusFirstElement } from './formutil';
+import { Params } from "react-router"
+import { focusFirstElement } from "./formutil"
 
-export const pageSizes = [12, 24, 60, 100, 120, 180, 300, 600];
+export const pageSizes = [12, 24, 60, 100, 120, 180, 300, 600]
 // tslint:disable-next-line:class-name
 export class resources {
-  static phone = / |-|\.|\(|\)/g;
-  static _cache: any = {};
-  static cache = true;
-  static fields = "fields";
-  static page = "page";
-  static limit = "limit";
-  static defaultLimit = 24;
-  static limits = pageSizes;
-  static pageMaxSize = 7;
+  static phone = / |-|\.|\(|\)/g
+  static _cache: any = {}
+  static cache = true
+  static fields = "fields"
+  static page = "page"
+  static limit = "limit"
+  static defaultLimit = 24
+  static limits = pageSizes
+  static pageMaxSize = 7
 }
-export const size = pageSizes;
+export const size = pageSizes
 export interface ModelMap {
-  [key: string]: any;
+  [key: string]: any
 }
 export interface PageChange {
-  page: number; // currentPage
-  size: number; // itemsPerPage
+  page: number // currentPage
+  size: number // itemsPerPage
 }
 export interface ModelProps {
-  setGlobalState?: (m: ModelMap) => void;
-  shouldBeCustomized?: boolean;
+  setGlobalState?: (m: ModelMap) => void
+  shouldBeCustomized?: boolean
 }
 export interface EditPermission {
-  addable?: boolean;
-  readOnly?: boolean;
-  deletable?: boolean;
+  addable?: boolean
+  readOnly?: boolean
+  deletable?: boolean
 }
 export interface SearchPermission {
-  viewable?: boolean;
-  addable?: boolean;
-  editable?: boolean;
-  deletable?: boolean;
-  approvable?: boolean;
+  viewable?: boolean
+  addable?: boolean
+  editable?: boolean
+  deletable?: boolean
+  approvable?: boolean
 }
 export interface SearchParameter {
-  resource: ResourceService;
-  showMessage: (msg: string, option?: string) => void;
-  showError: (m: string, callback?: () => void, h?: string) => void;
-  ui?: UIService;
-  getLocale?: (profile?: string) => Locale;
-  loading?: LoadingService;
-  auto?: boolean;
+  resource: ResourceService
+  showMessage: (msg: string, option?: string) => void
+  showError: (m: string, callback?: () => void, h?: string) => void
+  ui?: UIService
+  getLocale?: (profile?: string) => Locale
+  loading?: LoadingService
+  auto?: boolean
 }
 /*
 export interface EditStatusConfig {
@@ -90,176 +90,192 @@ export function createDiffStatus(status?: DiffStatusConfig): DiffStatusConfig {
 }
 */
 export interface Filter {
-  q?: string;
-  page?: number;
-  limit: number;
-  firstLimit?: number;
-  fields?: string[];
-  sort?: string;
+  q?: string
+  page?: number
+  limit: number
+  firstLimit?: number
+  fields?: string[]
+  sort?: string
 }
 export interface SearchResult<T> {
-  total?: number;
-  list: T[];
-  next?: string;
-  last?: boolean;
+  total?: number
+  list: T[]
+  next?: string
+  last?: boolean
 }
 export interface SearchState<T, S extends Filter> {
-  model?: S;
-  q?: string;
-  list?: T[];
+  model?: S
+  q?: string
+  list?: T[]
 }
 export interface SearchService<T, S extends Filter> {
-  keys?(): string[];
-  search(s: S, limit?: number, offset?: number | string, fields?: string[]): Promise<SearchResult<T>>;
+  keys?(): string[]
+  search(s: S, limit?: number, offset?: number | string, fields?: string[]): Promise<SearchResult<T>>
 }
 export interface ViewParameter {
-  resource: ResourceService;
-  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
-  getLocale?: (profile?: string) => Locale;
-  loading?: LoadingService;
+  resource: ResourceService
+  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void
+  getLocale?: (profile?: string) => Locale
+  loading?: LoadingService
 }
 export interface ViewService<T, ID> {
-  metadata?(): Attributes | undefined;
-  keys?(): string[];
-  load(id: ID, ctx?: any): Promise<T | null>;
+  metadata?(): Attributes | undefined
+  keys?(): string[]
+  load(id: ID, ctx?: any): Promise<T | null>
 }
 
 export interface DiffParameter {
-  resource: ResourceService;
-  showMessage: (msg: string, option?: string) => void;
-  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
-  loading?: LoadingService;
+  resource: ResourceService
+  showMessage: (msg: string, option?: string) => void
+  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void
+  loading?: LoadingService
   // status?: DiffStatusConfig;
 }
 export interface BaseDiffState {
-  disabled: boolean;
+  disabled: boolean
 }
 export interface DiffModel<T, ID> {
-  id?: ID;
-  origin?: T;
-  value: T;
+  id?: ID
+  origin?: T
+  value: T
 }
 export interface DiffModel<T, ID> {
-  id?: ID;
-  origin?: T;
-  value: T;
+  id?: ID
+  origin?: T
+  value: T
 }
 export interface ApprService<ID> {
-  approve(id: ID, ctx?: any): Promise<number | string>;
-  reject(id: ID, ctx?: any): Promise<number | string>;
+  approve(id: ID, ctx?: any): Promise<number | string>
+  reject(id: ID, ctx?: any): Promise<number | string>
 }
 export interface DiffService<T, ID> {
-  keys(): string[];
-  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>>;
+  keys(): string[]
+  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>>
 }
-export interface DiffApprService<T, ID> extends DiffService<T, ID>, ApprService<ID> {
-}
+export interface DiffApprService<T, ID> extends DiffService<T, ID>, ApprService<ID> {}
 export interface DiffState<T> {
-  origin: T;
-  value: T;
-  disabled: boolean;
+  origin: T
+  value: T
+  disabled: boolean
 }
 
 export function getCurrencyCode(form?: HTMLFormElement | null): string | undefined {
   if (form) {
-    const x = form.getAttribute('currency-code');
+    const x = form.getAttribute("currency-code")
     if (x) {
-      return x;
+      return x
     }
   }
-  return undefined;
+  return undefined
 }
 export function removePhoneFormat(phone: string): string {
   if (phone) {
-    return phone.replace(resources.phone, '');
+    return phone.replace(resources.phone, "")
   } else {
-    return phone;
+    return phone
   }
 }
 export interface StringMap {
-  [key: string]: string;
+  [key: string]: string
 }
 export interface ResourceService {
-  resource(): StringMap;
-  value(key: string, param?: any): string;
-  format(f: string, ...args: any[]): string;
+  resource(): StringMap
+  value(key: string, param?: any): string
+  format(f: string, ...args: any[]): string
 }
 export interface Message {
-  message: string;
-  title: string;
-  yes?: string;
-  no?: string;
+  message: string
+  title: string
+  yes?: string
+  no?: string
 }
 export function getString(key: string, gv: StringMap | ((key: string) => string)): string {
-  if (typeof gv === 'function') {
-    return gv(key);
+  if (typeof gv === "function") {
+    return gv(key)
   } else {
-    return gv[key];
+    return gv[key]
   }
 }
 export function message(gv: StringMap | ((key: string) => string), msg: string, title?: string, yes?: string, no?: string): Message {
-  const m2 = (msg && msg.length > 0 ? getString(msg, gv) : '');
-  const m: Message = { message: m2, title: '' };
+  const m2 = msg && msg.length > 0 ? getString(msg, gv) : ""
+  const m: Message = { message: m2, title: "" }
   if (title && title.length > 0) {
-    m.title = getString(title, gv);
+    m.title = getString(title, gv)
   }
   if (yes && yes.length > 0) {
-    m.yes = getString(yes, gv);
+    m.yes = getString(yes, gv)
   }
   if (no && no.length > 0) {
-    m.no = getString(no, gv);
+    m.no = getString(no, gv)
   }
-  return m;
+  return m
 }
 export function messageByHttpStatus(status: number, gv: StringMap | ((key: string) => string)): string {
-  const k = 'error_' + status;
-  let msg = getString(k, gv);
+  const k = "error_" + status
+  let msg = getString(k, gv)
   if (!msg || msg.length === 0) {
-    msg = getString('error_500', gv);
+    msg = getString("error_500", gv)
   }
-  return msg;
+  return msg
 }
 
 export interface Locale {
-  id?: string;
-  countryCode: string;
-  dateFormat: string;
-  firstDayOfWeek: number;
-  decimalSeparator: string;
-  groupSeparator: string;
-  decimalDigits: number;
-  currencyCode: string;
-  currencySymbol: string;
-  currencyPattern: number;
-  currencySample?: string;
+  id?: string
+  countryCode: string
+  dateFormat: string
+  firstDayOfWeek: number
+  decimalSeparator: string
+  groupSeparator: string
+  decimalDigits: number
+  currencyCode: string
+  currencySymbol: string
+  currencyPattern: number
+  currencySample?: string
 }
 export interface LoadingService {
-  showLoading(firstTime?: boolean): void;
-  hideLoading(): void;
+  showLoading(firstTime?: boolean): void
+  hideLoading(): void
 }
 export interface ErrorMessage {
-  field: string;
-  code: string;
-  param?: string | number | Date;
-  message?: string;
+  field: string
+  code: string
+  param?: string | number | Date
+  message?: string
 }
 export interface UIService {
-  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string | number | boolean | null | undefined;
+  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string | number | boolean | null | undefined
   // decodeFromForm(form: HTMLFormElement, locale?: Locale, currencyCode?: string | null): any;
 
-  validateForm(form?: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean): boolean;
-  removeFormError(form: HTMLFormElement): void;
-  removeError(el: HTMLInputElement): void;
-  showFormError(form?: HTMLFormElement, errors?: ErrorMessage[], focusFirst?: boolean): ErrorMessage[];
-  buildErrorMessage(errors: ErrorMessage[]): string;
+  validateForm(form?: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean): boolean
+  removeFormError(form: HTMLFormElement): void
+  removeError(el: HTMLInputElement): void
+  showFormError(form?: HTMLFormElement, errors?: ErrorMessage[], focusFirst?: boolean): ErrorMessage[]
+  buildErrorMessage(errors: ErrorMessage[]): string
 
-  registerEvents?(form: HTMLFormElement): void;
+  registerEvents?(form: HTMLFormElement): void
 }
 
-export type DataType = 'ObjectId' | 'date' | 'datetime' | 'time'
-  | 'boolean' | 'number' | 'integer' | 'string' | 'text'
-  | 'object' | 'array' | 'binary'
-  | 'primitives' | 'booleans' | 'numbers' | 'integers' | 'strings' | 'dates' | 'datetimes' | 'times';
+export type DataType =
+  | "ObjectId"
+  | "date"
+  | "datetime"
+  | "time"
+  | "boolean"
+  | "number"
+  | "integer"
+  | "string"
+  | "text"
+  | "object"
+  | "array"
+  | "binary"
+  | "primitives"
+  | "booleans"
+  | "numbers"
+  | "integers"
+  | "strings"
+  | "dates"
+  | "datetimes"
+  | "times"
 /*
 export interface Metadata {
   name?: string;
@@ -268,72 +284,72 @@ export interface Metadata {
 }
 */
 export interface Attribute {
-  name?: string;
-  type?: DataType;
-  key?: boolean;
-  version?: boolean;
-  typeof?: Attributes;
+  name?: string
+  type?: DataType
+  key?: boolean
+  version?: boolean
+  typeof?: Attributes
 }
 export interface Attributes {
-  [key: string]: Attribute;
+  [key: string]: Attribute
 }
 
 export function buildKeys(attributes: Attributes): string[] {
   if (!attributes) {
-    return [];
+    return []
   }
-  const ks = Object.keys(attributes);
-  const ps = [];
+  const ks = Object.keys(attributes)
+  const ps = []
   for (const k of ks) {
-    const attr: Attribute = attributes[k];
+    const attr: Attribute = attributes[k]
     if (attr.key === true) {
-      ps.push(k);
+      ps.push(k)
     }
   }
-  return ps;
+  return ps
 }
 type Readonly<T> = {
-  readonly [P in keyof T]: T[P];
-};
+  readonly [P in keyof T]: T[P]
+}
 export function buildId<ID>(p: Readonly<Params<string>>, keys?: string[]): ID | null {
   if (!keys || keys.length === 0 || keys.length === 1) {
     if (keys && keys.length === 1) {
       if (p[keys[0]]) {
-        return p[keys[0]] as any;
+        return p[keys[0]] as any
       }
     }
-    return p['id'] as any;
+    return p["id"] as any
   }
-  const id: any = {};
+  const id: any = {}
   for (const key of keys) {
-    let v = p[key];
+    let v = p[key]
     if (!v) {
-      v = p[key];
+      v = p[key]
       if (!v) {
-        return null;
+        return null
       }
     }
-    id[key] = v;
+    id[key] = v
   }
-  return id;
+  return id
 }
 export const datetimeToString = (inputDate: Date) => {
-  const date = new Date(inputDate);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-};
+  const date = new Date(inputDate)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  const hours = String(date.getHours()).padStart(2, "0")
+  const minutes = String(date.getMinutes()).padStart(2, "0")
+  const seconds = String(date.getSeconds()).padStart(2, "0")
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+}
 
 export const dateToString = (inputDate: Date) => {
-  const year = inputDate.getFullYear();
-  const month = String(inputDate.getMonth() + 1).padStart(2, '0');
-  const day = String(inputDate.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+  const year = inputDate.getFullYear()
+  const month = String(inputDate.getMonth() + 1).padStart(2, "0")
+  const day = String(inputDate.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
 /*
 export function formatFax(value: string) {
   return formatter.formatFax(value);
@@ -394,111 +410,114 @@ export function initForm(form?: HTMLFormElement, initMat?: (f: HTMLFormElement) 
   if (form) {
     setTimeout(() => {
       if (initMat) {
-        initMat(form);
+        initMat(form)
       }
-      focusFirstElement(form);
-    }, 100);
+      focusFirstElement(form)
+    }, 100)
   }
-  return form;
+  return form
 }
 export function error(err: any, gv: StringMap | ((key: string) => string), ae: (msg: string, callback?: () => void, header?: string) => void) {
-  const title = getString('error', gv);
-  let msg = getString('error_internal', gv);
+  const title = getString("error", gv)
+  let msg = getString("error_internal", gv)
   if (!err) {
-    ae(msg, undefined, title);
-    return;
+    ae(msg, undefined, title)
+    return
   }
-  const data = err && err.response ? err.response : err;
+  const data = err && err.response ? err.response : err
   if (data) {
-    const status = data.status;
+    const status = data.status
     if (status && !isNaN(status)) {
-      msg = messageByHttpStatus(status, gv);
+      msg = messageByHttpStatus(status, gv)
     }
-    ae(msg, undefined, title);
+    ae(msg, undefined, title)
   } else {
-    ae(msg, undefined, title);
+    ae(msg, undefined, title)
   }
 }
 export function getName(d: string, n?: string): string {
-  return (n && n.length > 0 ? n : d);
+  return n && n.length > 0 ? n : d
 }
 export function getModelName(form?: HTMLFormElement | null, name?: string): string {
   if (form) {
-    const a = form.getAttribute('model-name');
+    const a = form.getAttribute("model-name")
     if (a && a.length > 0) {
-      return a;
+      return a
     }
-    const b = form.name;
+    const b = form.name
     if (b) {
-      if (b.endsWith('Form')) {
-        return b.substr(0, b.length - 4);
+      if (b.endsWith("Form")) {
+        return b.substr(0, b.length - 4)
       }
-      return b;
+      return b
     }
   }
   if (name && name.length > 0) {
-    return name;
+    return name
   }
-  return '';
+  return ""
 }
 
 export const scrollToFocus = (e: any, isUseTimeOut?: boolean) => {
   try {
-    const element = e.target as HTMLInputElement;
-    const form = element.form;
+    const element = e.target as HTMLInputElement
+    const form = element.form
     if (form) {
-      const container = form.childNodes[1] as HTMLElement;
-      const elementRect = element.getBoundingClientRect();
-      const absoluteElementTop = elementRect.top + window.pageYOffset;
-      const middle = absoluteElementTop - (window.innerHeight / 2);
-      const scrollTop = container.scrollTop;
-      const timeOut = isUseTimeOut ? 300 : 0;
-      const isChrome = navigator.userAgent.search('Chrome') > 0;
+      const container = form.childNodes[1] as HTMLElement
+      const elementRect = element.getBoundingClientRect()
+      const absoluteElementTop = elementRect.top + window.pageYOffset
+      const middle = absoluteElementTop - window.innerHeight / 2
+      const scrollTop = container.scrollTop
+      const timeOut = isUseTimeOut ? 300 : 0
+      const isChrome = navigator.userAgent.search("Chrome") > 0
       setTimeout(() => {
         if (isChrome) {
-          const scrollPosition = scrollTop === 0 ? (elementRect.top + 64) : (scrollTop + middle);
-          container.scrollTo(0, Math.abs(scrollPosition));
+          const scrollPosition = scrollTop === 0 ? elementRect.top + 64 : scrollTop + middle
+          container.scrollTo(0, Math.abs(scrollPosition))
         } else {
-          container.scrollTo(0, Math.abs(scrollTop + middle));
+          container.scrollTo(0, Math.abs(scrollTop + middle))
         }
-      }, timeOut);
+      }, timeOut)
     }
   } catch (e) {
-    console.log(e);
+    console.log(e)
   }
-};
+}
 export interface LoadingParameter {
-  loading?: LoadingService;
+  loading?: LoadingService
 }
 export function showLoading(s?: LoadingService): void {
   if (s) {
-    s.showLoading();
+    s.showLoading()
   }
 }
 export function hideLoading(s?: LoadingService): void {
   if (s) {
-    s.hideLoading();
+    s.hideLoading()
   }
 }
 export interface UIParameter {
-  ui?: UIService;
+  ui?: UIService
 }
 export function getRemoveError(u?: UIParameter, rmErr?: (el: HTMLInputElement) => void): ((el: HTMLInputElement) => void) | undefined {
   if (rmErr) {
-    return rmErr;
+    return rmErr
   }
-  return (u && u.ui ? u.ui.removeError : undefined);
+  return u && u.ui ? u.ui.removeError : undefined
 }
 export function removeFormError(u?: UIParameter, f?: HTMLFormElement): void {
   if (f && u && u.ui) {
-    u.ui.removeFormError(f);
+    u.ui.removeFormError(f)
   }
 }
-export function getValidateForm(u?: UIParameter, vf?: (form: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean) => boolean): ((form: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean) => boolean) | undefined {
+export function getValidateForm(
+  u?: UIParameter,
+  vf?: (form: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean) => boolean,
+): ((form: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean) => boolean) | undefined {
   if (vf) {
-    return vf;
+    return vf
   }
-  return (u && u.ui ? u.ui.validateForm : undefined);
+  return u && u.ui ? u.ui.validateForm : undefined
 }
 /*
 export function getDecodeFromForm(u?: UIParameter, d?: (form: HTMLFormElement, locale?: Locale, currencyCode?: string) => any): ((form: HTMLFormElement, locale?: Locale, currencyCode?: string) => any) | undefined {

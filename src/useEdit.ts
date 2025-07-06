@@ -1,524 +1,578 @@
-import {useEffect, useState} from 'react';
-import {useNavigate, useParams} from 'react-router';
-import {Attributes, buildId, ErrorMessage, getModelName as getModelName2, hideLoading, initForm, LoadingService, Locale, message, messageByHttpStatus, ResourceService, showLoading, UIService} from './core';
-import {build, createModel as createModel2, EditParameter, GenericService, handleVersion} from './edit';
-import {focusFirstError, setReadOnly} from './formutil';
-import {DispatchWithCallback, useMergeState} from './merge';
-import {clone, makeDiff} from './reflect';
-import {localeOf} from './state';
-import {useUpdate} from './update';
+import { useEffect, useState } from "react"
+import { useNavigate, useParams } from "react-router"
+import {
+  Attributes,
+  buildId,
+  ErrorMessage,
+  getModelName as getModelName2,
+  hideLoading,
+  initForm,
+  LoadingService,
+  Locale,
+  message,
+  messageByHttpStatus,
+  ResourceService,
+  showLoading,
+  UIService,
+} from "./core"
+import { build, createModel as createModel2, EditParameter, GenericService, handleVersion } from "./edit"
+import { focusFirstError, setReadOnly } from "./formutil"
+import { DispatchWithCallback, useMergeState } from "./merge"
+import { clone, makeDiff } from "./reflect"
+import { localeOf } from "./state"
+import { useUpdate } from "./update"
 
 export interface BaseEditComponentParam<T, ID> {
   // status?: EditStatusConfig;
-  backOnSuccess?: boolean;
-  name?: string;
-  metadata?: Attributes;
-  keys?: string[];
-  version?: string;
-  setBack?: boolean;
-  patchable?: boolean;
+  backOnSuccess?: boolean
+  name?: string
+  metadata?: Attributes
+  keys?: string[]
+  version?: string
+  setBack?: boolean
+  patchable?: boolean
 
   // addable?: boolean;
-  readOnly?: boolean;
+  readOnly?: boolean
   // deletable?: boolean;
 
-  createSuccessMsg?: string;
-  updateSuccessMsg?: string;
+  createSuccessMsg?: string
+  updateSuccessMsg?: string
 
-  handleNotFound?: (form?: HTMLFormElement) => void;
-  getModelName?: (f?: HTMLFormElement) => string;
-  getModel?: () => T;
-  showModel?: (m: T) => void;
-  createModel?: () => T;
-  onSave?: (isBack?: boolean) => void;
-  validate?: (obj: T, callback: (obj2?: T) => void) => void;
-  succeed?: (msg: string, origin: T, version?: string, isBack?: boolean, model?: T) => void;
-  fail?: (result: ErrorMessage[]) => void;
-  postSave?: (res: number|T|ErrorMessage[], origin: T, version?: string, isPatch?: boolean, backOnSave?: boolean) => void;
-  handleError?: (error: any) => void;
-  handleDuplicateKey?: (result?: T) => void;
-  load?: (i: ID|null, callback?: (m: T, showM: (m2: T) => void) => void) => void;
-  doSave?: (obj: T, diff?: T, version?: string, isBack?: boolean) => void;
+  handleNotFound?: (form?: HTMLFormElement) => void
+  getModelName?: (f?: HTMLFormElement) => string
+  getModel?: () => T
+  showModel?: (m: T) => void
+  createModel?: () => T
+  onSave?: (isBack?: boolean) => void
+  validate?: (obj: T, callback: (obj2?: T) => void) => void
+  succeed?: (msg: string, origin: T, version?: string, isBack?: boolean, model?: T) => void
+  fail?: (result: ErrorMessage[]) => void
+  postSave?: (res: number | T | ErrorMessage[], origin: T, version?: string, isPatch?: boolean, backOnSave?: boolean) => void
+  handleError?: (error: any) => void
+  handleDuplicateKey?: (result?: T) => void
+  load?: (i: ID | null, callback?: (m: T, showM: (m2: T) => void) => void) => void
+  doSave?: (obj: T, diff?: T, version?: string, isBack?: boolean) => void
   // prepareCustomData?: (data: any) => void; // need to review
 }
 export interface HookBaseEditParameter<T, ID, S> extends BaseEditComponentParam<T, ID> {
-  refForm: any;
-  initialState: S;
-  service: GenericService<T, ID, number|T|ErrorMessage[]>;
-  resource: ResourceService;
-  showMessage: (msg: string) => void;
-  showError: (m: string, callback?: () => void, header?: string) => void;
-  getLocale?: () => Locale;
-  confirm: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void;
-  ui?: UIService;
-  loading?: LoadingService;
+  refForm: any
+  initialState: S
+  service: GenericService<T, ID, number | T | ErrorMessage[]>
+  resource: ResourceService
+  showMessage: (msg: string) => void
+  showError: (m: string, callback?: () => void, header?: string) => void
+  getLocale?: () => Locale
+  confirm: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void
+  ui?: UIService
+  loading?: LoadingService
 }
 export interface EditComponentParam<T, ID, S> extends BaseEditComponentParam<T, ID> {
-  initialize?: (id: ID|null, ld: (i: ID|null, cb?: (m: T, showF: (model: T) => void) => void) => void, setState2: DispatchWithCallback<Partial<S>>, callback?: (m: T, showF: (model: T) => void) => void) => void;
-  callback?: (m: T, showF: (model: T) => void) => void;
+  initialize?: (
+    id: ID | null,
+    ld: (i: ID | null, cb?: (m: T, showF: (model: T) => void) => void) => void,
+    setState2: DispatchWithCallback<Partial<S>>,
+    callback?: (m: T, showF: (model: T) => void) => void,
+  ) => void
+  callback?: (m: T, showF: (model: T) => void) => void
 }
 export interface HookPropsEditParameter<T, ID, S, P> extends HookPropsBaseEditParameter<T, ID, S, P> {
-  initialize?: (id: ID|null, ld: (i: ID|null, cb?: (m: T, showF: (model: T) => void) => void) => void, setState2: DispatchWithCallback<Partial<S>>, callback?: (m: T, showF: (model: T) => void) => void) => void;
-  callback?: (m: T, showF: (model: T) => void) => void;
+  initialize?: (
+    id: ID | null,
+    ld: (i: ID | null, cb?: (m: T, showF: (model: T) => void) => void) => void,
+    setState2: DispatchWithCallback<Partial<S>>,
+    callback?: (m: T, showF: (model: T) => void) => void,
+  ) => void
+  callback?: (m: T, showF: (model: T) => void) => void
 }
 export interface HookPropsBaseEditParameter<T, ID, S, P> extends HookBaseEditParameter<T, ID, S> {
-  props: P;
+  props: P
   // prepareCustomData?: (data: any) => void;
 }
 export const useEdit = <T, ID, S>(
   refForm: any,
   initialState: S,
-  service: GenericService<T, ID, number|T|ErrorMessage[]>,
+  service: GenericService<T, ID, number | T | ErrorMessage[]>,
 
   p2: EditParameter,
-  p?: EditComponentParam<T, ID, S>
-  ) => {
-  const params = useParams();
-  const baseProps = useCoreEdit(refForm, initialState, service, p2, p);
+  p?: EditComponentParam<T, ID, S>,
+) => {
+  const params = useParams()
+  const baseProps = useCoreEdit(refForm, initialState, service, p2, p)
   useEffect(() => {
     if (refForm) {
-      const registerEvents = (p2.ui ? p2.ui.registerEvents : undefined);
-      initForm(baseProps.refForm.current, registerEvents);
+      const registerEvents = p2.ui ? p2.ui.registerEvents : undefined
+      initForm(baseProps.refForm.current, registerEvents)
     }
-    const n = baseProps.getModelName(refForm.current);
-    const obj: any = {};
-    obj[n] = baseProps.createModel();
-    baseProps.setState(obj);
-    let keys: string[]|undefined;
+    const n = baseProps.getModelName(refForm.current)
+    const obj: any = {}
+    obj[n] = baseProps.createModel()
+    baseProps.setState(obj)
+    let keys: string[] | undefined
     if (p && !p.keys && service && service.metadata) {
-      const metadata = (p.metadata ? p.metadata : service.metadata());
+      const metadata = p.metadata ? p.metadata : service.metadata()
       if (metadata) {
-        const meta = build(metadata);
-        keys = (p.keys ? p.keys : (meta ? meta.keys : undefined));
-        const version = (p.version ? p.version : (meta ? meta.version : undefined));
-        p.keys = keys;
-        p.version = version;
+        const meta = build(metadata)
+        keys = p.keys ? p.keys : meta ? meta.keys : undefined
+        const version = p.version ? p.version : meta ? meta.version : undefined
+        p.keys = keys
+        p.version = version
       }
     }
-    const id = buildId<ID>(params, keys);
+    const id = buildId<ID>(params, keys)
     if (p && p.initialize) {
-      p.initialize(id, baseProps.load, baseProps.setState, p.callback);
+      p.initialize(id, baseProps.load, baseProps.setState, p.callback)
     } else {
       try {
-        baseProps.load(id, p ? p.callback : undefined);
+        baseProps.load(id, p ? p.callback : undefined)
       } catch (error) {
-        p2.showError(error as string);
-        hideLoading(p2.loading);
+        p2.showError(error as string)
+        hideLoading(p2.loading)
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return {...baseProps};
-};
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  return { ...baseProps }
+}
 export const useEditProps = <T, ID, S, P>(
   props: P,
   refForm: any,
   initialState: S,
-  service: GenericService<T, ID, number|T|ErrorMessage[]>,
+  service: GenericService<T, ID, number | T | ErrorMessage[]>,
   p2: EditParameter,
-  p?: EditComponentParam<T, ID, S>
-  ) => {
-  const params = useParams();
-  const baseProps = useCoreEdit<T, ID, S, P>(refForm, initialState, service, p2, p, props);
+  p?: EditComponentParam<T, ID, S>,
+) => {
+  const params = useParams()
+  const baseProps = useCoreEdit<T, ID, S, P>(refForm, initialState, service, p2, p, props)
   useEffect(() => {
     if (refForm) {
-      const registerEvents = (p2.ui ? p2.ui.registerEvents : undefined);
-      initForm(baseProps.refForm.current, registerEvents);
+      const registerEvents = p2.ui ? p2.ui.registerEvents : undefined
+      initForm(baseProps.refForm.current, registerEvents)
     }
-    const n = baseProps.getModelName(refForm.current);
-    const obj: any = {};
-    obj[n] = baseProps.createModel();
-    baseProps.setState(obj);
-    let keys: string[]|undefined;
+    const n = baseProps.getModelName(refForm.current)
+    const obj: any = {}
+    obj[n] = baseProps.createModel()
+    baseProps.setState(obj)
+    let keys: string[] | undefined
     if (p && !p.keys && service && service.metadata) {
-      const metadata = (p.metadata ? p.metadata : service.metadata());
+      const metadata = p.metadata ? p.metadata : service.metadata()
       if (metadata) {
-        const meta = build(metadata);
-        keys = (p.keys ? p.keys : (meta ? meta.keys : undefined));
-        const version = (p.version ? p.version : (meta ? meta.version : undefined));
-        p.keys = keys;
-        p.version = version;
+        const meta = build(metadata)
+        keys = p.keys ? p.keys : meta ? meta.keys : undefined
+        const version = p.version ? p.version : meta ? meta.version : undefined
+        p.keys = keys
+        p.version = version
       }
     }
-    const id = buildId<ID>(params, keys);
+    const id = buildId<ID>(params, keys)
     if (p && p.initialize) {
-      p.initialize(id, baseProps.load, baseProps.setState, p.callback);
+      p.initialize(id, baseProps.load, baseProps.setState, p.callback)
     } else {
-      baseProps.load(id, p ? p.callback : undefined);
+      baseProps.load(id, p ? p.callback : undefined)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return {...baseProps};
-};
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  return { ...baseProps }
+}
 export const useEditOneProps = <T, ID, S, P>(p: HookPropsEditParameter<T, ID, S, P>) => {
-  return useEditProps(p.props, p.refForm, p.initialState, p.service, p, p);
-};
+  return useEditProps(p.props, p.refForm, p.initialState, p.service, p, p)
+}
 export const useEditOne = <T, ID, S>(p: HookBaseEditParameter<T, ID, S>) => {
-  return useEdit(p.refForm, p.initialState, p.service, p, p);
-};
+  return useEdit(p.refForm, p.initialState, p.service, p, p)
+}
 export const useCoreEdit = <T, ID, S, P>(
   refForm: any,
   initialState: S,
-  service: GenericService<T, ID, number|T|ErrorMessage[]>,
+  service: GenericService<T, ID, number | T | ErrorMessage[]>,
   p1: EditParameter,
   p?: BaseEditComponentParam<T, ID>,
-  props?: P
-  ) => {
-    /*
+  props?: P,
+) => {
+  /*
   const {
     backOnSuccess = true,
     patchable = true,
     addable = true
   } = p; */
-  const navigate = useNavigate();
+  const navigate = useNavigate()
   // const addable = (p && p.patchable !== false ? true : undefined);
 
-  const [running, setRunning] = useState<boolean>();
+  const [running, setRunning] = useState<boolean>()
 
-  const getModelName = (f?: HTMLFormElement|null): string => {
+  const getModelName = (f?: HTMLFormElement | null): string => {
     if (p && p.name && p.name.length > 0) {
-      return p.name;
+      return p.name
     }
-    return getModelName2(f);
-  };
-  const baseProps = useUpdate<S>(initialState, getModelName, p1.getLocale);
+    return getModelName2(f)
+  }
+  const baseProps = useUpdate<S>(initialState, getModelName, p1.getLocale)
 
-  const { state, setState } = baseProps;
+  const { state, setState } = baseProps
   const [flag, setFlag] = useMergeState({
     newMode: false,
     setBack: false,
     // addable,
     readOnly: p ? p.readOnly : undefined,
-    originalModel: undefined
-  });
+    originalModel: undefined,
+  })
 
   const showModel = (model: T) => {
-    const n = getModelName(refForm.current);
-    const objSet: any = {};
-    objSet[n] = model;
-    setState(objSet);
+    const n = getModelName(refForm.current)
+    const objSet: any = {}
+    objSet[n] = model
+    setState(objSet)
     if (p && p.readOnly) {
-      const f = refForm.current;
-      setReadOnly(f);
+      const f = refForm.current
+      setReadOnly(f)
     }
-  };
+  }
 
   const resetState = (newMode: boolean, model: T, originalModel?: T) => {
-    setFlag({ newMode, originalModel } as any);
-    showModel(model);
-  };
+    setFlag({ newMode, originalModel } as any)
+    showModel(model)
+  }
 
   const _handleNotFound = (form?: any): void => {
-    const msg = message(p1.resource.value, 'error_404', 'error');
+    const msg = message(p1.resource.value, "error_404", "error")
     if (form) {
-      setReadOnly(form);
+      setReadOnly(form)
     }
-    p1.showError(msg.message, () => window.history.back, msg.title);
-  };
-  const handleNotFound = (p && p.handleNotFound ? p.handleNotFound : _handleNotFound);
+    p1.showError(msg.message, () => window.history.back, msg.title)
+  }
+  const handleNotFound = p && p.handleNotFound ? p.handleNotFound : _handleNotFound
 
   const _getModel = () => {
-    const n = getModelName(refForm.current);
+    const n = getModelName(refForm.current)
     if (props) {
-      return (props as any)[n] || (state as any)[n];
+      return (props as any)[n] || (state as any)[n]
     } else {
-      return (state as any)[n];
+      return (state as any)[n]
     }
-  };
-  const getModel = (p && p.getModel ? p.getModel : _getModel);
+  }
+  const getModel = p && p.getModel ? p.getModel : _getModel
 
   const back = (event?: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     if (event) {
-      event.preventDefault();
+      event.preventDefault()
     }
     if (flag.newMode === true) {
-      navigate(-1);
+      navigate(-1)
     } else {
-      const obj = getModel();
-      const diffObj = makeDiff(flag.originalModel, obj);
-      const objKeys = Object.keys(diffObj);
+      const obj = getModel()
+      const diffObj = makeDiff(flag.originalModel, obj)
+      const objKeys = Object.keys(diffObj)
       if (objKeys.length === 0) {
-        navigate(-1);
+        navigate(-1)
       } else {
-        const msg = message(p1.resource.value, 'msg_confirm_back', 'confirm', 'yes', 'no');
-        p1.confirm(msg.message, () => {
-          navigate(-1);
-        }, msg.title, msg.no, msg.yes);
+        const msg = message(p1.resource.value, "msg_confirm_back", "confirm", "yes", "no")
+        p1.confirm(
+          msg.message,
+          () => {
+            navigate(-1)
+          },
+          msg.title,
+          msg.no,
+          msg.yes,
+        )
       }
     }
-  };
+  }
   const _createModel = (): T => {
-    const metadata = (p && p.metadata ? p.metadata : (service.metadata ? service.metadata() : undefined));
+    const metadata = p && p.metadata ? p.metadata : service.metadata ? service.metadata() : undefined
     if (metadata) {
-      const obj = createModel2<T>(metadata);
-      return obj;
+      const obj = createModel2<T>(metadata)
+      return obj
     } else {
-      const obj: any = {};
-      return obj;
+      const obj: any = {}
+      return obj
     }
-  };
-  const createModel = (p && p.createModel ? p.createModel : _createModel);
+  }
+  const createModel = p && p.createModel ? p.createModel : _createModel
 
   const create = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-    event.preventDefault();
-    const obj = createModel();
-    resetState(true, obj, undefined);
-    const u = p1.ui;
+    event.preventDefault()
+    const obj = createModel()
+    resetState(true, obj, undefined)
+    const u = p1.ui
     if (u) {
       setTimeout(() => {
-        u.removeFormError(refForm.current);
-      }, 100);
+        u.removeFormError(refForm.current)
+      }, 100)
     }
-  };
+  }
 
   const _onSave = (isBack?: boolean) => {
     if (p && p.readOnly) {
       if (flag.newMode === true) {
-        const m = message(p1.resource.value, 'error_permission_add', 'error_permission');
-        p1.showError(m.message, undefined, m.title);
+        const m = message(p1.resource.value, "error_permission_add", "error_permission")
+        p1.showError(m.message, undefined, m.title)
       } else {
-        const msg = message(p1.resource.value, 'error_permission_edit', 'error_permission');
-        p1.showError(msg.message, undefined, msg.title);
+        const msg = message(p1.resource.value, "error_permission_edit", "error_permission")
+        p1.showError(msg.message, undefined, msg.title)
       }
     } else {
-if (running === true) {
-        return;
+      if (running === true) {
+        return
       }
-      const obj = getModel();
-      const metadata = (p && p.metadata ? p.metadata : (service.metadata ? service.metadata() : undefined));
-      let keys: string[]|undefined;
-      let version: string|undefined;
+      const obj = getModel()
+      const metadata = p && p.metadata ? p.metadata : service.metadata ? service.metadata() : undefined
+      let keys: string[] | undefined
+      let version: string | undefined
       if (p && metadata && (!p.keys || !p.version)) {
-        const meta = build(metadata);
-        keys = (p.keys ? p.keys : (meta ? meta.keys : undefined));
-        version = (p.version ? p.version : (meta ? meta.version : undefined));
+        const meta = build(metadata)
+        keys = p.keys ? p.keys : meta ? meta.keys : undefined
+        version = p.version ? p.version : meta ? meta.version : undefined
       }
       if (flag.newMode) {
         validate(obj, () => {
-          const msg = message(p1.resource.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
-          p1.confirm(msg.message, () => {
-            doSave(obj, undefined, version, isBack);
-          },  msg.title, msg.no, msg.yes);
-        });
+          const msg = message(p1.resource.value, "msg_confirm_save", "confirm", "yes", "no")
+          p1.confirm(
+            msg.message,
+            () => {
+              doSave(obj, undefined, version, isBack)
+            },
+            msg.title,
+            msg.no,
+            msg.yes,
+          )
+        })
       } else {
-        const diffObj = makeDiff(flag.originalModel, obj, keys, version);
-        const objKeys = Object.keys(diffObj);
+        const diffObj = makeDiff(flag.originalModel, obj, keys, version)
+        const objKeys = Object.keys(diffObj)
         if (objKeys.length === 0) {
-          p1.showMessage(p1.resource.value('msg_no_change'));
+          p1.showMessage(p1.resource.value("msg_no_change"))
         } else {
           validate(obj, () => {
-            const msg = message(p1.resource.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
-            p1.confirm(msg.message, () => {
-              doSave(obj, diffObj as any, version, isBack);
-            }, msg.title, msg.no, msg.yes);
-          });
+            const msg = message(p1.resource.value, "msg_confirm_save", "confirm", "yes", "no")
+            p1.confirm(
+              msg.message,
+              () => {
+                doSave(obj, diffObj as any, version, isBack)
+              },
+              msg.title,
+              msg.no,
+              msg.yes,
+            )
+          })
         }
       }
     }
-  };
-  const onSave = (p && p.onSave ? p.onSave : _onSave);
+  }
+  const onSave = p && p.onSave ? p.onSave : _onSave
 
   const save = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-    event.preventDefault();
-    event.persist();
-    onSave();
-  };
+    event.preventDefault()
+    event.persist()
+    onSave()
+  }
 
   const _validate = (obj: T, callback: (obj2?: T) => void) => {
     if (p1.ui) {
-      const valid = p1.ui.validateForm(refForm.current, localeOf(undefined, p1.getLocale));
+      const valid = p1.ui.validateForm(refForm.current, localeOf(undefined, p1.getLocale))
       if (valid) {
-        callback(obj);
+        callback(obj)
       }
     } else {
-      callback(obj);
+      callback(obj)
     }
-  };
-  const validate = (p && p.validate ? p.validate : _validate);
+  }
+  const validate = p && p.validate ? p.validate : _validate
 
   const _succeed = (msg: string, origin: T, version?: string, isBack?: boolean, model?: T) => {
     if (model) {
-      setFlag({ newMode: false });
+      setFlag({ newMode: false })
       if (model && flag.setBack === true) {
-        resetState(false, model, clone(model));
+        resetState(false, model, clone(model))
       } else {
-        handleVersion(origin, version);
+        handleVersion(origin, version)
       }
     } else {
-      handleVersion(origin, version);
+      handleVersion(origin, version)
     }
-    p1.showMessage(msg);
+    p1.showMessage(msg)
     if (isBack) {
-      back(undefined);
+      back(undefined)
     }
-  };
-  const succeed = (p && p.succeed ? p.succeed : _succeed);
+  }
+  const succeed = p && p.succeed ? p.succeed : _succeed
 
   const _fail = (result: ErrorMessage[]) => {
-    const f = refForm.current;
-    const u = p1.ui;
+    const f = refForm.current
+    const u = p1.ui
     if (u && f) {
-      const unmappedErrors = u.showFormError(f, result);
-      focusFirstError(f);
+      const unmappedErrors = u.showFormError(f, result)
+      focusFirstError(f)
       if (unmappedErrors && unmappedErrors.length > 0) {
-        const t = p1.resource.value('error');
+        const t = p1.resource.value("error")
         if (p1.ui && p1.ui.buildErrorMessage) {
-          const msg = p1.ui.buildErrorMessage(unmappedErrors);
-          p1.showError(msg, undefined, t);
+          const msg = p1.ui.buildErrorMessage(unmappedErrors)
+          p1.showError(msg, undefined, t)
         } else {
-          p1.showError(unmappedErrors[0].field + ' ' + unmappedErrors[0].code + ' ' + unmappedErrors[0].message, undefined, t);
+          p1.showError(unmappedErrors[0].field + " " + unmappedErrors[0].code + " " + unmappedErrors[0].message, undefined, t)
         }
       }
     } else {
-      const t = p1.resource.value('error');
+      const t = p1.resource.value("error")
       if (result.length > 0) {
-        p1.showError(result[0].field + ' ' + result[0].code + ' ' + result[0].message, undefined, t);
+        p1.showError(result[0].field + " " + result[0].code + " " + result[0].message, undefined, t)
       } else {
-        p1.showError(t, undefined, t);
+        p1.showError(t, undefined, t)
       }
     }
-  };
-  const fail = (p && p.fail ? p.fail : _fail);
+  }
+  const fail = p && p.fail ? p.fail : _fail
 
   const _handleError = function (err: any) {
     if (err) {
-      setRunning(false);
-      hideLoading(p1.loading);
-      const errHeader = p1.resource.value('error');
-      const errMsg = p1.resource.value('error_internal');
-      const data = (err && err.response) ? err.response : err;
+      setRunning(false)
+      hideLoading(p1.loading)
+      const errHeader = p1.resource.value("error")
+      const errMsg = p1.resource.value("error_internal")
+      const data = err && err.response ? err.response : err
       if (data.status === 400) {
-        const errMsg = p1.resource.value('error_400');
-        p1.showError(errMsg, undefined, errHeader);
-      } else{
-        p1.showError(errMsg, undefined, errHeader);
+        const errMsg = p1.resource.value("error_400")
+        p1.showError(errMsg, undefined, errHeader)
+      } else {
+        p1.showError(errMsg, undefined, errHeader)
       }
     }
-  };
-  const handleError = (p && p.handleError ? p.handleError : _handleError);
+  }
+  const handleError = p && p.handleError ? p.handleError : _handleError
 
-  const _postSave = (r: number | T|ErrorMessage[], origin: T, version?: string, isPatch?: boolean, backOnSave?: boolean) => {
-    setRunning(false);
-    hideLoading(p1.loading);
-    const x: any = r;
-    const successMsg = p1.resource.value('msg_save_success');
-    const newMod = flag.newMode;
+  const _postSave = (r: number | T | ErrorMessage[], origin: T, version?: string, isPatch?: boolean, backOnSave?: boolean) => {
+    setRunning(false)
+    hideLoading(p1.loading)
+    const x: any = r
+    const successMsg = p1.resource.value("msg_save_success")
+    const newMod = flag.newMode
     // const st = createEditStatus(p ? p.status : undefined);
     if (Array.isArray(x)) {
-      fail(x);
+      fail(x)
     } else if (!isNaN(x)) {
       if (x > 0) {
-        succeed(successMsg, origin, version, backOnSave);
+        succeed(successMsg, origin, version, backOnSave)
       } else {
         if (newMod && x <= 0) {
-          handleDuplicateKey();
+          handleDuplicateKey()
         } else if (!newMod && x === 0) {
-          handleNotFound();
+          handleNotFound()
         } else {
-          const title = p1.resource.value('error');
-          const err = p1.resource.value('error_version');
-          p1.showError(err, undefined, title);
+          const title = p1.resource.value("error")
+          const err = p1.resource.value("error_version")
+          p1.showError(err, undefined, title)
         }
       }
     } else {
-      const result = r as T;
+      const result = r as T
       if (isPatch) {
-        const keys = Object.keys(result as any);
-        const a: any = origin;
+        const keys = Object.keys(result as any)
+        const a: any = origin
         for (const k of keys) {
-          a[k] = (result as any)[k];
+          a[k] = (result as any)[k]
         }
-        succeed(successMsg, a, undefined, backOnSave, a);
+        succeed(successMsg, a, undefined, backOnSave, a)
       } else {
-        succeed(successMsg, origin, version, backOnSave, r as T);
+        succeed(successMsg, origin, version, backOnSave, r as T)
       }
-      p1.showMessage(successMsg);
+      p1.showMessage(successMsg)
     }
-  };
-  const postSave = (p && p.postSave ? p.postSave : _postSave);
+  }
+  const postSave = p && p.postSave ? p.postSave : _postSave
 
   const _handleDuplicateKey = (result?: T) => {
-    const msg = message(p1.resource.value, 'error_duplicate_key', 'error');
-    p1.showError(msg.message, undefined, msg.title);
-  };
-  const handleDuplicateKey = (p && p.handleDuplicateKey ? p.handleDuplicateKey : _handleDuplicateKey);
+    const msg = message(p1.resource.value, "error_duplicate_key", "error")
+    p1.showError(msg.message, undefined, msg.title)
+  }
+  const handleDuplicateKey = p && p.handleDuplicateKey ? p.handleDuplicateKey : _handleDuplicateKey
 
   const _doSave = (obj: T, body?: Partial<T>, version?: string, isBack?: boolean) => {
-    setRunning(true);
-    showLoading(p1.loading);
-    const isBackO = (isBack != null && isBack !== undefined ? isBack : false);
-    const patchable = (p ? p.patchable : true);
+    setRunning(true)
+    showLoading(p1.loading)
+    const isBackO = isBack != null && isBack !== undefined ? isBack : false
+    const patchable = p ? p.patchable : true
     if (flag.newMode === false) {
       if (service.patch && patchable !== false && body && Object.keys(body).length > 0) {
-        service.patch(body).then((res: number|T|ErrorMessage[]) => {
-          postSave(res, obj, version, true, isBackO);
-        }).catch(handleError);
+        service
+          .patch(body)
+          .then((res: number | T | ErrorMessage[]) => {
+            postSave(res, obj, version, true, isBackO)
+          })
+          .catch(handleError)
       } else {
-        service.update(obj).then((res: number|T|ErrorMessage[]) => postSave(res, obj, version, false, isBackO)).catch(handleError);
+        service
+          .update(obj)
+          .then((res: number | T | ErrorMessage[]) => postSave(res, obj, version, false, isBackO))
+          .catch(handleError)
       }
     } else {
-      service.create(obj).then((res: number|T|ErrorMessage[]) => postSave(res, obj, version, false, isBackO)).catch(handleError);
+      service
+        .create(obj)
+        .then((res: number | T | ErrorMessage[]) => postSave(res, obj, version, false, isBackO))
+        .catch(handleError)
     }
-  };
+  }
 
-  const doSave = (p && p.doSave ? p.doSave : _doSave);
+  const doSave = p && p.doSave ? p.doSave : _doSave
 
-  const _load = (_id: ID|null, callback?: (m: T, showM: (m2: T) => void) => void) => {
-    const id: any = _id;
-    if (id != null && id !== '') {
-      setRunning(true);
-      showLoading(p1.loading);
-      service.load(id).then((obj: T|null) => {
-        if (!obj) {
-          handleNotFound(refForm.current);
-        } else {
-          setFlag({ newMode: false, originalModel: clone(obj) });
-          if (callback) {
-            callback(obj, showModel);
+  const _load = (_id: ID | null, callback?: (m: T, showM: (m2: T) => void) => void) => {
+    const id: any = _id
+    if (id != null && id !== "") {
+      setRunning(true)
+      showLoading(p1.loading)
+      service
+        .load(id)
+        .then((obj: T | null) => {
+          if (!obj) {
+            handleNotFound(refForm.current)
           } else {
-            showModel(obj);
+            setFlag({ newMode: false, originalModel: clone(obj) })
+            if (callback) {
+              callback(obj, showModel)
+            } else {
+              showModel(obj)
+            }
           }
-        }
-        setRunning(false);
-        hideLoading(p1.loading);
-      }).catch((err: any) => {
-        const data = (err &&  err.response) ? err.response : err;
-        const r = p1.resource;
-        const title = r.value('error');
-        let msg = r.value('error_internal');
-        if (data && data.status === 422) {
-          fail(err.response?.data);
-          const obj = err.response?.data?.value;
-          if (obj) {
-            callback ? callback(obj as T, showModel) : showModel(obj as T);
-          }
-        } else {
-          if (data && data.status === 404) {
-            handleNotFound(refForm.current);
+          setRunning(false)
+          hideLoading(p1.loading)
+        })
+        .catch((err: any) => {
+          const data = err && err.response ? err.response : err
+          const r = p1.resource
+          const title = r.value("error")
+          let msg = r.value("error_internal")
+          if (data && data.status === 422) {
+            fail(err.response?.data)
+            const obj = err.response?.data?.value
+            if (obj) {
+              callback ? callback(obj as T, showModel) : showModel(obj as T)
+            }
           } else {
-            if (data.status && !isNaN(data.status)) {
-              msg = messageByHttpStatus(data.status, r.value);
+            if (data && data.status === 404) {
+              handleNotFound(refForm.current)
+            } else {
+              if (data.status && !isNaN(data.status)) {
+                msg = messageByHttpStatus(data.status, r.value)
+              }
+              if (data && (data.status === 401 || data.status === 403)) {
+                setReadOnly(refForm.current)
+              }
+              p1.showError(msg, undefined, title)
             }
-            if (data && (data.status === 401 || data.status === 403)) {
-              setReadOnly(refForm.current);
-            }
-            p1.showError(msg, undefined, title);
-          } 
-        }
-        setRunning(false);
-        hideLoading(p1.loading);
-      });
+          }
+          setRunning(false)
+          hideLoading(p1.loading)
+        })
     } else {
-      const obj = createModel();
-      setFlag({ newMode: true, originalModel: undefined });
+      const obj = createModel()
+      setFlag({ newMode: true, originalModel: undefined })
       if (callback) {
-        callback(obj, showModel);
+        callback(obj, showModel)
       } else {
-        showModel(obj);
+        showModel(obj)
       }
     }
-  };
-  const load = (p && p.load ? p.load : _load);
+  }
+  const load = p && p.load ? p.load : _load
 
   return {
     ...baseProps,
@@ -547,6 +601,6 @@ if (running === true) {
     postSave,
     handleDuplicateKey,
     load,
-    doSave
-  };
-};
+    doSave,
+  }
+}
