@@ -1,11 +1,38 @@
 import { useEffect, useState } from "react"
-import { getModelName as getModelName2, Locale, removePhoneFormat } from "./core"
+import { Locale, resources } from "./core"
 import { useMergeState } from "./merge"
 import { buildFlatState, buildState, handleEvent, localeOf } from "./state"
 
+export function removePhoneFormat(phone: string): string {
+  if (phone) {
+    return phone.replace(resources.phone, "")
+  } else {
+    return phone
+  }
+}
+
+export function getModelName(form?: HTMLFormElement | null, name?: string): string {
+  if (form) {
+    const a = form.getAttribute("model-name")
+    if (a && a.length > 0) {
+      return a
+    }
+    const b = form.name
+    if (b) {
+      if (b.endsWith("Form")) {
+        return b.substring(0, b.length - 4)
+      }
+      return b
+    }
+  }
+  if (name && name.length > 0) {
+    return name
+  }
+  return ""
+}
 const m = "model"
 const _getModelName = (f2?: HTMLFormElement | null): string => {
-  return getModelName2(f2, m)
+  return getModelName(f2, m)
 }
 export const useUpdate = <T>(
   initialState: T,

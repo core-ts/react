@@ -1,6 +1,3 @@
-import { NavigateFunction } from "react-router-dom"
-import { StringMap } from "./core"
-
 export function clone(obj: any): any {
   if (!obj) {
     return obj
@@ -141,22 +138,6 @@ export function makeDiff<T>(o1: T, o2: T, keys?: string[], version?: string): Pa
 export function hasDiff<T>(o1: T, o2: T, keys?: string[], version?: string): boolean {
   const diff = makeDiff(o1, o2, keys, version)
   return !isEmptyObject(diff)
-}
-
-export function goBack<T>(
-  navigate: NavigateFunction,
-  confirm: (msg: string, yesCallback?: () => void) => void,
-  resource: StringMap,
-  o1: T,
-  o2: T,
-  keys?: string[],
-  version?: string,
-) {
-  if (!hasDiff(o1, o2, keys, version)) {
-    navigate(-1)
-  } else {
-    confirm(resource.msg_confirm_back, () => navigate(-1))
-  }
 }
 
 export function notIn(s1: string[], s2: string[]): string[] {

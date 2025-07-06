@@ -1,5 +1,24 @@
 import * as qs from "query-string"
+import { NavigateFunction } from "react-router-dom"
+import { StringMap } from "./core"
+import { hasDiff } from "./reflect"
 import { Filter } from "./search"
+
+export function goBack<T>(
+  navigate: NavigateFunction,
+  confirm: (msg: string, yesCallback?: () => void) => void,
+  resource: StringMap,
+  o1: T,
+  o2: T,
+  keys?: string[],
+  version?: string,
+) {
+  if (!hasDiff(o1, o2, keys, version)) {
+    navigate(-1)
+  } else {
+    confirm(resource.msg_confirm_back, () => navigate(-1))
+  }
+}
 
 export function buildFromUrl<S extends Filter>(modelT?: S): S {
   return buildParameters<S>(window.location.search, modelT)

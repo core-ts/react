@@ -81,23 +81,55 @@ export function getErrorFunc(
   }
   return (p as any).showError
 }
-/*
-export interface EditStatusParameter {
-  status?: EditStatusConfig;
-}
-export function getEditStatusFunc(p: ResourceService|EditStatusParameter, status?: EditStatusConfig): EditStatusConfig {
-  if (status) {
-    return status;
+
+export function showLoading(s?: LoadingService): void {
+  if (s) {
+    s.showLoading()
   }
-  return (p as any).status;
 }
-export interface DiffStatusParameter {
-  status?: DiffStatusConfig;
-}
-export function getDiffStatusFunc(p: ResourceService|DiffStatusParameter, status?: DiffStatusConfig): DiffStatusConfig {
-  if (status) {
-    return status;
+export function hideLoading(s?: LoadingService): void {
+  if (s) {
+    s.hideLoading()
   }
-  return (p as any).status;
 }
-*/
+
+export function initForm(form?: HTMLFormElement, initMat?: (f: HTMLFormElement) => void): HTMLFormElement | undefined {
+  if (form) {
+    setTimeout(() => {
+      if (initMat) {
+        initMat(form)
+      }
+      focusFirstElement(form)
+    }, 100)
+  }
+  return form
+}
+export function focusFirstElement(form: HTMLFormElement): void {
+  let i = 0
+  const len = form.length
+  for (i = 0; i < len; i++) {
+    const ctrl = form[i] as HTMLInputElement
+    if (!(ctrl.readOnly || ctrl.disabled)) {
+      let nodeName = ctrl.nodeName
+      const type = ctrl.getAttribute("type")
+      if (type) {
+        const t = type.toUpperCase()
+        if (t === "BUTTON" || t === "SUBMIT") {
+          ctrl.focus()
+        }
+        if (nodeName === "INPUT") {
+          nodeName = t
+        }
+      }
+      if (nodeName !== "BUTTON" && nodeName !== "RESET" && nodeName !== "SUBMIT" && nodeName !== "CHECKBOX" && nodeName !== "RADIO") {
+        ctrl.focus()
+        /*
+        try {
+          ctrl.setSelectionRange(0, ctrl.value.length)
+        } catch (err) {}
+         */
+        return
+      }
+    }
+  }
+}

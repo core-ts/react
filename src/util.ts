@@ -77,7 +77,7 @@ function getStringCurrency(value: string, datatype: string, locale?: Locale, max
 
   const dotPosition = value.indexOf(".")
   // Format thousands
-  let beforeDot = dotPosition >= 0 ? value.substr(0, dotPosition) : value
+  let beforeDot = dotPosition >= 0 ? value.substring(0, dotPosition) : value
   if (datatype === "string-currency" || isOnBlur) {
     beforeDot = beforeDot.replace(new RegExp("\\B(?=(\\d{" + groupDigits + "})+(?!\\d))", "g"), groupSeparator)
   }
@@ -85,9 +85,9 @@ function getStringCurrency(value: string, datatype: string, locale?: Locale, max
   // Cut after dot
   let afterDot
   if (dotPosition > 0) {
-    afterDot = value.substr(dotPosition + 1)
+    afterDot = value.substring(dotPosition + 1)
     if (afterDot.length > decimalDigits) {
-      afterDot = afterDot.substr(0, decimalDigits)
+      afterDot = afterDot.substring(0, decimalDigits)
     }
   }
   if (maxLength && beforeDot.length > maxLength - (decimalDigits + 1)) {

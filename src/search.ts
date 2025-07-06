@@ -42,7 +42,7 @@ export interface Pagination {
   appendable?: boolean
 }
 
-export interface Searchable extends Pagination, Sortable {}
+interface Searchable extends Pagination, Sortable {}
 
 export function getOffset(limit: number, page?: number, firstLimit?: number): number {
   const p = page && page > 0 ? page : 1
@@ -156,13 +156,6 @@ export function initFilter<S extends Filter>(m: S, com: Searchable): S {
   return m
 }
 
-export function showPaging<T>(com: Pagination, list: T[], pageSize?: number, total?: number): void {
-  com.total = total
-  const pageTotal = getPageTotal(pageSize, total)
-  com.pages = pageTotal
-  com.showPaging = !total || com.pages <= 1 || (list && list.length >= total) ? false : true
-}
-
 export function getFields(form?: HTMLFormElement, arr?: string[]): string[] | undefined {
   if (arr && arr.length > 0) {
     return arr
@@ -202,20 +195,6 @@ export function getFields(form?: HTMLFormElement, arr?: string[]): string[] | un
   return fields.length > 0 ? fields : undefined
 }
 
-export function getPageTotal(pageSize?: number, total?: number): number {
-  if (!pageSize || pageSize <= 0) {
-    return 1
-  } else {
-    if (!total) {
-      total = 0
-    }
-    if (total % pageSize === 0) {
-      return Math.floor(total / pageSize)
-    }
-    return Math.floor(total / pageSize + 1)
-  }
-}
-
 export function formatText(...args: any[]): string {
   let formatted = args[0]
   if (!formatted || formatted === "") {
@@ -234,6 +213,19 @@ export function formatText(...args: any[]): string {
     }
   }
   return formatted
+}
+export function getPageTotal(pageSize?: number, total?: number): number {
+  if (!pageSize || pageSize <= 0) {
+    return 1
+  } else {
+    if (!total) {
+      total = 0
+    }
+    if (total % pageSize === 0) {
+      return Math.floor(total / pageSize)
+    }
+    return Math.floor(total / pageSize + 1)
+  }
 }
 export function buildMessage<T>(resource: StringMap, results: T[], limit: number, page: number | undefined, total?: number): string {
   if (!results || results.length === 0) {
@@ -392,15 +384,6 @@ export function handleToggle(target?: HTMLElement, on?: boolean): boolean {
     }
   }
   return off
-}
-export function handleSortEvent(event: Event, com: Sortable): void {
-  if (event && event.target) {
-    const target = event.target as HTMLElement
-    const s = handleSort(target, com.sortTarget, com.sortField, com.sortType)
-    com.sortField = s.field
-    com.sortType = s.type
-    com.sortTarget = target
-  }
 }
 
 export function getSortElement(target: HTMLElement): HTMLElement {

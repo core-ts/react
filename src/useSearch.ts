@@ -1,20 +1,7 @@
 import { useEffect, useState } from "react"
-import {
-  getName,
-  getRemoveError,
-  getValidateForm,
-  hideLoading,
-  initForm,
-  LoadingService,
-  Locale,
-  pageSizes,
-  removeFormError,
-  resources,
-  ResourceService,
-  showLoading,
-  UIService,
-} from "./core"
+import { LoadingService, Locale, pageSizes, resources, ResourceService, UIService } from "./core"
 import { error } from "./error"
+import { hideLoading, initForm, showLoading } from "./input"
 import { DispatchWithCallback, useMergeState } from "./merge"
 import { clone } from "./reflect"
 import { buildFromUrl } from "./route"
@@ -23,6 +10,7 @@ import {
   buildMessage,
   Filter,
   getFields,
+  getPageTotal,
   handleSort,
   handleToggle,
   initFilter,
@@ -32,13 +20,19 @@ import {
   removeSortStatus,
   SearchResult,
   SearchService,
-  showPaging,
   Sortable,
 } from "./search"
 import { enLocale } from "./state"
 import { useUpdate } from "./update"
 
-export interface Searchable extends Pagination, Sortable {
+export function showPaging<T>(com: Pagination, list: T[], pageSize?: number, total?: number): void {
+  com.total = total
+  const pageTotal = getPageTotal(pageSize, total)
+  com.pages = pageTotal
+  com.showPaging = !total || com.pages <= 1 || (list && list.length >= total) ? false : true
+}
+
+interface Searchable extends Pagination, Sortable {
   nextPageToken?: string
   excluding?: string[] | number[]
 }
@@ -50,6 +44,30 @@ export interface SearchParameter {
   getLocale?: (profile?: string) => Locale
   loading?: LoadingService
   auto?: boolean
+}
+
+export interface UIParameter {
+  ui?: UIService
+}
+export function removeFormError(u?: UIParameter, f?: HTMLFormElement): void {
+  if (f && u && u.ui) {
+    u.ui.removeFormError(f)
+  }
+}
+export function getValidateForm(
+  u?: UIParameter,
+  vf?: (form: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean) => boolean,
+): ((form: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean) => boolean) | undefined {
+  if (vf) {
+    return vf
+  }
+  return u && u.ui ? u.ui.validateForm : undefined
+}
+export function getRemoveError(u?: UIParameter, rmErr?: (el: HTMLInputElement) => void): ((el: HTMLInputElement) => void) | undefined {
+  if (rmErr) {
+    return rmErr
+  }
+  return u && u.ui ? u.ui.removeError : undefined
 }
 
 export function getModel<S extends Filter>(state: any, modelName: string, searchable: Searchable, fields?: string[], excluding?: string[] | number[]): S {
@@ -122,6 +140,7 @@ export function getFieldsFromForm(fields?: string[], initFields?: boolean, form?
   }
   return fields
 }
+
 export function append<T>(list?: T[], results?: T[]): T[] {
   if (list && results) {
     for (const obj of results) {
@@ -424,6 +443,10 @@ export const useSearchOneProps = <T, S extends Filter, ST extends SearchComponen
 }
 export const useSearchOne = <T, S extends Filter, ST extends SearchComponentState<T, S>>(p: HookBaseSearchParameter<T, S, ST>) => {
   return useCoreSearch(p.refForm, p.initialState, p.service, p, p)
+}
+
+export function getName(d: string, n?: string): string {
+  return n && n.length > 0 ? n : d
 }
 export const useCoreSearch = <T, S extends Filter, ST>(
   refForm: any,
