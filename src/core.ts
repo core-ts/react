@@ -1,6 +1,10 @@
 import { Params } from "react-router"
 import { focusFirstElement } from "./formutil"
 
+export interface LoadingService {
+  showLoading(firstTime?: boolean): void
+  hideLoading(): void
+}
 export const pageSizes = [12, 24, 60, 100, 120, 180, 300, 600]
 // tslint:disable-next-line:class-name
 export class resources {
@@ -15,103 +19,6 @@ export class resources {
   static pageMaxSize = 7
 }
 export const size = pageSizes
-export interface ModelMap {
-  [key: string]: any
-}
-export interface PageChange {
-  page: number // currentPage
-  size: number // itemsPerPage
-}
-export interface ModelProps {
-  setGlobalState?: (m: ModelMap) => void
-  shouldBeCustomized?: boolean
-}
-export interface EditPermission {
-  addable?: boolean
-  readOnly?: boolean
-  deletable?: boolean
-}
-export interface SearchPermission {
-  viewable?: boolean
-  addable?: boolean
-  editable?: boolean
-  deletable?: boolean
-  approvable?: boolean
-}
-export interface SearchParameter {
-  resource: ResourceService
-  showMessage: (msg: string, option?: string) => void
-  showError: (m: string, callback?: () => void, h?: string) => void
-  ui?: UIService
-  getLocale?: (profile?: string) => Locale
-  loading?: LoadingService
-  auto?: boolean
-}
-/*
-export interface EditStatusConfig {
-  duplicate_key: number | string;
-  not_found: number | string;
-  success: number | string;
-  version_error: number | string;
-  error?: number | string;
-  data_corrupt?: number | string;
-}
-export function createEditStatus(status?: EditStatusConfig): EditStatusConfig {
-  if (status) {
-    return status;
-  }
-  const s: EditStatusConfig = {
-    duplicate_key: 0,
-    not_found: 0,
-    success: 1,
-    version_error: -1,
-    error: 2,
-    data_corrupt: 4
-  };
-  return s;
-}
-export interface DiffStatusConfig {
-  not_found: number | string;
-  success: number | string;
-  version_error: number | string;
-  error?: number | string;
-}
-export function createDiffStatus(status?: DiffStatusConfig): DiffStatusConfig {
-  if (status) {
-    return status;
-  }
-  const s: DiffStatusConfig = {
-    not_found: 0,
-    success: 1,
-    version_error: 2,
-    error: 4
-  };
-  return s;
-}
-*/
-export interface Filter {
-  q?: string
-  page?: number
-  limit: number
-  firstLimit?: number
-  fields?: string[]
-  sort?: string
-}
-export interface SearchResult<T> {
-  total?: number
-  list: T[]
-  next?: string
-  last?: boolean
-}
-export interface SearchState<T, S extends Filter> {
-  model?: S
-  q?: string
-  list?: T[]
-}
-export interface SearchService<T, S extends Filter> {
-  keys?(): string[]
-  search(s: S, limit?: number, offset?: number | string, fields?: string[]): Promise<SearchResult<T>>
-}
 
 export function getCurrencyCode(form?: HTMLFormElement | null): string | undefined {
   if (form) {
@@ -150,10 +57,6 @@ export interface Locale {
   currencySymbol: string
   currencyPattern: number
   currencySample?: string
-}
-export interface LoadingService {
-  showLoading(firstTime?: boolean): void
-  hideLoading(): void
 }
 export interface ErrorMessage {
   field: string

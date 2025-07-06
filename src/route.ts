@@ -1,5 +1,5 @@
 import * as qs from "query-string"
-import { Filter } from "./core"
+import { Filter } from "./search"
 
 export function buildFromUrl<S extends Filter>(modelT?: S): S {
   return buildParameters<S>(window.location.search, modelT)

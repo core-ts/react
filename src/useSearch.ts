@@ -1,21 +1,18 @@
 import { useEffect, useState } from "react"
 import {
-  Filter,
   getName,
   getRemoveError,
   getValidateForm,
   hideLoading,
   initForm,
+  LoadingService,
   Locale,
-  PageChange,
   pageSizes,
   removeFormError,
   resources,
   ResourceService,
-  SearchParameter,
-  SearchResult,
-  SearchService,
   showLoading,
+  UIService,
 } from "./core"
 import { error } from "./error"
 import { DispatchWithCallback, useMergeState } from "./merge"
@@ -23,21 +20,20 @@ import { clone } from "./reflect"
 import { buildFromUrl } from "./route"
 import {
   addParametersIntoUrl,
-  append,
   buildMessage,
-  formatResults,
-  getFieldsFromForm,
-  getModel,
-  handleAppend,
+  Filter,
+  getFields,
   handleSort,
   handleToggle,
   initFilter,
   mergeFilter as mergeFilter2,
+  PageChange,
   Pagination,
   removeSortStatus,
+  SearchResult,
+  SearchService,
   showPaging,
   Sortable,
-  validate,
 } from "./search"
 import { enLocale } from "./state"
 import { useUpdate } from "./update"
@@ -45,6 +41,182 @@ import { useUpdate } from "./update"
 export interface Searchable extends Pagination, Sortable {
   nextPageToken?: string
   excluding?: string[] | number[]
+}
+export interface SearchParameter {
+  resource: ResourceService
+  showMessage: (msg: string, option?: string) => void
+  showError: (m: string, callback?: () => void, h?: string) => void
+  ui?: UIService
+  getLocale?: (profile?: string) => Locale
+  loading?: LoadingService
+  auto?: boolean
+}
+
+export function getModel<S extends Filter>(state: any, modelName: string, searchable: Searchable, fields?: string[], excluding?: string[] | number[]): S {
+  let obj2 = getModelFromState(state, modelName)
+
+  const obj: any = obj2 ? obj2 : {}
+  const obj3 = optimizeFilter(obj, searchable, fields)
+  obj3.excluding = excluding
+  return obj3
+}
+export function optimizeFilter<S extends Filter>(obj: S, searchable: Searchable, fields?: string[]): S {
+  // const sLimit = searchable.limit;
+  obj.fields = fields
+  if (searchable.page && searchable.page > 1) {
+    obj.page = searchable.page
+  } else {
+    delete obj.page
+  }
+  obj.limit = searchable.limit
+
+  if (searchable.appendMode && searchable.initLimit !== searchable.limit) {
+    obj.firstLimit = searchable.initLimit
+  } else {
+    delete obj.firstLimit
+  }
+  if (searchable.sortField && searchable.sortField.length > 0) {
+    obj.sort = searchable.sortType === "-" ? "-" + searchable.sortField : searchable.sortField
+  } else {
+    delete obj.sort
+  }
+  if (searchable) {
+    mapObjects(obj, searchable as any)
+  }
+  return obj
+}
+function mapObjects(dest: any, src: any): void {
+  for (let key in dest) {
+    if (src.hasOwnProperty(key) && src[key] !== null && src[key] !== undefined) {
+      if (Array.isArray(dest[key]) && typeof src[key] === "string" && src[key].length > 0) {
+        const arrayObjKeySrc = src[key].length > 0 ? src[key]?.split(",") : []
+        if (arrayObjKeySrc && arrayObjKeySrc.length > 1) {
+          dest[key] = [...arrayObjKeySrc]
+        } else {
+          dest[key] = []
+          dest[key].push(src[key])
+        }
+      } else {
+        dest[key] = src[key]
+      }
+    }
+  }
+}
+function getModelFromState(state: any, modelName: string): any {
+  if (!modelName || modelName.length === 0) {
+    return state
+  }
+  if (!state) {
+    return state
+  }
+  return state[modelName]
+}
+export function getFieldsFromForm(fields?: string[], initFields?: boolean, form?: HTMLFormElement | null): string[] | undefined {
+  if (fields && fields.length > 0) {
+    return fields
+  }
+  if (!initFields) {
+    if (form) {
+      return getFields(form)
+    }
+  }
+  return fields
+}
+export function append<T>(list?: T[], results?: T[]): T[] {
+  if (list && results) {
+    for (const obj of results) {
+      list.push(obj)
+    }
+  }
+  if (!list) {
+    return []
+  }
+  return list
+}
+export function handleAppend<T>(com: Pagination, list: T[], limit?: number, nextPageToken?: string): void {
+  if (!limit || limit === 0) {
+    com.appendable = false
+  } else {
+    if (!nextPageToken || nextPageToken.length === 0 || list.length < limit) {
+      com.appendable = false
+    } else {
+      com.appendable = true
+    }
+  }
+  if (!list || list.length === 0) {
+    com.appendable = false
+  }
+}
+export function formatResults<T>(
+  results: T[],
+  page?: number,
+  limit?: number,
+  initPageSize?: number,
+  sequenceNo?: string,
+  ft?: (oj: T, lc?: Locale) => T,
+  lc?: Locale,
+): void {
+  if (results && results.length > 0) {
+    let hasSequencePro = false
+    if (ft) {
+      if (sequenceNo && sequenceNo.length > 0) {
+        for (const obj of results) {
+          if ((obj as any)[sequenceNo]) {
+            hasSequencePro = true
+          }
+          ft(obj, lc)
+        }
+      } else {
+        for (const obj of results) {
+          ft(obj, lc)
+        }
+      }
+    } else if (sequenceNo && sequenceNo.length > 0) {
+      for (const obj of results) {
+        if ((obj as any)[sequenceNo]) {
+          hasSequencePro = true
+        }
+      }
+    }
+    if (sequenceNo && sequenceNo.length > 0 && !hasSequencePro) {
+      if (!page) {
+        page = 1
+      }
+      if (limit) {
+        if (!initPageSize) {
+          initPageSize = limit
+        }
+        if (page <= 1) {
+          for (let i = 0; i < results.length; i++) {
+            ;(results[i] as any)[sequenceNo] = i - limit + limit * page + 1
+          }
+        } else {
+          for (let i = 0; i < results.length; i++) {
+            ;(results[i] as any)[sequenceNo] = i - limit + limit * page + 1 - (limit - initPageSize)
+          }
+        }
+      } else {
+        for (let i = 0; i < results.length; i++) {
+          ;(results[i] as any)[sequenceNo] = i + 1
+        }
+      }
+    }
+  }
+}
+export function validate<S extends Filter>(
+  se: S,
+  callback: () => void,
+  form?: HTMLFormElement | null,
+  lc?: Locale,
+  vf?: (f: HTMLFormElement, lc2?: Locale, focus?: boolean, scr?: boolean) => boolean,
+): void {
+  let valid = true
+  if (form && vf) {
+    valid = vf(form, lc)
+  }
+  if (valid === true) {
+    callback()
+  }
 }
 
 export const callSearch = <T, S extends Filter>(

@@ -1,4 +1,4 @@
-import { Locale, ModelProps } from "./core"
+import { Locale } from "./core"
 import { setValue } from "./reflect"
 import { valueOf } from "./util"
 
@@ -40,6 +40,14 @@ export function handleEvent(e: any, removeErr?: (ctrl: HTMLInputElement) => void
   if (removeErr && ctrl.nodeName === "SELECT" && ctrl.value && ctrl.classList.contains("invalid")) {
     removeErr(ctrl)
   }
+}
+
+export interface ModelMap {
+  [key: string]: any
+}
+export interface ModelProps {
+  setGlobalState?: (m: ModelMap) => void
+  shouldBeCustomized?: boolean
 }
 export function handleProps<P extends ModelProps>(
   e: any,
