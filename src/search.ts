@@ -148,11 +148,6 @@ export function initFilter<S extends Filter>(m: S, com: Searchable): S {
       com.sortType = ""
     }
   }
-  /*
-  delete m.page;
-  delete m.limit;
-  delete m.firstLimit;
-  */
   return m
 }
 

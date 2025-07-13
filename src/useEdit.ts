@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { Params, useNavigate, useParams } from "react-router"
 import { Attribute, Attributes, ErrorMessage, LoadingService, Locale, resources, ResourceService, UIService } from "./core"
 import { createModel as createModel2 } from "./edit"
-import { message, messageByHttpStatus } from "./error"
+import { messageByHttpStatus } from "./error"
 import { focusFirstError, setReadOnly } from "./formutil"
 import { hideLoading, initForm, showLoading } from "./input"
 import { DispatchWithCallback, useMergeState } from "./merge"
@@ -337,11 +337,11 @@ export const useCoreEdit = <T, ID, S, P>(
   }
 
   const _handleNotFound = (form?: any): void => {
-    const msg = message(p1.resource.value, "error_404", "error")
     if (form) {
       setReadOnly(form)
     }
-    p1.showError(msg.message, () => window.history.back, msg.title)
+    const resource = p1.resource.resource()
+    p1.showError(resource.error_404, () => window.history.back, resource.error)
   }
   const handleNotFound = p && p.handleNotFound ? p.handleNotFound : _handleNotFound
 
@@ -368,15 +368,15 @@ export const useCoreEdit = <T, ID, S, P>(
       if (objKeys.length === 0) {
         navigate(-1)
       } else {
-        const msg = message(p1.resource.value, "msg_confirm_back", "confirm", "yes", "no")
+        const resource = p1.resource.resource()
         p1.confirm(
-          msg.message,
+          resource.msg_confirm_back,
           () => {
             navigate(-1)
           },
-          msg.title,
-          msg.no,
-          msg.yes,
+          resource.confirm,
+          resource.no,
+          resource.yes,
         )
       }
     }
@@ -406,13 +406,12 @@ export const useCoreEdit = <T, ID, S, P>(
   }
 
   const _onSave = (isBack?: boolean) => {
+    const resource = p1.resource.resource()
     if (p && p.readOnly) {
       if (flag.newMode === true) {
-        const m = message(p1.resource.value, "error_permission_add", "error_permission")
-        p1.showError(m.message, undefined, m.title)
+        p1.showError(resource.error_permission_add, undefined, resource.error_permission)
       } else {
-        const msg = message(p1.resource.value, "error_permission_edit", "error_permission")
-        p1.showError(msg.message, undefined, msg.title)
+        p1.showError(resource.error_permission_edit, undefined, resource.error_permission)
       }
     } else {
       if (running === true) {
@@ -429,15 +428,14 @@ export const useCoreEdit = <T, ID, S, P>(
       }
       if (flag.newMode) {
         validate(obj, () => {
-          const msg = message(p1.resource.value, "msg_confirm_save", "confirm", "yes", "no")
           p1.confirm(
-            msg.message,
+            resource.msg_confirm_save,
             () => {
               doSave(obj, undefined, version, isBack)
             },
-            msg.title,
-            msg.no,
-            msg.yes,
+            resource.confirm,
+            resource.no,
+            resource.yes,
           )
         })
       } else {
@@ -447,15 +445,14 @@ export const useCoreEdit = <T, ID, S, P>(
           p1.showMessage(p1.resource.value("msg_no_change"))
         } else {
           validate(obj, () => {
-            const msg = message(p1.resource.value, "msg_confirm_save", "confirm", "yes", "no")
             p1.confirm(
-              msg.message,
+              resource.msg_confirm_save,
               () => {
                 doSave(obj, diffObj as any, version, isBack)
               },
-              msg.title,
-              msg.no,
-              msg.yes,
+              resource.confirm,
+              resource.no,
+              resource.yes,
             )
           })
         }
@@ -584,8 +581,8 @@ export const useCoreEdit = <T, ID, S, P>(
   const postSave = p && p.postSave ? p.postSave : _postSave
 
   const _handleDuplicateKey = (result?: T) => {
-    const msg = message(p1.resource.value, "error_duplicate_key", "error")
-    p1.showError(msg.message, undefined, msg.title)
+    const resource = p1.resource.resource()
+    p1.showError(resource.error_duplicate_key, undefined, resource.error)
   }
   const handleDuplicateKey = p && p.handleDuplicateKey ? p.handleDuplicateKey : _handleDuplicateKey
 
@@ -641,9 +638,9 @@ export const useCoreEdit = <T, ID, S, P>(
         })
         .catch((err: any) => {
           const data = err && err.response ? err.response : err
-          const r = p1.resource
-          const title = r.value("error")
-          let msg = r.value("error_internal")
+          const resource = p1.resource.resource()
+          const title = resource.error
+          let msg = resource.error_internal
           if (data && data.status === 422) {
             fail(err.response?.data)
             const obj = err.response?.data?.value
@@ -655,7 +652,7 @@ export const useCoreEdit = <T, ID, S, P>(
               handleNotFound(refForm.current)
             } else {
               if (data.status && !isNaN(data.status)) {
-                msg = messageByHttpStatus(data.status, r.value)
+                msg = messageByHttpStatus(data.status, resource)
               }
               if (data && (data.status === 401 || data.status === 403)) {
                 setReadOnly(refForm.current)

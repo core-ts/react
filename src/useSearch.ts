@@ -656,7 +656,8 @@ export const useCoreSearch = <T, S extends Filter, ST>(
 
   const searchError = (err: any): void => {
     setComponent({ page: component.tmpPageIndex })
-    error(err, p1.resource.value, p1.showError)
+    const resource = p1.resource.resource()
+    error(err, resource, p1.showError)
     hideLoading(p1.loading)
   }
   const appendList = p && p.appendList ? p.appendList : appendListOfState
