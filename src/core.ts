@@ -22,7 +22,6 @@ export interface StringMap {
 }
 export interface ResourceService {
   resource(): StringMap
-  value(key: string, param?: any): string
 }
 
 export interface Locale {

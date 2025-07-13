@@ -441,7 +441,7 @@ export const useCoreEdit = <T, ID, S, P>(
         const diffObj = makeDiff(flag.originalModel, obj, keys, version)
         const objKeys = Object.keys(diffObj)
         if (objKeys.length === 0) {
-          p1.showMessage(p1.resource.value("msg_no_change"))
+          p1.showMessage(resource.msg_no_change)
         } else {
           validate(obj, () => {
             p1.confirm(
@@ -497,13 +497,14 @@ export const useCoreEdit = <T, ID, S, P>(
   const succeed = p && p.succeed ? p.succeed : _succeed
 
   const _fail = (result: ErrorMessage[]) => {
+    const resource = p1.resource.resource()
     const f = refForm.current
     const u = p1.ui
     if (u && f) {
       const unmappedErrors = u.showFormError(f, result)
       focusFirstError(f)
       if (unmappedErrors && unmappedErrors.length > 0) {
-        const t = p1.resource.value("error")
+        const t = resource.error
         if (p1.ui && p1.ui.buildErrorMessage) {
           const msg = p1.ui.buildErrorMessage(unmappedErrors)
           p1.showError(msg, undefined, t)
@@ -512,7 +513,7 @@ export const useCoreEdit = <T, ID, S, P>(
         }
       }
     } else {
-      const t = p1.resource.value("error")
+      const t = resource.error
       if (result.length > 0) {
         p1.showError(result[0].field + " " + result[0].code + " " + result[0].message, undefined, t)
       } else {
@@ -524,13 +525,14 @@ export const useCoreEdit = <T, ID, S, P>(
 
   const _handleError = function (err: any) {
     if (err) {
+      const resource = p1.resource.resource()
       setRunning(false)
       hideLoading(p1.loading)
-      const errHeader = p1.resource.value("error")
-      const errMsg = p1.resource.value("error_internal")
+      const errHeader = resource.error
+      const errMsg = resource.error_internal
       const data = err && err.response ? err.response : err
       if (data.status === 400) {
-        const errMsg = p1.resource.value("error_400")
+        const errMsg = resource.error_400
         p1.showError(errMsg, undefined, errHeader)
       } else {
         p1.showError(errMsg, undefined, errHeader)
@@ -541,9 +543,10 @@ export const useCoreEdit = <T, ID, S, P>(
 
   const _postSave = (r: number | T | ErrorMessage[], origin: T, version?: string, isPatch?: boolean, backOnSave?: boolean) => {
     setRunning(false)
+    const resource = p1.resource.resource()
     hideLoading(p1.loading)
     const x: any = r
-    const successMsg = p1.resource.value("msg_save_success")
+    const successMsg = resource.msg_save_success
     const newMod = flag.newMode
     // const st = createEditStatus(p ? p.status : undefined);
     if (Array.isArray(x)) {
@@ -557,8 +560,8 @@ export const useCoreEdit = <T, ID, S, P>(
         } else if (!newMod && x === 0) {
           handleNotFound()
         } else {
-          const title = p1.resource.value("error")
-          const err = p1.resource.value("error_version")
+          const title = resource.error
+          const err = resource.error_version
           p1.showError(err, undefined, title)
         }
       }
