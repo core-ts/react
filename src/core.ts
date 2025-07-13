@@ -46,7 +46,6 @@ export interface ErrorMessage {
 }
 export interface UIService {
   getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string | number | boolean | null | undefined
-  // decodeFromForm(form: HTMLFormElement, locale?: Locale, currencyCode?: string | null): any;
 
   validateForm(form?: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean): boolean
   removeFormError(form: HTMLFormElement): void
@@ -57,7 +56,7 @@ export interface UIService {
   registerEvents?(form: HTMLFormElement): void
 }
 
-export type DataType =
+export type Type =
   | "ObjectId"
   | "date"
   | "datetime"
@@ -79,9 +78,21 @@ export type DataType =
   | "datetimes"
   | "times"
 
+export type Format = "currency" | "percentage" | "email" | "url" | "phone" | "fax" | "ipv4" | "ipv6"
+
 export interface Attribute {
   name?: string
-  type?: DataType
+  type?: Type
+  format?: Format
+  key?: boolean
+  version?: boolean
+  typeof?: Attributes
+  scale?: number
+  noformat?: boolean
+}
+export interface Attribute {
+  name?: string
+  type?: Type
   key?: boolean
   version?: boolean
   typeof?: Attributes

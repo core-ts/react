@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Locale, resources } from "./core"
-import { useMergeState } from "./merge"
 import { buildFlatState, buildState, handleEvent, localeOf } from "./state"
 
 export function removePhoneFormat(phone: string): string {
@@ -34,6 +33,32 @@ const m = "model"
 const _getModelName = (f2?: HTMLFormElement | null): string => {
   return getModelName(f2, m)
 }
+
+export type Callback<T> = (value?: T) => void
+export type DispatchWithCallback<T> = (value: T, callback?: Callback<T>) => void
+
+export function useMergeState<T>(initialState?: T | (() => T)): [T, DispatchWithCallback<Partial<T>>] {
+  const [state, _setState] = useState(initialState ? initialState : ({} as any))
+
+  const callbackRef = useRef<Callback<T>>()
+
+  const setState = useCallback(
+    (newState: Partial<T>, callback?: Callback<T>): void => {
+      callbackRef.current = callback
+      _setState((prevState: any) => Object.assign({}, prevState, newState))
+    },
+    [state],
+  )
+
+  useEffect(() => {
+    if (callbackRef.current) {
+      callbackRef.current(state)
+    }
+  }, [state])
+
+  return [state, setState]
+}
+
 export const useUpdate = <T>(
   initialState: T,
   getName?: ((f?: HTMLFormElement | null) => string) | string,

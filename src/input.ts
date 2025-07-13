@@ -82,14 +82,22 @@ export function getErrorFunc(
   return (p as any).showError
 }
 
-export function showLoading(s?: LoadingService): void {
-  if (s) {
-    s.showLoading()
+export function showLoading(loading?: LoadingService | ((firstTime?: boolean) => void)): void {
+  if (loading) {
+    if (typeof loading === "function") {
+      loading()
+    } else {
+      loading.showLoading()
+    }
   }
 }
-export function hideLoading(s?: LoadingService): void {
-  if (s) {
-    s.hideLoading()
+export function hideLoading(loading?: LoadingService | (() => void)): void {
+  if (loading) {
+    if (typeof loading === "function") {
+      loading()
+    } else {
+      loading.hideLoading()
+    }
   }
 }
 

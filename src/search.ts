@@ -44,16 +44,6 @@ export interface Pagination {
 
 interface Searchable extends Pagination, Sortable {}
 
-export function getOffset(limit: number, page?: number, firstLimit?: number): number {
-  const p = page && page > 0 ? page : 1
-  if (firstLimit && firstLimit > 0) {
-    const offset = limit * (p - 2) + firstLimit
-    return offset < 0 ? 0 : offset
-  } else {
-    const offset = limit * (p - 1)
-    return offset < 0 ? 0 : offset
-  }
-}
 export function mergeFilter<S extends Filter>(obj: S, b?: S, pageSizes?: number[], arrs?: string[] | any) {
   let a: any = b
   if (!b) {
@@ -190,6 +180,19 @@ export function getFields(form?: HTMLFormElement, arr?: string[]): string[] | un
   return fields.length > 0 ? fields : undefined
 }
 
+export function getPageTotal(pageSize?: number, total?: number): number {
+  if (!pageSize || pageSize <= 0) {
+    return 1
+  } else {
+    if (!total) {
+      total = 0
+    }
+    if (total % pageSize === 0) {
+      return Math.floor(total / pageSize)
+    }
+    return Math.floor(total / pageSize + 1)
+  }
+}
 export function formatText(...args: any[]): string {
   let formatted = args[0]
   if (!formatted || formatted === "") {
@@ -208,19 +211,6 @@ export function formatText(...args: any[]): string {
     }
   }
   return formatted
-}
-export function getPageTotal(pageSize?: number, total?: number): number {
-  if (!pageSize || pageSize <= 0) {
-    return 1
-  } else {
-    if (!total) {
-      total = 0
-    }
-    if (total % pageSize === 0) {
-      return Math.floor(total / pageSize)
-    }
-    return Math.floor(total / pageSize + 1)
-  }
 }
 export function buildMessage<T>(resource: StringMap, results: T[], limit: number, page: number | undefined, total?: number): string {
   if (!results || results.length === 0) {
@@ -450,4 +440,15 @@ export function toggleSortStyle(target: HTMLElement): string {
     }
   }
   return field
+}
+
+export function getOffset(limit: number, page?: number, firstLimit?: number): number {
+  const p = page && page > 0 ? page : 1
+  if (firstLimit && firstLimit > 0) {
+    const offset = limit * (p - 2) + firstLimit
+    return offset < 0 ? 0 : offset
+  } else {
+    const offset = limit * (p - 1)
+    return offset < 0 ? 0 : offset
+  }
 }

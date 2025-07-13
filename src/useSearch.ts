@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
+import { error } from "./common"
 import { LoadingService, Locale, pageSizes, resources, ResourceService, UIService } from "./core"
-import { error } from "./error"
 import { hideLoading, initForm, showLoading } from "./input"
 import { DispatchWithCallback, useMergeState } from "./merge"
 import { clone } from "./reflect"
