@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import { error } from "./common"
 import { LoadingService, Locale, pageSizes, resources, ResourceService, UIService } from "./core"
 import { hideLoading, initForm, showLoading } from "./input"
-import { DispatchWithCallback, useMergeState } from "./merge"
 import { clone } from "./reflect"
 import { buildFromUrl } from "./route"
 import {
@@ -23,7 +22,7 @@ import {
   Sortable,
 } from "./search"
 import { enLocale } from "./state"
-import { useUpdate } from "./update"
+import { DispatchWithCallback, useMergeState, useUpdate } from "./update"
 
 export function showPaging<T>(com: Pagination, list: T[], pageSize?: number, total?: number): void {
   com.total = total
