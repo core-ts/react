@@ -1,5 +1,6 @@
-import { LoadingService, Locale, ResourceService, UIService } from "./core"
+import { LoadingService, Locale, UIService } from "./core"
 
+/*
 interface ResourceInput {
   resource: ResourceService
 }
@@ -11,10 +12,11 @@ export function getResource(p: ResourceService | ResourceInput): ResourceService
     return x.resource
   }
 }
+*/
 interface ShortSearchParameter {
   auto?: boolean
 }
-export function getAutoSearch(p: ResourceService | ShortSearchParameter): boolean {
+export function getAutoSearch(p: ShortSearchParameter): boolean {
   const x: any = p
   if (x.value && x.format && typeof x.value === "function") {
     return true
@@ -24,7 +26,7 @@ export function getAutoSearch(p: ResourceService | ShortSearchParameter): boolea
 interface UIInput {
   ui?: UIService
 }
-export function getUIService(p: ResourceService | UIInput, ui0?: UIService): UIService {
+export function getUIService(p: UIInput, ui0?: UIService): UIService {
   if (ui0) {
     return ui0
   }
@@ -33,7 +35,7 @@ export function getUIService(p: ResourceService | UIInput, ui0?: UIService): UIS
 interface LoadingInput {
   loading?: LoadingService
 }
-export function getLoadingFunc(p: ResourceService | LoadingInput, ui0?: LoadingService): LoadingService {
+export function getLoadingFunc(p: LoadingInput, ui0?: LoadingService): LoadingService {
   if (ui0) {
     return ui0
   }
@@ -42,7 +44,7 @@ export function getLoadingFunc(p: ResourceService | LoadingInput, ui0?: LoadingS
 interface ShowMessageInput {
   showMessage: (msg: string, option?: string) => void
 }
-export function getMsgFunc(p: ResourceService | ShowMessageInput, showMsg?: (msg: string, option?: string) => void): (msg: string) => void {
+export function getMsgFunc(p: ShowMessageInput, showMsg?: (msg: string, option?: string) => void): (msg: string) => void {
   if (showMsg) {
     return showMsg
   }
@@ -52,7 +54,7 @@ interface ConfirmInput {
   confirm: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void
 }
 export function getConfirmFunc(
-  p: ResourceService | ConfirmInput,
+  p: ConfirmInput,
   cf?: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
 ): (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void {
   if (cf) {
@@ -63,7 +65,7 @@ export function getConfirmFunc(
 interface GetLocaleInput {
   getLocale?: (profile?: string) => Locale
 }
-export function getLocaleFunc(p: ResourceService | GetLocaleInput, getLoc?: () => Locale): () => Locale {
+export function getLocaleFunc(p: GetLocaleInput, getLoc?: () => Locale): () => Locale {
   if (getLoc) {
     return getLoc
   }
@@ -73,7 +75,7 @@ interface ShowErrorInput {
   showError: (m: string, callback?: () => void, header?: string) => void
 }
 export function getErrorFunc(
-  p: ResourceService | ShowErrorInput,
+  p: ShowErrorInput,
   showErr?: (m: string, callback?: () => void, header?: string) => void,
 ): (m: string, callback?: () => void, header?: string) => void {
   if (showErr) {

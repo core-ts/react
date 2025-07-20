@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { error } from "./common"
-import { LoadingService, Locale, pageSizes, resources, ResourceService, UIService } from "./core"
+import { LoadingService, Locale, pageSizes, resources, StringMap, UIService } from "./core"
 import { hideLoading, initForm, showLoading } from "./input"
 import { clone } from "./reflect"
 import { buildFromUrl } from "./route"
@@ -36,7 +36,6 @@ interface Searchable extends Pagination, Sortable {
   excluding?: string[] | number[]
 }
 export interface SearchParameter {
-  resource: ResourceService
   showMessage: (msg: string, option?: string) => void
   showError: (m: string, callback?: () => void, h?: string) => void
   ui?: UIService
@@ -325,7 +324,7 @@ export interface HookBaseSearchParameter<T, S extends Filter, ST extends SearchC
   refForm: any
   initialState: ST
   service: ((s: S, limit?: number, offset?: number | string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>
-  resource: ResourceService
+  // resource: ResourceService
   showMessage: (msg: string) => void
   showError: (m: string, callback?: () => void, header?: string) => void
   getLocale?: () => Locale
@@ -411,10 +410,11 @@ export const useSearch = <T, S extends Filter, ST extends SearchComponentState<T
   refForm: any,
   initialState: ST,
   service: ((s: S, limit?: number, offset?: number | string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
+  resource: StringMap,
   p2: SearchParameter,
   p?: InitSearchComponentParam<T, S, ST>,
 ) => {
-  const baseProps = useCoreSearch(refForm, initialState, service, p2, p)
+  const baseProps = useCoreSearch(refForm, initialState, service, resource, p2, p)
 
   useEffect(() => {
     const { load, setState, component, searchError } = baseProps
@@ -437,11 +437,14 @@ export const useSearch = <T, S extends Filter, ST extends SearchComponentState<T
   }, [])
   return { ...baseProps }
 }
-export const useSearchOneProps = <T, S extends Filter, ST extends SearchComponentState<T, S>, P>(p: HookPropsSearchParameter<T, S, ST, P>) => {
-  return useSearch(p.refForm, p.initialState, p.service, p, p)
+export const useSearchOneProps = <T, S extends Filter, ST extends SearchComponentState<T, S>, P>(
+  resource: StringMap,
+  p: HookPropsSearchParameter<T, S, ST, P>,
+) => {
+  return useSearch(p.refForm, p.initialState, p.service, resource, p, p)
 }
-export const useSearchOne = <T, S extends Filter, ST extends SearchComponentState<T, S>>(p: HookBaseSearchParameter<T, S, ST>) => {
-  return useCoreSearch(p.refForm, p.initialState, p.service, p, p)
+export const useSearchOne = <T, S extends Filter, ST extends SearchComponentState<T, S>>(resource: StringMap, p: HookBaseSearchParameter<T, S, ST>) => {
+  return useCoreSearch(p.refForm, p.initialState, p.service, resource, p, p)
 }
 
 export function getName(d: string, n?: string): string {
@@ -451,6 +454,7 @@ export const useCoreSearch = <T, S extends Filter, ST>(
   refForm: any,
   initialState: ST,
   service: ((s: S, limit?: number, offset?: number | string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
+  resource: StringMap,
   p1: SearchParameter,
   p2?: SearchComponentParam<T, S>,
 ) => {
@@ -655,7 +659,6 @@ export const useCoreSearch = <T, S extends Filter, ST>(
 
   const searchError = (err: any): void => {
     setComponent({ page: component.tmpPageIndex })
-    const resource = p1.resource.resource()
     error(err, resource, p1.showError)
     hideLoading(p1.loading)
   }
@@ -688,7 +691,7 @@ export const useCoreSearch = <T, S extends Filter, ST>(
       setList(results, setState as any)
       setComponent({ tmpPageIndex: s.page })
       if (s.limit) {
-        const m1 = buildMessage(p1.resource.resource(), sr.list, s.limit, s.page, sr.total)
+        const m1 = buildMessage(resource, sr.list, s.limit, s.page, sr.total)
         p1.showMessage(m1)
       }
     }
@@ -726,7 +729,6 @@ export const useCoreSearch = <T, S extends Filter, ST>(
     running,
     setRunning,
     getCurrencyCode,
-    resource: p1.resource.resource(),
     setComponent,
     component,
     showMessage: p1.showMessage,

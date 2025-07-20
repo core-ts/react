@@ -1,11 +1,5 @@
 import * as React from "react"
-
-interface ErrorMessage {
-  field: string
-  code: string
-  param?: string | number | Date
-  message?: string
-}
+import { ErrorMessage } from "./core"
 
 export interface MessageState {
   message?: string

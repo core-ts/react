@@ -1,12 +1,10 @@
-import { LoadingService, ResourceService } from "./core"
+import { LoadingService } from "./core"
 import { clone } from "./reflect"
 
 export interface DiffParameter {
-  resource: ResourceService
   showMessage: (msg: string, option?: string) => void
   showError: (m: string, header?: string, detail?: string, callback?: () => void) => void
   loading?: LoadingService
-  // status?: DiffStatusConfig;
 }
 export interface BaseDiffState {
   disabled: boolean

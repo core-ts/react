@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Params, useNavigate, useParams } from "react-router"
 import { messageByHttpStatus } from "./common"
-import { Attribute, Attributes, ErrorMessage, LoadingService, Locale, resources, ResourceService, UIService } from "./core"
+import { Attribute, Attributes, ErrorMessage, LoadingService, Locale, resources, StringMap, UIService } from "./core"
 import { createModel as createModel2 } from "./edit"
 import { focusFirstError, setReadOnly } from "./formutil"
 import { hideLoading, initForm, showLoading } from "./input"
@@ -50,14 +50,12 @@ export function buildId<ID>(p: Readonly<Params<string>>, keys?: string[]): ID | 
 }
 
 export interface EditParameter {
-  resource: ResourceService
   showMessage: (msg: string, option?: string) => void
   showError: (m: string, callback?: () => void, header?: string) => void
   confirm: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void
   ui?: UIService
   getLocale?: (profile?: string) => Locale
   loading?: LoadingService
-  // status?: EditStatusConfig;
 }
 export interface GenericService<T, ID, R> {
   metadata?(): Attributes | undefined
@@ -162,7 +160,7 @@ export interface HookBaseEditParameter<T, ID, S> extends BaseEditComponentParam<
   refForm: any
   initialState: S
   service: GenericService<T, ID, number | T | ErrorMessage[]>
-  resource: ResourceService
+  // resource: ResourceService
   showMessage: (msg: string) => void
   showError: (m: string, callback?: () => void, header?: string) => void
   getLocale?: () => Locale
@@ -196,12 +194,12 @@ export const useEdit = <T, ID, S>(
   refForm: any,
   initialState: S,
   service: GenericService<T, ID, number | T | ErrorMessage[]>,
-
+  resource: StringMap,
   p2: EditParameter,
   p?: EditComponentParam<T, ID, S>,
 ) => {
   const params = useParams()
-  const baseProps = useCoreEdit(refForm, initialState, service, p2, p)
+  const baseProps = useCoreEdit(refForm, initialState, service, resource, p2, p)
   useEffect(() => {
     if (refForm) {
       const registerEvents = p2.ui ? p2.ui.registerEvents : undefined
@@ -242,11 +240,12 @@ export const useEditProps = <T, ID, S, P>(
   refForm: any,
   initialState: S,
   service: GenericService<T, ID, number | T | ErrorMessage[]>,
+  resource: StringMap,
   p2: EditParameter,
   p?: EditComponentParam<T, ID, S>,
 ) => {
   const params = useParams()
-  const baseProps = useCoreEdit<T, ID, S, P>(refForm, initialState, service, p2, p, props)
+  const baseProps = useCoreEdit<T, ID, S, P>(refForm, initialState, service, resource, p2, p, props)
   useEffect(() => {
     if (refForm) {
       const registerEvents = p2.ui ? p2.ui.registerEvents : undefined
@@ -277,16 +276,17 @@ export const useEditProps = <T, ID, S, P>(
   }, [])
   return { ...baseProps }
 }
-export const useEditOneProps = <T, ID, S, P>(p: HookPropsEditParameter<T, ID, S, P>) => {
-  return useEditProps(p.props, p.refForm, p.initialState, p.service, p, p)
+export const useEditOneProps = <T, ID, S, P>(resource: StringMap, p: HookPropsEditParameter<T, ID, S, P>) => {
+  return useEditProps(p.props, p.refForm, p.initialState, p.service, resource, p, p)
 }
-export const useEditOne = <T, ID, S>(p: HookBaseEditParameter<T, ID, S>) => {
-  return useEdit(p.refForm, p.initialState, p.service, p, p)
+export const useEditOne = <T, ID, S>(resource: StringMap, p: HookBaseEditParameter<T, ID, S>) => {
+  return useEdit(p.refForm, p.initialState, p.service, resource, p, p)
 }
 export const useCoreEdit = <T, ID, S, P>(
   refForm: any,
   initialState: S,
   service: GenericService<T, ID, number | T | ErrorMessage[]>,
+  resource: StringMap,
   p1: EditParameter,
   p?: BaseEditComponentParam<T, ID>,
   props?: P,
@@ -339,7 +339,6 @@ export const useCoreEdit = <T, ID, S, P>(
     if (form) {
       setReadOnly(form)
     }
-    const resource = p1.resource.resource()
     p1.showError(resource.error_404, () => window.history.back, resource.error)
   }
   const handleNotFound = p && p.handleNotFound ? p.handleNotFound : _handleNotFound
@@ -367,7 +366,6 @@ export const useCoreEdit = <T, ID, S, P>(
       if (objKeys.length === 0) {
         navigate(-1)
       } else {
-        const resource = p1.resource.resource()
         p1.confirm(
           resource.msg_confirm_back,
           () => {
@@ -405,7 +403,6 @@ export const useCoreEdit = <T, ID, S, P>(
   }
 
   const _onSave = (isBack?: boolean) => {
-    const resource = p1.resource.resource()
     if (p && p.readOnly) {
       if (flag.newMode === true) {
         p1.showError(resource.error_permission_add, undefined, resource.error_permission)
@@ -497,7 +494,6 @@ export const useCoreEdit = <T, ID, S, P>(
   const succeed = p && p.succeed ? p.succeed : _succeed
 
   const _fail = (result: ErrorMessage[]) => {
-    const resource = p1.resource.resource()
     const f = refForm.current
     const u = p1.ui
     if (u && f) {
@@ -525,7 +521,6 @@ export const useCoreEdit = <T, ID, S, P>(
 
   const _handleError = function (err: any) {
     if (err) {
-      const resource = p1.resource.resource()
       setRunning(false)
       hideLoading(p1.loading)
       const errHeader = resource.error
@@ -543,7 +538,6 @@ export const useCoreEdit = <T, ID, S, P>(
 
   const _postSave = (r: number | T | ErrorMessage[], origin: T, version?: string, isPatch?: boolean, backOnSave?: boolean) => {
     setRunning(false)
-    const resource = p1.resource.resource()
     hideLoading(p1.loading)
     const x: any = r
     const successMsg = resource.msg_save_success
@@ -583,7 +577,6 @@ export const useCoreEdit = <T, ID, S, P>(
   const postSave = p && p.postSave ? p.postSave : _postSave
 
   const _handleDuplicateKey = (result?: T) => {
-    const resource = p1.resource.resource()
     p1.showError(resource.error_duplicate_key, undefined, resource.error)
   }
   const handleDuplicateKey = p && p.handleDuplicateKey ? p.handleDuplicateKey : _handleDuplicateKey
@@ -640,7 +633,6 @@ export const useCoreEdit = <T, ID, S, P>(
         })
         .catch((err: any) => {
           const data = err && err.response ? err.response : err
-          const resource = p1.resource.resource()
           const title = resource.error
           let msg = resource.error_internal
           if (data && data.status === 422) {
@@ -682,7 +674,6 @@ export const useCoreEdit = <T, ID, S, P>(
     back,
     refForm,
     ui: p1.ui,
-    resource: p1.resource.resource(),
     flag,
     running,
     setRunning,
