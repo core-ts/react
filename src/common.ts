@@ -8,11 +8,11 @@ export function messageByHttpStatus(status: number, resource: StringMap): string
   }
   return msg
 }
-export function error(err: any, resource: StringMap, ae: (msg: string, header?: string, callback?: () => void) => void) {
+export function error(err: any, resource: StringMap, ae: (msg: string, callback?: () => void, header?: string) => void) {
   const title = resource.error
   let msg = resource.error_internal
   if (!err) {
-    ae(msg, title)
+    ae(msg, undefined, title)
     return
   }
   const data = err && err.response ? err.response : err
@@ -21,8 +21,8 @@ export function error(err: any, resource: StringMap, ae: (msg: string, header?: 
     if (status && !isNaN(status)) {
       msg = messageByHttpStatus(status, resource)
     }
-    ae(msg, title)
+    ae(msg, undefined, title)
   } else {
-    ae(msg, title)
+    ae(msg, undefined, title)
   }
 }
