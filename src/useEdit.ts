@@ -52,7 +52,7 @@ export function buildId<ID>(p: Readonly<Params<string>>, keys?: string[]): ID | 
 export interface EditParameter {
   resource: ResourceService
   showMessage: (msg: string, option?: string) => void
-  showError: (m: string, callback?: () => void, header?: string) => void
+  showError: (m: string, header?: string, callback?: () => void) => void
   confirm: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void
   ui?: UIService
   getLocale?: (profile?: string) => Locale
@@ -164,7 +164,7 @@ export interface HookBaseEditParameter<T, ID, S> extends BaseEditComponentParam<
   service: GenericService<T, ID, number | T | ErrorMessage[]>
   resource: ResourceService
   showMessage: (msg: string) => void
-  showError: (m: string, callback?: () => void, header?: string) => void
+  showError: (m: string, header?: string, callback?: () => void) => void
   getLocale?: () => Locale
   confirm: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void
   ui?: UIService
@@ -340,7 +340,7 @@ export const useCoreEdit = <T, ID, S, P>(
       setReadOnly(form)
     }
     const resource = p1.resource.resource()
-    p1.showError(resource.error_404, () => window.history.back, resource.error)
+    p1.showError(resource.error_404, resource.error, () => window.history.back)
   }
   const handleNotFound = p && p.handleNotFound ? p.handleNotFound : _handleNotFound
 
@@ -408,9 +408,9 @@ export const useCoreEdit = <T, ID, S, P>(
     const resource = p1.resource.resource()
     if (p && p.readOnly) {
       if (flag.newMode === true) {
-        p1.showError(resource.error_permission_add, undefined, resource.error_permission)
+        p1.showError(resource.error_permission_add, resource.error_permission)
       } else {
-        p1.showError(resource.error_permission_edit, undefined, resource.error_permission)
+        p1.showError(resource.error_permission_edit, resource.error_permission)
       }
     } else {
       if (running === true) {
@@ -507,17 +507,17 @@ export const useCoreEdit = <T, ID, S, P>(
         const t = resource.error
         if (p1.ui && p1.ui.buildErrorMessage) {
           const msg = p1.ui.buildErrorMessage(unmappedErrors)
-          p1.showError(msg, undefined, t)
+          p1.showError(msg, t)
         } else {
-          p1.showError(unmappedErrors[0].field + " " + unmappedErrors[0].code + " " + unmappedErrors[0].message, undefined, t)
+          p1.showError(unmappedErrors[0].field + " " + unmappedErrors[0].code + " " + unmappedErrors[0].message, t)
         }
       }
     } else {
       const t = resource.error
       if (result.length > 0) {
-        p1.showError(result[0].field + " " + result[0].code + " " + result[0].message, undefined, t)
+        p1.showError(result[0].field + " " + result[0].code + " " + result[0].message, t)
       } else {
-        p1.showError(t, undefined, t)
+        p1.showError(t, t)
       }
     }
   }
@@ -533,9 +533,9 @@ export const useCoreEdit = <T, ID, S, P>(
       const data = err && err.response ? err.response : err
       if (data.status === 400) {
         const errMsg = resource.error_400
-        p1.showError(errMsg, undefined, errHeader)
+        p1.showError(errMsg, errHeader)
       } else {
-        p1.showError(errMsg, undefined, errHeader)
+        p1.showError(errMsg, errHeader)
       }
     }
   }
@@ -562,7 +562,7 @@ export const useCoreEdit = <T, ID, S, P>(
         } else {
           const title = resource.error
           const err = resource.error_version
-          p1.showError(err, undefined, title)
+          p1.showError(err, title)
         }
       }
     } else {
@@ -584,7 +584,7 @@ export const useCoreEdit = <T, ID, S, P>(
 
   const _handleDuplicateKey = (result?: T) => {
     const resource = p1.resource.resource()
-    p1.showError(resource.error_duplicate_key, undefined, resource.error)
+    p1.showError(resource.error_duplicate_key, resource.error)
   }
   const handleDuplicateKey = p && p.handleDuplicateKey ? p.handleDuplicateKey : _handleDuplicateKey
 
@@ -659,7 +659,7 @@ export const useCoreEdit = <T, ID, S, P>(
               if (data && (data.status === 401 || data.status === 403)) {
                 setReadOnly(refForm.current)
               }
-              p1.showError(msg, undefined, title)
+              p1.showError(msg, title)
             }
           }
           setRunning(false)

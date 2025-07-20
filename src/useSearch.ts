@@ -38,7 +38,7 @@ interface Searchable extends Pagination, Sortable {
 export interface SearchParameter {
   resource: ResourceService
   showMessage: (msg: string, option?: string) => void
-  showError: (m: string, callback?: () => void, h?: string) => void
+  showError: (m: string, h?: string, callback?: () => void) => void
   ui?: UIService
   getLocale?: (profile?: string) => Locale
   loading?: LoadingService
@@ -327,7 +327,7 @@ export interface HookBaseSearchParameter<T, S extends Filter, ST extends SearchC
   service: ((s: S, limit?: number, offset?: number | string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>
   resource: ResourceService
   showMessage: (msg: string) => void
-  showError: (m: string, callback?: () => void, header?: string) => void
+  showError: (m: string, header?: string, callback?: () => void) => void
   getLocale?: () => Locale
   autoSearch?: boolean
 }
