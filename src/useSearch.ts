@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react"
-import { error } from "./common"
+import { error, hideLoading, initForm, showLoading } from "./common"
 import { LoadingService, Locale, pageSizes, resources, StringMap, UIService } from "./core"
-import { hideLoading, initForm, showLoading } from "./input"
 import { clone } from "./reflect"
 import { buildFromUrl } from "./route"
 import {
