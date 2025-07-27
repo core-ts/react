@@ -13,18 +13,8 @@
     "declaration": false,
     "experimentalDecorators": false,
     "removeComments": true,
-    "lib": [
-      "dom",
-      "es6",
-      "es7",
-      "es2017",
-      "es2022"
-    ]
+    "lib": ["dom", "es6", "es7", "es2017"]
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
 }

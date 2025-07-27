@@ -20,11 +20,6 @@ export class resources {
 export interface StringMap {
   [key: string]: string
 }
-/*
-export interface ResourceService {
-  resource(): StringMap
-}
-*/
 export interface Locale {
   id?: string
   countryCode: string
