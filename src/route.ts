@@ -1,4 +1,4 @@
-import * as qs from "query-string"
+import queryString from "query-string"
 import { NavigateFunction } from "react-router-dom"
 import { StringMap } from "./core"
 import { hasDiff } from "./reflect"
@@ -30,7 +30,7 @@ export function buildParameters<T>(url: string, model?: T): T {
     urlSearch = url.substring(i + 1)
   }
   try {
-    const parsed: any = convertToObject<T>(qs.parse(urlSearch), model)
+    const parsed: any = convertToObject<T>(queryString.parse(urlSearch), model)
     return parsed
   } catch (error) {
     console.log(error)
