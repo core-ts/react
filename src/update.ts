@@ -40,11 +40,11 @@ export type DispatchWithCallback<T> = (value: T, callback?: Callback<T>) => void
 export function useMergeState<T>(initialState?: T | (() => T)): [T, DispatchWithCallback<Partial<T>>] {
   const [state, _setState] = useState(initialState ? initialState : ({} as any))
 
-  const callbackRef = useRef<Callback<T>>()
+  const callbackRef = useRef<Callback<T>>(null)
 
   const setState = useCallback(
     (newState: Partial<T>, callback?: Callback<T>): void => {
-      callbackRef.current = callback
+      ;(callbackRef as any).current = callback
       _setState((prevState: any) => Object.assign({}, prevState, newState))
     },
     [state],
