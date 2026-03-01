@@ -16,7 +16,11 @@ export function getDecimalSeparator(ele: HTMLInputElement): string {
 
 const r1 = / |,|\$|€|£|¥|'|٬|،| /g
 const r2 = / |\.|\$|€|£|¥|'|٬|،| /g
-export function updateState<T>(e: ChangeEvent<HTMLInputElement, HTMLInputElement>, o: T, setObj: (v: React.SetStateAction<T>) => void) {
+export function updateState<T>(
+  e: ChangeEvent<HTMLInputElement, HTMLInputElement> | ChangeEvent<HTMLTextAreaElement, HTMLTextAreaElement>,
+  o: T,
+  setObj: (v: React.SetStateAction<T>) => void,
+) {
   const ctrl = e.target
   const dataField = ctrl.getAttribute("data-field")
   const field = dataField ? dataField : ctrl.name
@@ -36,7 +40,7 @@ export function updateState<T>(e: ChangeEvent<HTMLInputElement, HTMLInputElement
     if (type === "text") {
       const datatype = ctrl.getAttribute("data-type")
       if (datatype === "number" || datatype === "integer") {
-        const decimalSeparator = getDecimalSeparator(ctrl)
+        const decimalSeparator = getDecimalSeparator(ctrl as HTMLInputElement)
         const v0: string = ctrl.value
         const v = decimalSeparator === "," ? v0.replace(r2, "") : v0.replace(r1, "")
         const val = isNaN(v as any) ? undefined : parseFloat(v)
@@ -53,7 +57,7 @@ export function updateState<T>(e: ChangeEvent<HTMLInputElement, HTMLInputElement
         value.includes(ctrl.value) ? (value = value.filter((v: string) => v !== ctrl.value)) : value.push(ctrl.value)
         model[field] = value
       } else {
-        const v = valueOfCheckbox(ctrl)
+        const v = valueOfCheckbox(ctrl as HTMLInputElement)
         model[field] = v
       }
     } else if (type === "radio") {
