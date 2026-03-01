@@ -1,6 +1,89 @@
+import { ChangeEvent } from "react"
 import { Locale } from "./core"
 import { setValue } from "./reflect"
 import { valueOf } from "./util"
+
+export function getDecimalSeparator(ele: HTMLInputElement): string {
+  let separator = ele.getAttribute("data-decimal-separator")
+  if (!separator) {
+    const form = ele.form
+    if (form) {
+      separator = form.getAttribute("data-decimal-separator")
+    }
+  }
+  return separator === "," ? "," : "."
+}
+
+const r1 = / |,|\$|€|£|¥|'|٬|،| /g
+const r2 = / |\.|\$|€|£|¥|'|٬|،| /g
+export function updateState<T>(e: ChangeEvent<HTMLInputElement, HTMLInputElement>, o: T, setObj: (v: React.SetStateAction<T>) => void) {
+  const ctrl = e.target
+  const dataField = ctrl.getAttribute("data-field")
+  const field = dataField ? dataField : ctrl.name
+  if (ctrl.tagName === "SELECT") {
+    if (ctrl.tagName === "SELECT") {
+      if (ctrl.value === "" || !ctrl.value) {
+        ctrl.removeAttribute("data-value")
+      } else {
+        ctrl.setAttribute("data-value", "data-value")
+      }
+    }
+    setValue(o, field, ctrl.value)
+  } else {
+    let stype = ctrl.getAttribute("type")
+    const type: string = stype ? stype.toLowerCase() : "text"
+    let model: any = o
+    if (type === "text") {
+      const datatype = ctrl.getAttribute("data-type")
+      if (datatype === "number" || datatype === "integer") {
+        const decimalSeparator = getDecimalSeparator(ctrl)
+        const v0: string = ctrl.value
+        const v = decimalSeparator === "," ? v0.replace(r2, "") : v0.replace(r1, "")
+        const val = isNaN(v as any) ? undefined : parseFloat(v)
+        setValue(o, field, val)
+      } else {
+        setValue(o, field, ctrl.value)
+      }
+    } else if (type === "checkbox") {
+      let value = model[field]
+      if (ctrl.id && ctrl.name !== ctrl.id) {
+        if (!value || !Array.isArray(value)) {
+          value = []
+        }
+        value.includes(ctrl.value) ? (value = value.filter((v: string) => v !== ctrl.value)) : value.push(ctrl.value)
+        model[field] = value
+      } else {
+        const v = valueOfCheckbox(ctrl)
+        model[field] = v
+      }
+    } else if (type === "radio") {
+      if (field.indexOf(".") < 0 && field.indexOf("[") < 0) {
+        model[field] = ctrl.value
+      } else {
+        setValue(model, field, ctrl.value)
+      }
+    } else if (type === "date" || type === "datetime-local") {
+      try {
+        const selectedDate = new Date(ctrl.value)
+        setValue(model, field, ctrl.value && ctrl.value !== "" ? selectedDate.toISOString() : null)
+      } catch (error) {
+        console.error("Error occurred while formatting date:", error)
+      }
+    } else if (type === "time") {
+      const objSet: any = {}
+      try {
+        const selectedDate = new Date(ctrl.value)
+        setValue(model, field, selectedDate.getTime())
+      } catch (error) {
+        console.error("Error occurred while formatting time:", error)
+      }
+      return objSet
+    } else {
+      setValue(o, field, ctrl.value)
+    }
+  }
+  setObj({ ...o })
+}
 
 export const enLocale = {
   id: "en-US",
