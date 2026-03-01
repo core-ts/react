@@ -1,3 +1,4 @@
+import { ChangeEvent } from "react"
 import { resources, StringMap } from "./core"
 import { clone } from "./reflect"
 
@@ -371,6 +372,68 @@ export function handleToggle(target?: HTMLElement, on?: boolean): boolean {
   return off
 }
 
+export function getNumber(event: ChangeEvent<HTMLSelectElement | HTMLInputElement>): number {
+  return parseInt(event.currentTarget.value, 10)
+}
+export function onPageSizeChanged<T extends Filter>(
+  event: ChangeEvent<HTMLSelectElement>,
+  search: () => void,
+  filter: T,
+  setState?: (v: React.SetStateAction<T>) => void,
+) {
+  filter.page = 1
+  filter.limit = getNumber(event)
+  if (setState) {
+    setState(filter)
+  }
+  search()
+}
+export function onPageChanged<T extends Filter>(data: PageChange, search: () => void, filter: T, setState?: (v: React.SetStateAction<T>) => void) {
+  const { page, size } = data
+  filter.page = page
+  filter.limit = size
+  if (setState) {
+    setState(filter)
+  }
+  search()
+}
+export function onSearch<F extends Filter, T extends Sortable>(
+  event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+  search: () => void,
+  filter: F,
+  state: T,
+  setFilter?: (v: React.SetStateAction<F>) => void,
+  setState?: (v: React.SetStateAction<T>) => void,
+): void {
+  event.preventDefault()
+  removeSortStatus(state.sortTarget)
+  filter.page = 1
+  state.sortTarget = undefined
+  state.sortField = undefined
+  if (setFilter) {
+    setFilter(filter)
+  }
+  if (setState) {
+    setState(state)
+  }
+  search()
+}
+export function onSort<T extends Sortable>(
+  event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+  search: () => void,
+  state: T,
+  setState?: (v: React.SetStateAction<T>) => void,
+) {
+  const target = getSortElement(event.target as HTMLElement)
+  const sort = handleSort(target, state.sortTarget, state.sortField, state.sortType)
+  state.sortField = sort.field
+  state.sortType = sort.type
+  state.sortTarget = target
+  if (setState) {
+    setState(state)
+  }
+  search()
+}
 export function getSortElement(target: HTMLElement): HTMLElement {
   return target.nodeName === "I" ? (target.parentElement as HTMLElement) : target
 }
@@ -383,7 +446,6 @@ export function handleSort(target: HTMLElement, previousTarget?: HTMLElement, so
   }
   return s
 }
-
 export function sort(preField?: string, preSortType?: string, field?: string, sortType?: string): Sort {
   if (!preField || preField === "") {
     const s: Sort = {
