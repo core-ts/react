@@ -1,14 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Locale, resources } from "./core"
+import { Locale, removePhoneFormat } from "./core"
 import { buildFlatState, buildState, handleEvent, localeOf } from "./state"
-
-export function removePhoneFormat(phone: string): string {
-  if (phone) {
-    return phone.replace(resources.phone, "")
-  } else {
-    return phone
-  }
-}
 
 export function getModelName(form?: HTMLFormElement | null, name?: string): string {
   if (form) {

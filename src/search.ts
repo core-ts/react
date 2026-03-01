@@ -1,6 +1,7 @@
 import { ChangeEvent } from "react"
 import { resources, StringMap } from "./core"
 import { clone } from "./reflect"
+import { updateState } from "./state"
 
 export interface PageChange {
   page: number // currentPage
@@ -352,14 +353,16 @@ export function buildSortFilter<S extends Filter>(obj: S, sortable: Sortable): S
   const filter: any = clone(obj)
   if (sortable.sortField && sortable.sortField.length > 0) {
     filter.sort = sortable.sortType === "-" ? "-" + sortable.sortField : sortable.sortField
+    obj.sort = filter.sort
   } else {
     delete filter.sort
+    delete obj.sort
   }
   delete filter.fields
   return filter
 }
-export function handleToggle(target?: HTMLElement, on?: boolean): boolean {
-  const off = !on
+export function handleToggle(target?: HTMLElement, off?: boolean): boolean {
+  const on = !off
   if (target) {
     if (on) {
       if (!target.classList.contains("on")) {
@@ -369,31 +372,80 @@ export function handleToggle(target?: HTMLElement, on?: boolean): boolean {
       target.classList.remove("on")
     }
   }
-  return off
+  return on
 }
-
 export function getNumber(event: ChangeEvent<HTMLSelectElement | HTMLInputElement>): number {
   return parseInt(event.currentTarget.value, 10)
+}
+
+export function setSortFilter<F extends Filter, T extends Sortable>(
+  state: T,
+  filter: F,
+  setState?: (v: React.SetStateAction<T>) => void,
+  setFilter?: (v: React.SetStateAction<F>) => void,
+  search?: (first?: boolean) => void,
+) {
+  setSort(state, filter.sort)
+  if (setFilter) {
+    setFilter(filter)
+  }
+  if (setState) {
+    setState(state)
+  }
+  if (search) {
+    search(true)
+  }
+}
+export function onToggleSearch(
+  e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+  showFilter: boolean,
+  setShowFilter?: (v: React.SetStateAction<boolean>) => void,
+) {
+  const toggleFilter = handleToggle(e.target as HTMLElement, showFilter)
+  if (setShowFilter) {
+    setShowFilter(toggleFilter)
+  }
+}
+export function resetSearch<T extends Filter>(
+  e: ChangeEvent<HTMLInputElement, HTMLInputElement>,
+  filter: T,
+  setFilter: (v: React.SetStateAction<T>) => void,
+  search?: () => void,
+) {
+  filter.page = 1
+  updateState(e, filter, setFilter)
+  if (search) {
+    search()
+  }
+}
+export function onClearQ<T extends Filter>(filter: T, setFilter?: (v: React.SetStateAction<T>) => void, search?: () => void) {
+  filter.q = ""
+  if (setFilter) {
+    setFilter({ ...filter })
+  }
+  if (search) {
+    search()
+  }
 }
 export function onPageSizeChanged<T extends Filter>(
   event: ChangeEvent<HTMLSelectElement>,
   search: () => void,
   filter: T,
-  setState?: (v: React.SetStateAction<T>) => void,
+  setFilter?: (v: React.SetStateAction<T>) => void,
 ) {
   filter.page = 1
   filter.limit = getNumber(event)
-  if (setState) {
-    setState(filter)
+  if (setFilter) {
+    setFilter(filter)
   }
   search()
 }
-export function onPageChanged<T extends Filter>(data: PageChange, search: () => void, filter: T, setState?: (v: React.SetStateAction<T>) => void) {
+export function onPageChanged<T extends Filter>(data: PageChange, search: () => void, filter: T, setFilter?: (v: React.SetStateAction<T>) => void) {
   const { page, size } = data
   filter.page = page
   filter.limit = size
-  if (setState) {
-    setState(filter)
+  if (setFilter) {
+    setFilter(filter)
   }
   search()
 }

@@ -14,6 +14,10 @@ export * from "./useEdit"
 export * from "./useMessage"
 export * from "./useSearch"
 export * from "./util"
+
+export type ButtonMouseEvent = React.MouseEvent<HTMLButtonElement, MouseEvent>
+export type SelectChangeEvent = ChangeEvent<HTMLSelectElement>
+export type InputChangeEvent = ChangeEvent<HTMLInputElement>
 /*
 type CallBackType<T> = (updatedValue: T) => void;
 type SetStateType<T> = T | ((prev: T) => T);

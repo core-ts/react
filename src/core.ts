@@ -6,7 +6,6 @@ export const pageSizes = [12, 24, 60, 100, 120, 180, 300, 600]
 export const sizes = pageSizes
 // tslint:disable-next-line:class-name
 export class resources {
-  static phone = / |\-|\.|\(|\)/g
   static _cache: any = {}
   static cache = true
   static fields = "fields"
@@ -15,6 +14,20 @@ export class resources {
   static defaultLimit = 24
   static limits = pageSizes
   static pageMaxSize = 7
+  static phone = / |\-|\.|\(|\)/g
+  static fax = / |\-|\.|\(|\)/g
+  static removePhoneFormat(phone?: string | null): string {
+    return phone ? phone.replace(resources.phone, "") : ""
+  }
+  static removeFaxFormat(fax?: string | null): string {
+    return fax ? fax.replace(resources.fax, "") : ""
+  }
+}
+export function removePhoneFormat(phone?: string | null): string {
+  return resources.removePhoneFormat(phone)
+}
+export function removeFaxFormat(fax?: string | null): string {
+  return resources.removeFaxFormat(fax)
 }
 
 export interface StringMap {
