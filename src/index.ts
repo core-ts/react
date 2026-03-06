@@ -4,15 +4,11 @@ export * from "./com"
 export * from "./core"
 export * from "./diff"
 export * from "./edit"
-export * from "./formutil"
 export * from "./reflect"
 export * from "./route"
 export * from "./search"
 export * from "./state"
-export * from "./update"
-export * from "./useEdit"
 export * from "./useMessage"
-export * from "./useSearch"
 export * from "./util"
 
 export type ButtonMouseEvent = React.MouseEvent<HTMLButtonElement, MouseEvent>
@@ -98,7 +94,7 @@ interface InputProps {
   defaultValue?: string
   onChangeNumber?: (value: number) => void
   onChange?: ChangeEventHandler<HTMLInputElement>
-  currencyOnBlur?: (event: Event | any, locale: Locale, currencyCode?: string, includingCurrencySymbol?: boolean) => void
+  currencyOnBlur?: (e: Event | any, locale: Locale, currencyCode?: string, includingCurrencySymbol?: boolean) => void
   currencyCode?: string
   symbol?: boolean
   readOnly?: boolean

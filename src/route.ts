@@ -1,8 +1,23 @@
 import queryString from "query-string"
+import * as React from "react"
 import { NavigateFunction } from "react-router-dom"
 import { StringMap } from "./core"
 import { hasDiff } from "./reflect"
 import { Filter } from "./search"
+
+export function onBack<T>(
+  e: React.MouseEvent<HTMLElement, MouseEvent>,
+  navigate: NavigateFunction,
+  confirm: (msg: string, yesCallback?: () => void) => void,
+  resource: StringMap,
+  o1: T,
+  o2: T,
+  keys?: string[],
+  version?: string,
+) {
+  e.preventDefault()
+  goBack(navigate, confirm, resource, o1, o2, keys, version)
+}
 
 export function goBack<T>(
   navigate: NavigateFunction,

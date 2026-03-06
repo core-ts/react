@@ -374,8 +374,8 @@ export function handleToggle(target?: HTMLElement, off?: boolean): boolean {
   }
   return on
 }
-export function getNumber(event: ChangeEvent<HTMLSelectElement | HTMLInputElement>): number {
-  return parseInt(event.currentTarget.value, 10)
+export function getNumber(e: ChangeEvent<HTMLSelectElement | HTMLInputElement>): number {
+  return parseInt(e.currentTarget.value, 10)
 }
 
 export function setSortFilter<F extends Filter, T extends Sortable>(
@@ -428,13 +428,13 @@ export function onClearQ<T extends Filter>(filter: T, setFilter?: (v: React.SetS
   }
 }
 export function onPageSizeChanged<T extends Filter>(
-  event: ChangeEvent<HTMLSelectElement>,
+  e: ChangeEvent<HTMLSelectElement>,
   search: () => void,
   filter: T,
   setFilter?: (v: React.SetStateAction<T>) => void,
 ) {
   filter.page = 1
-  filter.limit = getNumber(event)
+  filter.limit = getNumber(e)
   if (setFilter) {
     setFilter(filter)
   }
@@ -450,14 +450,14 @@ export function onPageChanged<T extends Filter>(data: PageChange, search: () => 
   search()
 }
 export function onSearch<F extends Filter, T extends Sortable>(
-  event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+  e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
   search: () => void,
   filter: F,
   state: T,
   setFilter?: (v: React.SetStateAction<F>) => void,
   setState?: (v: React.SetStateAction<T>) => void,
 ): void {
-  event.preventDefault()
+  e.preventDefault()
   removeSortStatus(state.sortTarget)
   filter.page = 1
   state.sortTarget = undefined
@@ -471,12 +471,12 @@ export function onSearch<F extends Filter, T extends Sortable>(
   search()
 }
 export function onSort<T extends Sortable>(
-  event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+  e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
   search: () => void,
   state: T,
   setState?: (v: React.SetStateAction<T>) => void,
 ) {
-  const target = getSortElement(event.target as HTMLElement)
+  const target = getSortElement(e.target as HTMLElement)
   const sort = handleSort(target, state.sortTarget, state.sortField, state.sortType)
   state.sortField = sort.field
   state.sortType = sort.type

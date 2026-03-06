@@ -1,6 +1,42 @@
 import { NavigateFunction } from "react-router-dom"
 import { Attributes, ErrorMessage, StringMap } from "./core"
 
+export function isSuccessful<T>(x: number | T | ErrorMessage[]): boolean {
+  if (Array.isArray(x)) {
+    return false
+  } else if (typeof x === "object") {
+    return true
+  } else if (typeof x === "number" && x > 0) {
+    return true
+  }
+  return false
+}
+
+type Result<T> = number | T | ErrorMessage[]
+export function afterSaved<T>(
+  res: Result<T>,
+  form: HTMLFormElement | undefined | null,
+  resource: StringMap,
+  showFormError: (form?: HTMLFormElement | null, errors?: ErrorMessage[]) => ErrorMessage[],
+  alertSuccess: (msg: string, callback?: () => void) => void,
+  alertError: (msg: string) => void,
+  navigate?: NavigateFunction,
+) {
+  if (Array.isArray(res)) {
+    showFormError(form, res)
+  } else if (isSuccessful(res)) {
+    alertSuccess(resource.msg_save_success, () => {
+      if (navigate) {
+        navigate(-1)
+      }
+    })
+  } else if (res === 0) {
+    alertError(resource.error_not_found)
+  } else {
+    alertError(resource.error_conflict)
+  }
+}
+
 export function createModel<T>(attributes?: Attributes): T {
   const obj: any = {}
   if (!attributes) {
@@ -47,40 +83,4 @@ export function createModel<T>(attributes?: Attributes): T {
     }
   }
   return obj
-}
-
-export function isSuccessful<T>(x: number | T | ErrorMessage[]): boolean {
-  if (Array.isArray(x)) {
-    return false
-  } else if (typeof x === "object") {
-    return true
-  } else if (typeof x === "number" && x > 0) {
-    return true
-  }
-  return false
-}
-
-type Result<T> = number | T | ErrorMessage[]
-export function afterSaved<T>(
-  res: Result<T>,
-  form: HTMLFormElement | undefined | null,
-  resource: StringMap,
-  showFormError: (form?: HTMLFormElement | null, errors?: ErrorMessage[]) => ErrorMessage[],
-  alertSuccess: (msg: string, callback?: () => void) => void,
-  alertError: (msg: string) => void,
-  navigate?: NavigateFunction,
-) {
-  if (Array.isArray(res)) {
-    showFormError(form, res)
-  } else if (isSuccessful(res)) {
-    alertSuccess(resource.msg_save_success, () => {
-      if (navigate) {
-        navigate(-1)
-      }
-    })
-  } else if (res === 0) {
-    alertError(resource.error_not_found)
-  } else {
-    alertError(resource.error_conflict)
-  }
 }

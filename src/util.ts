@@ -1,5 +1,17 @@
-import { Locale } from "./core"
-import { enLocale } from "./state"
+import { Locale } from "./core";
+
+export const enLocale = {
+  id: "en-US",
+  countryCode: "US",
+  dateFormat: "M/d/yyyy",
+  firstDayOfWeek: 1,
+  decimalSeparator: ".",
+  groupSeparator: ",",
+  decimalDigits: 2,
+  currencyCode: "USD",
+  currencySymbol: "$",
+  currencyPattern: 0,
+}
 
 const r1 = / |,|\$|€|£|¥|'|٬|،| /g
 const r2 = / |\.|\$|€|£|¥|'|٬|،| /g

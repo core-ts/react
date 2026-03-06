@@ -23,7 +23,7 @@ export interface Props {
   maxLength?: number
   value?: string
   placeholder?: string
-  pageSizeChanged?: (event: any) => void
+  pageSizeChanged?: (e: React.ChangeEvent<HTMLSelectElement>) => void
   search?: React.MouseEventHandler<HTMLElement>
   toggle?: React.MouseEventHandler<HTMLElement>
   clear?: React.MouseEventHandler<HTMLButtonElement>
