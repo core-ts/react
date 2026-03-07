@@ -1,23 +1,15 @@
-import { LoadingService } from "./core"
 import { clone } from "./reflect"
 
-export interface DiffParameter {
-  showMessage: (msg: string, option?: string) => void
-  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void
-  loading?: LoadingService
-}
-export interface BaseDiffState {
-  disabled: boolean
-}
 export interface DiffModel<T, ID> {
   id?: ID
   origin?: T
   value: T
 }
 export interface ApprService<ID> {
-  approve(id: ID, ctx?: any): Promise<number | string>
-  reject(id: ID, ctx?: any): Promise<number | string>
+  approve(id: ID, note?: string): Promise<number>
+  reject(id: ID, note?: string): Promise<number>
 }
+
 export interface DiffService<T, ID> {
   keys(): string[]
   diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>>

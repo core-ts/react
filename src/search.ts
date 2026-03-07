@@ -407,7 +407,7 @@ export function onToggleSearch(
   }
 }
 export function resetSearch<T extends Filter>(
-  e: ChangeEvent<HTMLInputElement, HTMLInputElement>,
+  e: ChangeEvent<HTMLInputElement>,
   filter: T,
   setFilter: (v: React.SetStateAction<T>) => void,
   search?: () => void,

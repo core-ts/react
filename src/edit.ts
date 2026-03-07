@@ -36,6 +36,28 @@ export function afterSaved<T>(
     alertError(resource.error_conflict)
   }
 }
+export function afterCreated<T>(
+  res: Result<T>,
+  form: HTMLFormElement | undefined | null,
+  successMessage: string,
+  duplicateMessage: string,
+  showFormError: (form?: HTMLFormElement | null, errors?: ErrorMessage[]) => ErrorMessage[],
+  alertSuccess: (msg: string, callback?: () => void) => void,
+  alertError: (msg: string) => void,
+  navigate?: NavigateFunction,
+) {
+  if (Array.isArray(res)) {
+    showFormError(form, res)
+  } else if (isSuccessful(res)) {
+    alertSuccess(successMessage, () => {
+      if (navigate) {
+        navigate(-1)
+      }
+    })
+  } else {
+    alertError(duplicateMessage)
+  }
+}
 
 export function createModel<T>(attributes?: Attributes): T {
   const obj: any = {}
