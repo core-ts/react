@@ -30,6 +30,7 @@ export function goBack<T>(
 ) {
   if (!o2) {
     navigate(-1)
+    return
   }
   if (!hasDiff(o1, o2, keys, version)) {
     navigate(-1)
