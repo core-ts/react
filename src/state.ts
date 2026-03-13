@@ -39,7 +39,11 @@ export function updateNumber<T>(
   }
 }
 export function formatAndUpdateState<T>(
-  e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLSelectElement> | ChangeEvent<HTMLTextAreaElement>,
+  e:
+    | ChangeEvent<HTMLInputElement>
+    | ChangeEvent<HTMLSelectElement>
+    | ChangeEvent<HTMLTextAreaElement>
+    | ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   o: T,
   setObj: (v: React.SetStateAction<T>) => void,
   formatStr?: (s?: string) => string,
@@ -48,7 +52,11 @@ export function formatAndUpdateState<T>(
   updateState(e, o, setObj, callback, formatStr)
 }
 export function updateState<T>(
-  e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLSelectElement> | ChangeEvent<HTMLTextAreaElement>,
+  e:
+    | ChangeEvent<HTMLInputElement>
+    | ChangeEvent<HTMLSelectElement>
+    | ChangeEvent<HTMLTextAreaElement>
+    | ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   o: T,
   setObj: (v: React.SetStateAction<T>) => void,
   callback?: () => void,

@@ -75,23 +75,9 @@ export type Type =
   | "datetimes"
   | "times"
 
-export type Format = "currency" | "percentage" | "email" | "url" | "phone" | "fax" | "ipv4" | "ipv6"
-
 export interface Attribute {
   name?: string
   type?: Type
-  format?: Format
-  key?: boolean
-  version?: boolean
-  typeof?: Attributes
-  scale?: number
-  noformat?: boolean
-}
-export interface Attribute {
-  name?: string
-  type?: Type
-  key?: boolean
-  version?: boolean
   typeof?: Attributes
 }
 export interface Attributes {

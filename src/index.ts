@@ -40,9 +40,18 @@ export const useCallbackState: RetType = <T>(initialValue: T | (() => T)) => {
 export function checked(s: string[] | string | undefined, v: string): boolean | undefined {
   if (s) {
     if (Array.isArray(s)) {
-      return s.includes(v)
+      return includes(s, v)
     } else {
       return s === v
+    }
+  }
+  return false
+}
+export function includes(s: string[], v: string): boolean {
+  const l = s.length
+  for (let i = 0; i < l; i++) {
+    if (s[i] === v) {
+      return true
     }
   }
   return false
@@ -182,8 +191,8 @@ export function formatDate(date: Date | null | undefined, format: string): strin
 export function dateToString(date: Date | string): string {
   const d2 = typeof date !== "string" ? date : new Date(date)
   const year = d2.getFullYear()
-  const month = String(d2.getMonth() + 1).padStart(2, "0")
-  const day = String(d2.getDate()).padStart(2, "0")
+  const month = pad(d2.getMonth() + 1)
+  const day = pad(d2.getDate())
   return `${year}-${month}-${day}`
 }
 export function datetimeToString(date?: Date | string): string | undefined {
@@ -192,12 +201,15 @@ export function datetimeToString(date?: Date | string): string | undefined {
   }
   const d2 = typeof date !== "string" ? date : new Date(date)
   const year = d2.getFullYear()
-  const month = String(d2.getMonth() + 1).padStart(2, "0")
-  const day = String(d2.getDate()).padStart(2, "0")
-  const hours = String(d2.getHours()).padStart(2, "0")
-  const minutes = String(d2.getMinutes()).padStart(2, "0")
-  const seconds = String(d2.getSeconds()).padStart(2, "0")
+  const month = pad(d2.getMonth() + 1)
+  const day = pad(d2.getDate())
+  const hours = pad(d2.getHours())
+  const minutes = pad(d2.getMinutes())
+  const seconds = pad(d2.getSeconds())
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+}
+function pad(n: number): string {
+  return n < 10 ? "0" + n : n.toString()
 }
 
 export const scrollToFocus = (e: any, isUseTimeOut?: boolean) => {

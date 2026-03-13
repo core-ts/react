@@ -11,7 +11,7 @@ export function onBack<T>(
   confirm: (msg: string, yesCallback?: () => void) => void,
   resource: StringMap,
   o1: T,
-  o2: T,
+  o2?: T,
   keys?: string[],
   version?: string,
 ) {
@@ -24,10 +24,13 @@ export function goBack<T>(
   confirm: (msg: string, yesCallback?: () => void) => void,
   resource: StringMap,
   o1: T,
-  o2: T,
+  o2?: T,
   keys?: string[],
   version?: string,
 ) {
+  if (!o2) {
+    navigate(-1)
+  }
   if (!hasDiff(o1, o2, keys, version)) {
     navigate(-1)
   } else {
@@ -87,7 +90,9 @@ function parseToModel(dest: any, src: any) {
     return dest
   }
   for (let key in src) {
-    if (!Object.hasOwn(dest, key)) continue
+    if (!Object.hasOwn(dest, key)) {
+      continue
+    }
     if (src.hasOwnProperty(key)) {
       if (src[key] && src[key].constructor === Object) {
         if (!dest[key] || dest[key].constructor !== Object) {

@@ -76,7 +76,10 @@ export function notIn(s1: string[], s2: string[]): string[] {
   return r
 }
 
-export function makeDiff<T>(o1: T, o2: T, keys?: string[], version?: string): Partial<T> {
+export function makeDiff<T>(o1: T, o2?: T, keys?: string[], version?: string): Partial<T> {
+  if (o1 && !o2) {
+    return o1
+  }
   const obj1: any = o1
   const obj2: any = o2
   const obj3: any = {}
@@ -99,17 +102,15 @@ export function makeDiff<T>(o1: T, o2: T, keys?: string[], version?: string): Pa
   }
   return obj3
 }
-export function hasDiff<T>(o1: T, o2: T, keys?: string[], version?: string): boolean {
-  const diff = makeDiff(o1, o2, keys, version)
-  return !isEmptyObject(diff)
-}
-export function isEmptyObject(obj: any): boolean {
-  for (let key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      return false
-    }
+export function hasDiff<T>(o1: T, o2?: T, keys?: string[], version?: string): boolean {
+  if (o1 && !o2) {
+    return true
   }
-  return true
+  const diff = makeDiff(o1, o2, keys, version)
+  return !isEmpty(diff)
+}
+export function isEmpty(obj: unknown): boolean {
+  return !!obj && typeof obj === "object" && Object.keys(obj as object).length === 0
 }
 
 export function equal(obj1: any, obj2: any): boolean {
