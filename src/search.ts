@@ -361,6 +361,10 @@ export function buildSortFilter<S extends Filter>(obj: S, sortable: Sortable): S
   delete filter.fields
   return filter
 }
+export function addParametersIntoUrlWithSort<F extends Filter>(filter: F, state: Sortable, isFirstLoad?: boolean) {
+  const urlFilter = buildSortFilter(filter, state)
+  addParametersIntoUrl(urlFilter, isFirstLoad)
+}
 export function handleToggle(target?: HTMLElement, off?: boolean): boolean {
   const on = !off
   if (target) {
@@ -379,10 +383,10 @@ export function getNumber(e: ChangeEvent<HTMLSelectElement | HTMLInputElement>):
 }
 
 export function setSortFilter<F extends Filter, T extends Sortable>(
-  state: T,
   filter: F,
-  setState?: (v: React.SetStateAction<T>) => void,
+  state: T,
   setFilter?: (v: React.SetStateAction<F>) => void,
+  setState?: (v: React.SetStateAction<T>) => void,
   search?: (first?: boolean) => void,
 ) {
   setSort(state, filter.sort)

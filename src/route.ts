@@ -30,102 +30,123 @@ export function goBack<T>(
 ) {
   if (!o2) {
     navigate(-1)
-    return
-  }
-  if (!hasDiff(o1, o2, keys, version)) {
+  } else if (!hasDiff(o1, o2, keys, version)) {
     navigate(-1)
   } else {
     confirm(resource.msg_confirm_back, () => navigate(-1))
   }
 }
 
-export function buildFromUrl<S extends Filter>(modelT?: S): S {
-  return buildParameters<S>(window.location.search, modelT)
+export function buildFromUrl<T extends Filter>(model?: T): T {
+  return buildParameters<T>(window.location.search, model)
 }
+
 export function buildParameters<T>(url: string, model?: T): T {
-  let urlSearch = url
-  const i = urlSearch.indexOf("?")
-  if (i >= 0) {
-    urlSearch = url.substring(i + 1)
+  var query = url
+  var index = url.indexOf("?")
+
+  if (index >= 0) {
+    query = url.substring(index + 1)
   }
-  try {
-    const parsed: any = convertToObject<T>(queryString.parse(urlSearch), model)
-    return parsed
-  } catch (error) {
-    console.log(error)
-    throw error
-  }
+
+  var parsed = queryString.parse(query, {
+    parseNumbers: true,
+    parseBooleans: true,
+  })
+
+  return convertToObject(parsed as any, model)
 }
 
-export function convertToObject<T>(input: any, model?: T): T {
+export function convertToObject<T>(input: { [key: string]: any }, model?: T): T {
   if (model) {
-    return parseToModel(input, model)
+    return mapToModel(input, model)
   }
-  const output: any = {}
 
-  for (let key in input) {
-    const value = input[key]
-    const keys = key.split(".")
+  var output: any = {}
 
-    let currentObj: any = output
-    for (let i = 0; i < keys.length; i++) {
-      const currentKey = keys[i]
+  for (var key in input) {
+    if (!Object.prototype.hasOwnProperty.call(input, key)) {
+      continue
+    }
 
-      if (!currentObj[currentKey]) {
-        if (i === keys.length - 1) {
-          currentObj[currentKey] = parseValue(value)
-        } else {
-          currentObj[currentKey] = {}
+    var value = input[key]
+    var keys = key.split(".")
+    var current = output
+
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i]
+
+      if (i === keys.length - 1) {
+        current[k] = parseValue(value)
+      } else {
+        if (!current[k]) {
+          current[k] = {}
         }
+        current = current[k]
       }
-
-      currentObj = currentObj[currentKey]
     }
   }
 
   return output as T
 }
 
-function parseToModel(dest: any, src: any) {
-  if (typeof dest !== "object" || typeof src !== "object") {
-    return dest
-  }
-  for (let key in src) {
-    if (!Object.hasOwn(dest, key)) {
+function mapToModel<T>(input: { [key: string]: any }, model: T): T {
+  var result: any = {}
+  var key: string
+
+  for (key in model as any) {
+    if (!Object.prototype.hasOwnProperty.call(model, key)) {
       continue
     }
-    if (src.hasOwnProperty(key)) {
-      if (src[key] && src[key].constructor === Object) {
-        if (!dest[key] || dest[key].constructor !== Object) {
-          dest[key] = {}
-        }
-        parseToModel(dest[key], src[key])
-      } else if (src[key] instanceof Date) {
-        dest[key] = new Date(dest[key])
-      } else if (typeof src[key] === "boolean") {
-        if (dest[key].length > 0) {
-          dest[key] = new Boolean(dest[key])
-        }
-      } else if (typeof src[key] === "number") {
-        if (typeof dest[key] === "string" && dest[key].indexOf(".") !== -1) {
-          dest[key] = parseFloat(dest[key])
-        } else {
-          dest[key] = parseInt(dest[key], 10)
-        }
-      } else if (typeof src[key] === "string") {
-        if (dest[key]) {
-          dest[key] = dest[key].toString()
-        }
+
+    var modelValue = (model as any)[key]
+    var inputValue = input[key]
+
+    if (inputValue === undefined) {
+      result[key] = modelValue
+      continue
+    }
+
+    if (modelValue instanceof Date) {
+      result[key] = new Date(inputValue)
+    } else if (typeof modelValue === "number") {
+      result[key] = Number(inputValue)
+    } else if (typeof modelValue === "boolean") {
+      result[key] = Boolean(inputValue)
+    } else if (typeof modelValue === "string") {
+      result[key] = String(inputValue)
+    } else if (Object.prototype.toString.call(modelValue) === "[object Array]") {
+      if (Object.prototype.toString.call(inputValue) === "[object Array]") {
+        result[key] = inputValue
+      } else {
+        result[key] = [inputValue]
       }
+    } else if (typeof modelValue === "object" && modelValue !== null) {
+      result[key] = mapToModel(inputValue || {}, modelValue)
+    } else {
+      result[key] = inputValue
     }
   }
-  return dest
+
+  return result
 }
 
 function parseValue(value: any): any {
-  // Check if the value is a string representing a number and parse it to a number
-  if (!isNaN(value) && !isNaN(parseFloat(value))) {
-    return parseFloat(value)
+  if (typeof value !== "string") {
+    return value
   }
+
+  if (!isNaN(Number(value))) {
+    return Number(value)
+  }
+
+  if (value === "true") {
+    return true
+  }
+
+  if (value === "false") {
+    return false
+  }
+
   return value
 }

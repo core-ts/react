@@ -109,8 +109,13 @@ export function hasDiff<T>(o1: T, o2?: T, keys?: string[], version?: string): bo
   const diff = makeDiff(o1, o2, keys, version)
   return !isEmpty(diff)
 }
-export function isEmpty(obj: unknown): boolean {
-  return !!obj && typeof obj === "object" && Object.keys(obj as object).length === 0
+export function isEmpty(obj: object): boolean {
+  for (const _ in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, _)) {
+      return false
+    }
+  }
+  return true
 }
 
 export function equal(obj1: any, obj2: any): boolean {
