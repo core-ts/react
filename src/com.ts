@@ -1,6 +1,33 @@
 import * as React from "react"
 import { Locale, pageSizes } from "./core"
 
+export interface ErrorProps {
+  title?: string
+  message?: string
+  back?: React.MouseEventHandler<HTMLElement>
+}
+export function Error(p: ErrorProps) {
+  return React.createElement(
+    "div",
+    React.createElement(
+      "header",
+      p.back && React.createElement("button", { type: "button", id: "btnBack", name: "btnBack", className: "btn-back", onClick: p.back }),
+      React.createElement("h2", p.title),
+    ),
+    React.createElement("div", { className: "error-body" }, React.createElement("h4", { className: "h4" }, p.message)),
+  )
+  /*
+  <div>
+    <header>
+      <button type="button" id="btnBack" name="btnBack" className="btn-back" onClick={() => navigate(-1)}></button>
+      <h2>{resource.error_404_title}</h2>
+    </header>
+    <div className="error-body">
+      <h4 className="h4">{resource.error_404_message}</h4>
+    </div>
+  </div>
+  */
+}
 export interface PageSizeProps {
   id?: string
   name?: string
@@ -46,9 +73,10 @@ export function Search(p: Props) {
         maxLength: p.maxLength,
         placeholder: p.placeholder,
       }),
-      p.clear && React.createElement("button", { type: "button", hidden: !p.value, className: "btn-remove-text", onClick: p.clear }),
-      p.toggle && React.createElement("button", { type: "button", className: "btn-filter", onClick: p.toggle }),
-      p.search && React.createElement("button", { type: "submit", className: "btn-search", onClick: p.search }),
+      p.clear &&
+        React.createElement("button", { type: "button", id: "btnClearQ", name: "btnClearQ", hidden: !p.value, className: "btn-remove-text", onClick: p.clear }),
+      p.toggle && React.createElement("button", { type: "button", id: "btnToggleSearch", name: "btnToggleSearch", className: "btn-filter", onClick: p.toggle }),
+      p.search && React.createElement("button", { type: "submit", id: "btnSearch", name: "btnSearch", className: "btn-search", onClick: p.search }),
     ),
   )
   /*
@@ -57,9 +85,9 @@ export function Search(p: Props) {
       <label className={p.className}>
         {p.pageSizeChanged && <PageSizeSelect size={p.size} sizes={p.sizes} onChange={p.pageSizeChanged} name={p.name} id={p.id} />}
         <input type='text' id='q' name='q' value={p.value || ''} onChange={p.onChange} maxLength={p.maxLength} placeholder={p.placeholder} />
-        {p.clear && <button type='button' hidden={!p.value} className='btn-remove-text' onClick={p.clear}/>}
-        {p.toggle && <button type='button' className='btn-filter' onClick={p.toggle} />}
-        {p.search && <button type='submit' className='btn-search' onClick={p.search} />}
+        {p.clear && <button type='button' id='btnClearQ' name='btnClearQ' hidden={!p.value} className='btn-remove-text' onClick={p.clear}/>}
+        {p.toggle && <button type='button' id='btnToggleSearch' name='btnToggleSearch' className='btn-filter' onClick={p.toggle} />}
+        {p.search && <button type='submit' id='btnSearch' name='btnSearch' className='btn-search' onClick={p.search} />}
       </label>
     </>
   );

@@ -38,10 +38,10 @@ export function clone(obj: any): any {
 
 export function diff(obj1: any, obj2: any): string[] {
   const fields = []
-  const key1s = Object.keys(obj1)
+  const key1s = Object.keys(obj2)
   for (const k of key1s) {
-    const v1 = obj1[k]
-    const v2 = obj2[k]
+    const v1 = obj2[k]
+    const v2 = obj1[k]
     if (v1 == null) {
       if (v2 != null) {
         fields.push(k)
@@ -59,7 +59,7 @@ export function diff(obj1: any, obj2: any): string[] {
       }
     }
   }
-  const key2s = Object.keys(obj2)
+  const key2s = Object.keys(obj1)
   const ni = notIn(key1s, key2s)
   for (const n of ni) {
     fields.push(n)

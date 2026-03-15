@@ -361,9 +361,17 @@ export function buildSortFilter<S extends Filter>(obj: S, sortable: Sortable): S
   delete filter.fields
   return filter
 }
-export function addParametersIntoUrlWithSort<F extends Filter>(filter: F, state: Sortable, isFirstLoad?: boolean) {
+export function addParametersIntoUrlWithSort<F extends Filter>(
+  filter: F,
+  state: Sortable,
+  isFirstLoad?: boolean,
+  setFilter?: (v: React.SetStateAction<F>) => void,
+) {
   const urlFilter = buildSortFilter(filter, state)
   addParametersIntoUrl(urlFilter, isFirstLoad)
+  if (setFilter) {
+    setFilter(filter)
+  }
 }
 export function handleToggle(target?: HTMLElement, off?: boolean): boolean {
   const on = !off
