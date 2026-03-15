@@ -80,7 +80,6 @@ export function makeDiff<T>(o1: T, o2?: T, keys?: string[], version?: string): P
   if (o1 && !o2) {
     return o1
   }
-  debugger
   const obj1: any = o1
   const obj2: any = o2
   const obj3: any = {}

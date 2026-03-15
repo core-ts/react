@@ -16,6 +16,9 @@ export class resources {
   static pageMaxSize = 7
   static phone = / |\-|\.|\(|\)/g
   static fax = / |\-|\.|\(|\)/g
+  static getSortId(field: string): string {
+    return field + "Sort"
+  }
   static removePhoneFormat(phone?: string | null): string {
     return phone ? phone.replace(resources.phone, "") : ""
   }

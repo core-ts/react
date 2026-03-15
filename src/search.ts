@@ -361,6 +361,9 @@ export function buildSortFilter<S extends Filter>(obj: S, sortable: Sortable): S
   delete filter.fields
   return filter
 }
+export function getSortId(field: string): string {
+  return resources.getSortId(field)
+}
 export function addParametersIntoUrlWithSort<F extends Filter>(
   filter: F,
   state: Sortable,
@@ -368,6 +371,20 @@ export function addParametersIntoUrlWithSort<F extends Filter>(
   setFilter?: (v: React.SetStateAction<F>) => void,
 ) {
   const urlFilter = buildSortFilter(filter, state)
+  if (isFirstLoad) {
+    if (state.sortField) {
+      const eleId = getSortId(state.sortField)
+      const ele = document.getElementById(eleId)
+      if (ele) {
+        if (ele.children.length === 0) {
+          toggleSortStyle(ele)
+          if (state.sortType === "-") {
+            toggleSortStyle(ele)
+          }
+        }
+      }
+    }
+  }
   addParametersIntoUrl(urlFilter, isFirstLoad)
   if (setFilter) {
     setFilter(filter)
