@@ -9,10 +9,12 @@ export interface ErrorProps {
 export function Error(p: ErrorProps) {
   return React.createElement(
     "div",
+    {},
     React.createElement(
       "header",
+      {},
       p.back && React.createElement("button", { type: "button", id: "btnBack", name: "btnBack", className: "btn-back", onClick: p.back }),
-      React.createElement("h2", p.title),
+      React.createElement("h2", {}, p.title),
     ),
     React.createElement("div", { className: "error-body" }, React.createElement("h4", { className: "h4" }, p.message)),
   )

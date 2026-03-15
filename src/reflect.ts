@@ -80,6 +80,7 @@ export function makeDiff<T>(o1: T, o2?: T, keys?: string[], version?: string): P
   if (o1 && !o2) {
     return o1
   }
+  debugger
   const obj1: any = o1
   const obj2: any = o2
   const obj3: any = {}
@@ -88,17 +89,17 @@ export function makeDiff<T>(o1: T, o2?: T, keys?: string[], version?: string): P
     return obj3
   }
   for (const d of s) {
-    obj3[d] = obj2[d]
+    obj3[d] = obj1[d]
   }
   if (keys && keys.length > 0) {
     for (const x of keys) {
       if (x.length > 0) {
-        obj3[x] = obj1[x]
+        obj3[x] = obj2[x]
       }
     }
   }
   if (version && version.length > 0) {
-    obj3[version] = obj1[version]
+    obj3[version] = obj2[version]
   }
   return obj3
 }
