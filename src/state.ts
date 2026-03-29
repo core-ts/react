@@ -13,6 +13,20 @@ export function getDecimalSeparator(ele: HTMLInputElement): string {
   return separator === "," ? "," : "."
 }
 
+export function removeSeparators(s?: string | null): string {
+  if (!s) return ""
+  const buf: string[] = []
+  let idx = 0
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+
+    if (c === 45 || (c >= 48 && c <= 57)) {
+      buf[idx++] = s[i]
+    }
+  }
+  return buf.join("")
+}
+
 const r1 = / |,|\$|€|£|¥|'|٬|،| /g
 const r2 = / |\.|\$|€|£|¥|'|٬|،| /g
 export function updateNumber<T>(
@@ -31,7 +45,7 @@ export function updateNumber<T>(
   if (v.indexOf(",") >= 0) {
     v = v.replace(",", ".")
   }
-  const val = isNaN(v as any) ? undefined : parseInt(v)
+  const val = isNaN(v as any) ? undefined : parseFloat(v)
   setValue(o, field, val)
   setObj({ ...o })
   if (callback) {
@@ -116,7 +130,11 @@ export function updateState<T>(
       } else if (datatype === "fax") {
         const val = removeFaxFormat(v0)
         setValue(o, field, val)
-      } else if (datatype === "number" || datatype === "int") {
+      } else if (datatype === "int") {
+        let v = removeSeparators(v0)
+        const val = isNaN(v as any) ? undefined : parseFloat(v)
+        setValue(o, field, val)
+      } else if (datatype === "number") {
         const decimalSeparator = getDecimalSeparator(ctrl as HTMLInputElement)
         let v = decimalSeparator === "," ? v0.replace(r2, "") : v0.replace(r1, "")
         if (v.indexOf(",") >= 0) {
