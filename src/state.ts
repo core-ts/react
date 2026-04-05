@@ -130,7 +130,7 @@ export function updateState<T>(
       } else if (datatype === "fax") {
         const val = removeFaxFormat(v0)
         setValue(o, field, val)
-      } else if (datatype === "int") {
+      } else if (datatype === "integer") {
         let v = removeSeparators(v0)
         const val = isNaN(v as any) ? undefined : parseFloat(v)
         setValue(o, field, val)

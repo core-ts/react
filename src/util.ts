@@ -1,4 +1,4 @@
-import { Locale } from "./core";
+import { Locale } from "./core"
 
 export const enLocale = {
   id: "en-US",
@@ -29,7 +29,7 @@ export function valueOf(ctrl: HTMLInputElement, locale?: Locale, eventType?: str
     }
   } else {
     const datatype = ctrl.getAttribute("data-type")
-    if (datatype === "number" || datatype === "int") {
+    if (datatype === "number" || datatype === "integer") {
       let v
       if (locale && locale.decimalSeparator !== ".") {
         v = ctrl.value.replace(r2, "")
