@@ -364,28 +364,38 @@ export function buildSortFilter<S extends Filter>(obj: S, sortable: Sortable): S
 export function getSortId(field: string): string {
   return resources.getSortId(field)
 }
-export function addParametersIntoUrlWithSort<F extends Filter>(
+export function updateUrl<F extends Filter, S extends Sortable>(
   filter: F,
-  state: Sortable,
   isFirstLoad?: boolean,
   setFilter?: (v: React.SetStateAction<F>) => void,
+  state?: S,
+  setState?: (v: React.SetStateAction<S>) => void,
 ) {
-  const urlFilter = buildSortFilter(filter, state)
-  if (isFirstLoad) {
-    if (state.sortField) {
-      const eleId = getSortId(state.sortField)
-      const ele = document.getElementById(eleId)
-      if (ele) {
-        if (ele.children.length === 0) {
-          toggleSortStyle(ele)
-          if (state.sortType === "-") {
+  if (state) {
+    const urlFilter = buildSortFilter(filter, state)
+    if (isFirstLoad) {
+      if (state.sortField) {
+        const eleId = getSortId(state.sortField)
+        const ele = document.getElementById(eleId)
+        if (ele) {
+          if (ele.children.length === 0) {
             toggleSortStyle(ele)
+            if (state.sortType === "-") {
+              toggleSortStyle(ele)
+            }
           }
         }
       }
     }
+    addParametersIntoUrl(urlFilter, isFirstLoad)
+    if (setState) {
+      setState(state)
+    }
+  } else {
+    const urlFilter = { ...filter }
+    delete urlFilter.fields
+    addParametersIntoUrl(urlFilter, isFirstLoad)
   }
-  addParametersIntoUrl(urlFilter, isFirstLoad)
   if (setFilter) {
     setFilter(filter)
   }
@@ -467,26 +477,32 @@ export function onPageChanged<T extends Filter>(data: PageChange, search: (obj: 
   filter.limit = size
   search(filter)
 }
-export function onSearch<T extends Sortable, F extends Filter>(
+export function onSearch<F extends Filter, T extends Sortable>(
   e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-  state: T,
   search: (obj: F) => void,
   filter: F,
+  state?: T,
 ): void {
   e.preventDefault()
-  removeSortStatus(state.sortTarget)
   filter.page = 1
-  state.sortTarget = undefined
-  state.sortField = undefined
+  if (state) {
+    removeSortStatus(state.sortTarget)
+    state.sortTarget = undefined
+    state.sortField = undefined
+  }
   search(filter)
 }
-export function onSort<T extends Sortable, F>(e: React.MouseEvent<HTMLButtonElement, MouseEvent>, state: T, search: (obj: F) => void, filter: F) {
+export function sortOnChange<F extends Filter>(target: HTMLSelectElement, search: (obj: F) => void, filter: F) {
+  filter.sort = target.value
+  search(filter)
+}
+export function onSort<F, T extends Sortable>(e: React.MouseEvent<HTMLButtonElement, MouseEvent>, search: (obj: F, s?: T) => void, filter: F, state: T) {
   const target = getSortElement(e.target as HTMLElement)
   const sort = handleSort(target, state.sortTarget, state.sortField, state.sortType)
   state.sortField = sort.field
   state.sortType = sort.type
   state.sortTarget = target
-  search(filter)
+  search(filter, state)
 }
 export function getSortElement(target: HTMLElement): HTMLElement {
   return target.nodeName === "I" ? (target.parentElement as HTMLElement) : target

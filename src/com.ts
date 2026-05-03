@@ -33,6 +33,7 @@ export function Error(p: ErrorProps) {
 export interface PageSizeProps {
   id?: string
   name?: string
+  className?: string
   size?: number
   sizes?: number[]
   onChange?: React.ChangeEventHandler<HTMLSelectElement>
@@ -41,7 +42,25 @@ export function PageSizeSelect(p: PageSizeProps) {
   const g = p.sizes
   const s = !g || g.length === 0 ? pageSizes : g
   const opts = s.map((pgSize) => React.createElement("option", { key: pgSize, value: pgSize }, pgSize))
-  return React.createElement("select", { id: p.id, name: p.name, defaultValue: p.size, onChange: p.onChange }, opts)
+  return React.createElement("select", { id: p.id, name: p.name, className: p.className, value: p.size, onChange: p.onChange }, opts)
+}
+interface Item {
+  id?: string
+  value: string
+  text?: string
+}
+export interface SelectProps {
+  id?: string
+  name?: string
+  className?: string
+  value?: string
+  items: Item[]
+  onChange?: React.ChangeEventHandler<HTMLSelectElement>
+}
+export function Select(p: SelectProps) {
+  const s = p.items
+  const opts = s.map((item) => React.createElement("option", { key: item.value, value: item.value }, item.text))
+  return React.createElement("select", { id: p.id, name: p.name, className: p.className, value: p.value, onChange: p.onChange }, opts)
 }
 export interface Props {
   id?: string
