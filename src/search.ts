@@ -439,81 +439,54 @@ export function resetSearch<T extends Filter>(
   e: ChangeEvent<HTMLInputElement>,
   filter: T,
   setFilter: (v: React.SetStateAction<T>) => void,
-  search?: () => void,
+  search?: (obj: T) => void,
 ) {
   filter.page = 1
   updateState(e, filter, setFilter)
   if (search) {
-    search()
+    search(filter)
   }
 }
-export function onClearQ<T extends Filter>(filter: T, setFilter?: (v: React.SetStateAction<T>) => void, search?: () => void) {
+export function onClearQ<T extends Filter>(filter: T, setFilter?: (v: React.SetStateAction<T>) => void, search?: (obj: T) => void) {
   filter.q = ""
   if (setFilter) {
     setFilter({ ...filter })
   }
   if (search) {
-    search()
+    search(filter)
   }
 }
-export function onPageSizeChanged<T extends Filter>(
-  e: ChangeEvent<HTMLSelectElement>,
-  search: () => void,
-  filter: T,
-  setFilter?: (v: React.SetStateAction<T>) => void,
-) {
+export function onPageSizeChanged<T extends Filter>(e: ChangeEvent<HTMLSelectElement>, search: (obj: T) => void, filter: T) {
   filter.page = 1
   filter.limit = getNumber(e)
-  if (setFilter) {
-    setFilter(filter)
-  }
-  search()
+  search(filter)
 }
-export function onPageChanged<T extends Filter>(data: PageChange, search: () => void, filter: T, setFilter?: (v: React.SetStateAction<T>) => void) {
+export function onPageChanged<T extends Filter>(data: PageChange, search: (obj: T) => void, filter: T) {
   const { page, size } = data
   filter.page = page
   filter.limit = size
-  if (setFilter) {
-    setFilter(filter)
-  }
-  search()
+  search(filter)
 }
-export function onSearch<F extends Filter, T extends Sortable>(
+export function onSearch<T extends Sortable, F extends Filter>(
   e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-  search: () => void,
-  filter: F,
   state: T,
-  setFilter?: (v: React.SetStateAction<F>) => void,
-  setState?: (v: React.SetStateAction<T>) => void,
+  search: (obj: F) => void,
+  filter: F,
 ): void {
   e.preventDefault()
   removeSortStatus(state.sortTarget)
   filter.page = 1
   state.sortTarget = undefined
   state.sortField = undefined
-  if (setFilter) {
-    setFilter(filter)
-  }
-  if (setState) {
-    setState(state)
-  }
-  search()
+  search(filter)
 }
-export function onSort<T extends Sortable>(
-  e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-  search: () => void,
-  state: T,
-  setState?: (v: React.SetStateAction<T>) => void,
-) {
+export function onSort<T extends Sortable, F>(e: React.MouseEvent<HTMLButtonElement, MouseEvent>, state: T, search: (obj: F) => void, filter: F) {
   const target = getSortElement(e.target as HTMLElement)
   const sort = handleSort(target, state.sortTarget, state.sortField, state.sortType)
   state.sortField = sort.field
   state.sortType = sort.type
   state.sortTarget = target
-  if (setState) {
-    setState(state)
-  }
-  search()
+  search(filter)
 }
 export function getSortElement(target: HTMLElement): HTMLElement {
   return target.nodeName === "I" ? (target.parentElement as HTMLElement) : target
