@@ -418,21 +418,17 @@ export function getNumber(e: ChangeEvent<HTMLSelectElement | HTMLInputElement>):
 }
 
 export function setSortFilter<F extends Filter, T extends Sortable>(
-  filter: F,
   state: T,
+  filter: F,
   setFilter?: (v: React.SetStateAction<F>) => void,
-  setState?: (v: React.SetStateAction<T>) => void,
-  search?: (first?: boolean) => void,
+  search?: (obj: F, state?: T, first?: boolean) => void,
 ) {
   setSort(state, filter.sort)
   if (setFilter) {
     setFilter(filter)
   }
-  if (setState) {
-    setState(state)
-  }
   if (search) {
-    search(true)
+    search(filter, state, true)
   }
 }
 export function onToggleSearch(
