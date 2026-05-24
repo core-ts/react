@@ -211,6 +211,12 @@ export function datetimeToString(date?: Date | string): string | undefined {
 function pad(n: number): string {
   return n < 10 ? "0" + n : n.toString()
 }
+export function numberToString(n?: number | null) {
+  if (n == null || isNaN(n)) {
+    return ""
+  }
+  return n.toString()
+}
 
 export const scrollToFocus = (e: any, isUseTimeOut?: boolean) => {
   try {

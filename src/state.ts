@@ -45,8 +45,12 @@ export function updateNumber<T>(
   if (v.indexOf(",") >= 0) {
     v = v.replace(",", ".")
   }
-  const val = isNaN(v as any) ? undefined : parseFloat(v)
-  setValue(o, field, val)
+  if (v === "" || v == null) {
+    setValue(o, field, undefined)
+  } else {
+    const val = isNaN(v as any) ? undefined : parseFloat(v)
+    setValue(o, field, val)
+  }
   setObj({ ...o })
   if (callback) {
     callback()
@@ -131,17 +135,26 @@ export function updateState<T>(
         const val = removeFaxFormat(v0)
         setValue(o, field, val)
       } else if (datatype === "integer") {
+        debugger
         let v = removeSeparators(v0)
-        const val = isNaN(v as any) ? undefined : parseFloat(v)
-        setValue(o, field, val)
+        if (v === "" || v == null) {
+          setValue(o, field, undefined)
+        } else {
+          const val = isNaN(v as any) ? undefined : parseFloat(v)
+          setValue(o, field, val)
+        }
       } else if (datatype === "number") {
         const decimalSeparator = getDecimalSeparator(ctrl as HTMLInputElement)
         let v = decimalSeparator === "," ? v0.replace(r2, "") : v0.replace(r1, "")
         if (v.indexOf(",") >= 0) {
           v = v.replace(",", ".")
         }
-        const val = isNaN(v as any) ? undefined : parseFloat(v)
-        setValue(o, field, val)
+        if (v === "" || v == null) {
+          setValue(o, field, undefined)
+        } else {
+          const val = isNaN(v as any) ? undefined : parseFloat(v)
+          setValue(o, field, val)
+        }
       } else {
         setValue(o, field, v0)
       }
