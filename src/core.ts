@@ -17,11 +17,23 @@ export class resources {
   static getSortId(field: string): string {
     return field + "Sort"
   }
-  static normalizePhone(phone?: string | null): string {
-    return phone ? phone.replace(/[^+\d]/g, "") : ""
+  static normalizePhone(s?: string | null): string {
+    if (!s) {
+      return ""
+    }
+    const len = s.length
+    const buf = new Array<string>(len)
+    let j = 0
+    for (let i = 0; i < len; i++) {
+      const c = s.charCodeAt(i)
+      if (c === 43 || (c >= 48 && c <= 57)) {
+        buf[j++] = s[i]
+      }
+    }
+    return j === len ? buf.join("") : buf.slice(0, j).join("")
   }
   static normalizeFax(fax?: string | null): string {
-    return fax ? fax.replace(/[^+\d]/g, "") : ""
+    return resources.normalizePhone(fax)
   }
 }
 export function normalizePhone(phone?: string | null): string {

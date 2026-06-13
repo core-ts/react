@@ -16,52 +16,53 @@ export function normalizeInteger(s?: string | null): string {
   if (!s) {
     return ""
   }
-  const buf: string[] = []
-  let idx = 0
-  for (let i = 0; i < s.length; i++) {
+  const len = s.length
+  const buf = new Array<string>(len)
+  let j = 0
+  for (let i = 0; i < len; i++) {
     const c = s.charCodeAt(i)
     if (c >= 48 && c <= 57) {
-      buf[idx++] = s[i]
+      buf[j++] = s[i]
     }
   }
-  return buf.join("")
+  return j === len ? buf.join("") : buf.slice(0, j).join("")
 }
 export function removeSeparators(s?: string | null): string {
   if (!s) {
     return ""
   }
-  let result = ""
-  for (let i = 0; i < s.length; i++) {
-    const c = s.charCodeAt(i)
-
-    // '0'–'9' => 48–57, '.' => 46
-    if ((c >= 48 && c <= 57) || c === 46) {
-      result += s[i]
-    }
-  }
-  return result
-}
-// Keep digits 0–9 ; Replace , and ٫ (Arabic decimal separator) → . ; Remove everything else
-export function normalizeNumber(input?: string | null): string {
-  if (!input) {
-    return ""
-  }
-  const len = input.length
-  let result = ""
+  const len = s.length
+  const buffer = new Uint16Array(len) // preallocate max possible
+  let write = 0
 
   for (let i = 0; i < len; i++) {
-    const c = input.charCodeAt(i)
-
-    // '0' - '9'
-    if (c >= 48 && c <= 57) {
-      result += input[i]
-    }
-    // ',' (44) or '٫' (U+066B = 1643) Arabic decimal separator
-    else if (c === 44 || c === 1643) {
-      result += "."
+    const c = s.charCodeAt(i)
+    // '0'–'9' (48–57), '.' (46)
+    if ((c >= 48 && c <= 57) || c === 46) {
+      buffer[write++] = c
     }
   }
-  return result
+  // Convert only the used portion to string
+  return String.fromCharCode.apply(null, buffer.subarray(0, write) as any)
+}
+// Keep digits 0–9 ; Replace , and ٫ (Arabic decimal separator) → . ; Remove everything else
+export function normalizeNumber(s?: string | null): string {
+  if (!s) {
+    return ""
+  }
+  const len = s.length
+  const buf = new Array<string>(len)
+  let j = 0
+  for (let i = 0; i < len; i++) {
+    const c = s.charCodeAt(i)
+
+    if (c >= 48 && c <= 57) {
+      buf[j++] = s[i]
+    } else if (c === 44 || c === 1643) {
+      buf[j++] = "."
+    }
+  }
+  return j === len ? buf.join("") : buf.slice(0, j).join("")
 }
 // const r1 = / |,|\$|€|£|¥|'|٬|،| /g
 // const r2 = / |\.|\$|€|£|¥|'|٬|،| /g

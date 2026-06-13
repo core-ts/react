@@ -12,7 +12,7 @@ export function Error(p: ErrorProps) {
     {},
     React.createElement(
       "header",
-      {},
+      { className: "error-header" },
       p.back && React.createElement("button", { type: "button", id: "backBtn", name: "backBtn", className: "btn-back", onClick: p.back }),
       React.createElement("h2", {}, p.title),
     ),
@@ -20,7 +20,7 @@ export function Error(p: ErrorProps) {
   )
   /*
   <div>
-    <header>
+    <header className="error-header">
       <button type="button" id="backBtn" name="backBtn" className="btn-back" onClick={() => navigate(-1)}></button>
       <h2>{resource.error_404_title}</h2>
     </header>
