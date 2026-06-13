@@ -1,5 +1,5 @@
 import { ChangeEvent } from "react"
-import { removeFaxFormat, removePhoneFormat } from "./core"
+import { normalizeFax, normalizePhone } from "./core"
 import { setValue } from "./reflect"
 
 export function getDecimalSeparator(ele: HTMLInputElement): string {
@@ -10,25 +10,61 @@ export function getDecimalSeparator(ele: HTMLInputElement): string {
       separator = form.getAttribute("data-decimal-separator")
     }
   }
-  return separator === "," ? "," : "."
+  return separator === "," || separator === "٫" ? separator : "."
 }
-
-export function removeSeparators(s?: string | null): string {
-  if (!s) return ""
+export function normalizeInteger(s?: string | null): string {
+  if (!s) {
+    return ""
+  }
   const buf: string[] = []
   let idx = 0
   for (let i = 0; i < s.length; i++) {
     const c = s.charCodeAt(i)
-
-    if (c === 45 || (c >= 48 && c <= 57)) {
+    if (c >= 48 && c <= 57) {
       buf[idx++] = s[i]
     }
   }
   return buf.join("")
 }
+export function removeSeparators(s?: string | null): string {
+  if (!s) {
+    return ""
+  }
+  let result = ""
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i)
 
-const r1 = / |,|\$|€|£|¥|'|٬|،| /g
-const r2 = / |\.|\$|€|£|¥|'|٬|،| /g
+    // '0'–'9' => 48–57, '.' => 46
+    if ((c >= 48 && c <= 57) || c === 46) {
+      result += s[i]
+    }
+  }
+  return result
+}
+// Keep digits 0–9 ; Replace , and ٫ (Arabic decimal separator) → . ; Remove everything else
+export function normalizeNumber(input?: string | null): string {
+  if (!input) {
+    return ""
+  }
+  const len = input.length
+  let result = ""
+
+  for (let i = 0; i < len; i++) {
+    const c = input.charCodeAt(i)
+
+    // '0' - '9'
+    if (c >= 48 && c <= 57) {
+      result += input[i]
+    }
+    // ',' (44) or '٫' (U+066B = 1643) Arabic decimal separator
+    else if (c === 44 || c === 1643) {
+      result += "."
+    }
+  }
+  return result
+}
+// const r1 = / |,|\$|€|£|¥|'|٬|،| /g
+// const r2 = / |\.|\$|€|£|¥|'|٬|،| /g
 export function updateNumber<T>(
   e: ChangeEvent<HTMLInputElement>,
   o: T,
@@ -41,10 +77,7 @@ export function updateNumber<T>(
   const v0: string = formatStr ? formatStr(ctrl.value) : ctrl.value
   const dataField = ctrl.getAttribute("data-field")
   const field = dataField ? dataField : ctrl.name
-  let v = decimalSeparator === "," ? v0.replace(r2, "") : v0.replace(r1, "")
-  if (v.indexOf(",") >= 0) {
-    v = v.replace(",", ".")
-  }
+  let v = decimalSeparator === "," || decimalSeparator === "٫" ? normalizeNumber(v0) : removeSeparators(v0)
   if (v === "" || v == null) {
     setValue(o, field, undefined)
   } else {
@@ -65,9 +98,24 @@ export function formatAndUpdateState<T>(
   o: T,
   setObj: (v: React.SetStateAction<T>) => void,
   formatStr?: (s?: string) => string,
+  decimalSeparator?: string,
   callback?: () => void,
 ) {
-  updateState(e, o, setObj, callback, formatStr)
+  updateState(e, o, setObj, decimalSeparator, formatStr, callback)
+}
+export function updateStateAndCallback<T>(
+  e:
+    | ChangeEvent<HTMLInputElement>
+    | ChangeEvent<HTMLSelectElement>
+    | ChangeEvent<HTMLTextAreaElement>
+    | ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+  o: T,
+  setObj: (v: React.SetStateAction<T>) => void,
+  callback?: () => void,
+  decimalSeparator?: string,
+  formatStr?: (s?: string) => string,
+) {
+  updateState(e, o, setObj, decimalSeparator, formatStr, callback)
 }
 export function updateState<T>(
   e:
@@ -77,8 +125,9 @@ export function updateState<T>(
     | ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   o: T,
   setObj: (v: React.SetStateAction<T>) => void,
-  callback?: () => void,
+  decimalSeparator?: string,
   formatStr?: (s?: string) => string,
+  callback?: () => void,
 ) {
   const ctrl = e.target
   const v0: string = formatStr ? formatStr(ctrl.value) : ctrl.value
@@ -129,14 +178,13 @@ export function updateState<T>(
     } else {
       const datatype = ctrl.getAttribute("data-type")
       if (datatype === "phone") {
-        const val = removePhoneFormat(v0)
+        const val = normalizePhone(v0)
         setValue(o, field, val)
       } else if (datatype === "fax") {
-        const val = removeFaxFormat(v0)
+        const val = normalizeFax(v0)
         setValue(o, field, val)
       } else if (datatype === "integer") {
-        debugger
-        let v = removeSeparators(v0)
+        let v = normalizeInteger(v0)
         if (v === "" || v == null) {
           setValue(o, field, undefined)
         } else {
@@ -144,11 +192,8 @@ export function updateState<T>(
           setValue(o, field, val)
         }
       } else if (datatype === "number") {
-        const decimalSeparator = getDecimalSeparator(ctrl as HTMLInputElement)
-        let v = decimalSeparator === "," ? v0.replace(r2, "") : v0.replace(r1, "")
-        if (v.indexOf(",") >= 0) {
-          v = v.replace(",", ".")
-        }
+        const sep = decimalSeparator ? decimalSeparator : getDecimalSeparator(ctrl as HTMLInputElement)
+        let v = sep === "," || sep === "٫" ? normalizeNumber(v0) : removeSeparators(v0)
         if (v === "" || v == null) {
           setValue(o, field, undefined)
         } else {

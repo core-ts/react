@@ -14,23 +14,21 @@ export class resources {
   static defaultLimit = 24
   static limits = pageSizes
   static pageMaxSize = 7
-  static phone = / |\-|\.|\(|\)/g
-  static fax = / |\-|\.|\(|\)/g
   static getSortId(field: string): string {
     return field + "Sort"
   }
-  static removePhoneFormat(phone?: string | null): string {
-    return phone ? phone.replace(resources.phone, "") : ""
+  static normalizePhone(phone?: string | null): string {
+    return phone ? phone.replace(/[^+\d]/g, "") : ""
   }
-  static removeFaxFormat(fax?: string | null): string {
-    return fax ? fax.replace(resources.fax, "") : ""
+  static normalizeFax(fax?: string | null): string {
+    return fax ? fax.replace(/[^+\d]/g, "") : ""
   }
 }
-export function removePhoneFormat(phone?: string | null): string {
-  return resources.removePhoneFormat(phone)
+export function normalizePhone(phone?: string | null): string {
+  return resources.normalizePhone(phone)
 }
-export function removeFaxFormat(fax?: string | null): string {
-  return resources.removeFaxFormat(fax)
+export function normalizeFax(fax?: string | null): string {
+  return resources.normalizeFax(fax)
 }
 
 export interface StringMap {
