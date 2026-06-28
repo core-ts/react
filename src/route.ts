@@ -1,6 +1,6 @@
 import queryString from "query-string"
 import * as React from "react"
-import { NavigateFunction } from "react-router-dom"
+import { NavigateFunction } from "react-router"
 import { StringMap } from "./core"
 import { hasDiff } from "./reflect"
 import { Filter } from "./search"

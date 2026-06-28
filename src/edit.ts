@@ -1,4 +1,4 @@
-import { NavigateFunction } from "react-router-dom"
+import { NavigateFunction } from "react-router"
 import { Attributes, ErrorMessage, StringMap } from "./core"
 
 export function isSuccessful<T>(x: number | T | ErrorMessage[]): boolean {
