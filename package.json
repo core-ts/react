@@ -1,7 +1,7 @@
 {
-  "name": "react-hook-core",
-  "version": "0.5.18",
-  "description": "react",
+  "name": "react-feature-kit",
+  "version": "0.0.1",
+  "description": "A collection of React utilities and features for building React applications.",
   "main": "./lib/index.js",
   "types": "./src/index.ts",
   "scripts": {
@@ -26,7 +26,11 @@
   },
   "keywords": [
     "react",
-    "react-hook",
-    "react-hook-core"
+    "react-feature-kit",
+    "react feature kit",
+    "react-app-utilities",
+    "react app utilities",
+    "react-app-utils",
+    "react app utils"
   ]
 }
